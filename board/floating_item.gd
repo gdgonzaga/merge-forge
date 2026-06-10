@@ -68,9 +68,13 @@ func _process(delta: float) -> void:
 		_timer_bar.color = Color(0.9, 0.7, 0.2)
 
 
+var _is_dragging := false
+
+
 func _get_drag_data(at_position: Vector2) -> Variant:
 	if item_data.is_empty():
 		return null
+	_is_dragging = true
 	var preview := ColorRect.new()
 	preview.size = Vector2(48, 48)
 	preview.color = Color(0.4, 0.6, 0.4, 0.8)
@@ -86,8 +90,8 @@ func _get_drag_data(at_position: Vector2) -> Variant:
 
 
 func _notification(what: int) -> void:
-	if what == NOTIFICATION_DRAG_END:
-		print("[FloatingItem] NOTIFICATION_DRAG_END item=", item_data.get("name", "?"), " queued_for_deletion=", is_queued_for_deletion())
+	if what == NOTIFICATION_DRAG_END and _is_dragging:
+		_is_dragging = false
 		if is_queued_for_deletion():
 			return
 		drag_completed.emit()
