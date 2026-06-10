@@ -167,14 +167,16 @@ func _update_cell_visual(pos: Vector2i) -> void:
 
 func _on_cell_drop(from_pos: Vector2i, to_pos: Vector2i) -> void:
 	var drag_data = get_viewport().gui_get_drag_data()
-	print("[_on_cell_drop] to_pos=", to_pos, " from_pos=", from_pos, " drag_data=", drag_data)
 	if drag_data == null or not (drag_data is Dictionary) or not drag_data.has("item_id"):
-		print("[_on_cell_drop] INVALID drag_data, returning")
+		return
+	var is_from_board: bool = from_pos.x >= 0 and from_pos.y >= 0
+	if is_from_board and from_pos == to_pos:
 		return
 	if grid[to_pos.y][to_pos.x] == null:
-		var ok := place_item(drag_data, to_pos)
-		print("[_on_cell_drop] place_item result=", ok)
+		if is_from_board:
+			grid[from_pos.y][from_pos.x] = null
+			_update_cell_visual(from_pos)
+		place_item(drag_data, to_pos)
 	else:
-		print("[_on_cell_drop] cell occupied, from_pos valid=", from_pos.x >= 0 and from_pos.y >= 0)
-		if from_pos.x >= 0 and from_pos.y >= 0:
+		if is_from_board:
 			swap_items(from_pos, to_pos)
