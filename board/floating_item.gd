@@ -1,12 +1,10 @@
 extends Control
 
 signal despawn_timeout()
-signal drag_completed()
 
 var item_data: Dictionary = {}
 var despawn_time: float = 12.0
 var time_remaining: float = 12.0
-var _is_dragging := false
 
 var _icon: TextureRect
 var _timer_bar: ColorRect
@@ -72,7 +70,6 @@ func _process(delta: float) -> void:
 func _get_drag_data(at_position: Vector2) -> Variant:
 	if item_data.is_empty():
 		return null
-	_is_dragging = true
 	var preview := ColorRect.new()
 	preview.size = Vector2(48, 48)
 	preview.color = Color(0.4, 0.6, 0.4, 0.8)
@@ -85,12 +82,3 @@ func _get_drag_data(at_position: Vector2) -> Variant:
 	set_drag_preview(preview)
 	preview.position = Vector2(0, -50)
 	return item_data
-
-
-func _notification(what: int) -> void:
-	if what == NOTIFICATION_DRAG_END and _is_dragging:
-		_is_dragging = false
-		if is_queued_for_deletion():
-			return
-		drag_completed.emit()
-		queue_free()

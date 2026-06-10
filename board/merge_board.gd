@@ -15,7 +15,7 @@ func _ready() -> void:
 	_resolver = load("res://board/merge_resolver.gd").new()
 	_resolver.setup(_board, _on_merge_choice_requested)
 	if _board:
-		_board.item_placed.connect(_run_merge_detection)
+		_board.item_placed.connect(_on_item_placed)
 
 
 func setup(config: Dictionary) -> void:
@@ -69,16 +69,24 @@ func _spawn_staging_item(item_data: Dictionary) -> void:
 	var fi: Control = load("res://board/floating_item.tscn").instantiate()
 	fi.setup(item_data, _board.despawn_time if _board else 12.0)
 	fi.despawn_timeout.connect(fi.queue_free)
-	fi.drag_completed.connect(_on_staging_item_done.bind(fi))
 	_staging_container.add_child(fi)
 
 
-func _on_staging_item_done(fi: Control) -> void:
-	if _staging_container and _staging_container.is_ancestor_of(fi):
-		_staging_container.remove_child(fi)
+func _remove_staging_item(item_data: Dictionary) -> void:
+	if _staging_container == null:
+		return
+	for child in _staging_container.get_children():
+		if child.item_data == item_data:
+			child.queue_free()
+			return
 
 
-func _run_merge_detection(_item: Dictionary = {}, _pos: Vector2i = Vector2i.ZERO) -> void:
+func _on_item_placed(item: Dictionary, _pos: Vector2i) -> void:
+	_remove_staging_item(item)
+	_run_merge_detection()
+
+
+func _run_merge_detection() -> void:
 	if _resolver and _resolver.is_processing:
 		return
 	if _board == null:
