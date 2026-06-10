@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://cmg5popup001"]
+
+[ext_resource type="Script" path="res://board/merge_choice_popup.gd" id="1"]
+
+[node name="MergeChoicePopup" type="PopupPanel"]
+script = ExtResource("1")
