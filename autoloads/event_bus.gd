@@ -1,0 +1,17 @@
+extends Node
+
+signal merge_completed(result_id: String, bonus_gold: int)
+signal customer_fulfilled(order_id: String)
+signal customer_rejected(customer_id: String)
+signal session_ended(summary: Dictionary)
+signal session_summary_dismissed()
+signal prep_start_session()
+signal prep_enter_dungeon()
+signal dungeon_cleared(rewards: Dictionary)
+signal dungeon_failed(summary: Dictionary)
+signal dungeon_summary_dismissed()
+signal prep_quit_to_menu()
+signal new_game_started()
+signal continue_game()
+signal save_requested()
+signal item_despawned()

@@ -10,15 +10,29 @@ config_version=5
 
 [application]
 
-config/name="merge forge"
+config/name="MergeForge"
 config/features=PackedStringArray("4.6", "Mobile")
 config/icon="res://icon.svg"
 
-[physics]
+[autoload]
 
-3d/physics_engine="Jolt Physics"
+EventBus="*res://autoloads/event_bus.gd"
+GameManager="*res://autoloads/game_manager.gd"
+RecipeResolver="*res://autoloads/recipe_resolver.gd"
+SaveManager="*res://autoloads/save_manager.gd"
+AudioManager="*res://autoloads/audio_manager.gd"
+
+[display]
+
+window/size/viewport_width=1080
+window/size/viewport_height=1920
+window/stretch/mode="canvas_items"
+window/handheld/orientation=1
+
+[input_devices]
+
+pointing/emulate_touch_from_mouse=true
 
 [rendering]
 
-rendering_device/driver.windows="d3d12"
 renderer/rendering_method="mobile"
