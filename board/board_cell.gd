@@ -55,12 +55,11 @@ func _get_drag_data(at_position: Vector2) -> Variant:
 	return drag_info
 
 
-func _can_drop_data(at_position: Vector2, data: Variant) -> bool:
-	var can: bool = data is Dictionary and data.has("item_id")
-	return can
+func _can_drop_data(_at_position: Vector2, data: Variant) -> bool:
+	return data is Dictionary and data.has("item_id")
 
 
-func _drop_data(at_position: Vector2, data: Variant) -> void:
+func _drop_data(_at_position: Vector2, data: Variant) -> void:
 	if data is Dictionary and data.has("item_id"):
 		var from_pos: Vector2i = data.get("_source_pos", Vector2i(-1, -1))
 		cell_drag_ended.emit(from_pos, grid_pos)

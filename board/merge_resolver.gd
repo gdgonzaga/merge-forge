@@ -35,35 +35,9 @@ func process_next() -> void:
 	_last_group_item_id = item_id
 	_last_group_count = positions.size()
 	board.remove_items(positions)
-	var options: Array[Dictionary] = RecipeResolver.get_options(item_id)
-	var variant_options: Array[Dictionary] = RecipeResolver.get_variant_options(item_id)
-	var all_options: Array[Dictionary] = []
-	for opt in options:
-		var result_id: String = opt.get("result_id", "")
-		var item_data: Dictionary = RecipeResolver.get_item_data(result_id)
-		all_options.append({
-			"item_id": result_id,
-			"display_name": item_data.get("name", result_id),
-			"icon": item_data.get("icon", ""),
-			"is_variant": false,
-			"reagent_id": "",
-			"reagent_cost": 0,
-		})
-	for combo in variant_options:
-		var variant_id: String = combo.get("variant_item_id", "")
-		var variant_data: Dictionary = RecipeResolver.get_item_data(variant_id)
-		var reagent_id: String = combo.get("reagent_id", "")
-		var reagent_data: Dictionary = RecipeResolver.get_reagent_data(reagent_id)
-		all_options.append({
-			"item_id": variant_id,
-			"display_name": variant_data.get("name", variant_id),
-			"icon": variant_data.get("icon", ""),
-			"is_variant": true,
-			"reagent_id": reagent_id,
-			"reagent_cost": reagent_data.get("cost", 0),
-		})
+	var all_options := _build_options(item_id)
 	if all_options.size() == 1:
-		_place_result(all_options[0], item_id, positions.size())
+		_place_result(all_options[0])
 	elif all_options.size() >= 2:
 		_popup_callback.call(all_options, handle_choice)
 	else:
@@ -72,26 +46,52 @@ func process_next() -> void:
 
 
 func handle_choice(item_id: String, is_variant: bool, reagent_id: String) -> void:
-	var fake_opt := {"item_id": item_id, "is_variant": is_variant, "reagent_id": reagent_id}
-	_place_result(fake_opt, _last_group_item_id, _last_group_count)
+	_place_result({"item_id": item_id, "is_variant": is_variant, "reagent_id": reagent_id})
 
 
-func _place_result(option: Dictionary, source_item_id: String, count: int) -> void:
+func _build_options(item_id: String) -> Array[Dictionary]:
+	var all_options: Array[Dictionary] = []
+	for opt in RecipeResolver.get_options(item_id):
+		var result_id: String = opt.get("result_id", "")
+		var data: Dictionary = RecipeResolver.get_item_data(result_id)
+		all_options.append({
+			"item_id": result_id,
+			"display_name": data.get("name", result_id),
+			"icon": data.get("icon", ""),
+			"is_variant": false,
+			"reagent_id": "",
+			"reagent_cost": 0,
+		})
+	for combo in RecipeResolver.get_variant_options(item_id):
+		var variant_id: String = combo.get("variant_item_id", "")
+		var vdata: Dictionary = RecipeResolver.get_item_data(variant_id)
+		var reagent_id: String = combo.get("reagent_id", "")
+		var rdata: Dictionary = RecipeResolver.get_reagent_data(reagent_id)
+		all_options.append({
+			"item_id": variant_id,
+			"display_name": vdata.get("name", variant_id),
+			"icon": vdata.get("icon", ""),
+			"is_variant": true,
+			"reagent_id": reagent_id,
+			"reagent_cost": rdata.get("cost", 0),
+		})
+	return all_options
+
+
+func _place_result(option: Dictionary) -> void:
 	var result_id: String = option.get("item_id", "")
-	var is_variant: bool = option.get("is_variant", false)
-	var reagent_id: String = option.get("reagent_id", "")
-	if is_variant and reagent_id != "":
-		GameManager.consume_reagent(reagent_id)
+	if option.get("is_variant", false):
+		var rid: String = option.get("reagent_id", "")
+		if rid != "":
+			GameManager.consume_reagent(rid)
 	var result_data: Dictionary = RecipeResolver.get_item_data(result_id)
 	var gold_value: int = result_data.get("gold_value", 0)
 	var bonus: int = calculate_bonus_gold(_last_group_count, gold_value)
 	GameManager.add_gold(bonus)
 	var center := calculate_center_of_mass(_last_group_positions)
-	board.place_item({"item_id": result_id, "name": result_data.get("name", ""), "family": result_data.get("family", ""), "gold_value": gold_value, "icon": result_data.get("icon", ""), "dungeon_usable": result_data.get("dungeon_usable", false), "effect": result_data.get("effect")}, center)
+	board.place_item(result_data, center)
 	EventBus.merge_completed.emit(result_id, bonus)
 	process_next()
-
-
 
 
 func calculate_center_of_mass(positions: Array[Vector2i]) -> Vector2i:

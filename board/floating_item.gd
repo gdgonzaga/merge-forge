@@ -6,6 +6,7 @@ signal drag_completed()
 var item_data: Dictionary = {}
 var despawn_time: float = 12.0
 var time_remaining: float = 12.0
+var _is_dragging := false
 
 var _icon: TextureRect
 var _timer_bar: ColorRect
@@ -66,9 +67,6 @@ func _process(delta: float) -> void:
 		_timer_bar.color = Color(0.9, 0.2, 0.2)
 	elif ratio < 0.6:
 		_timer_bar.color = Color(0.9, 0.7, 0.2)
-
-
-var _is_dragging := false
 
 
 func _get_drag_data(at_position: Vector2) -> Variant:

@@ -37,17 +37,14 @@ func buy_crate(crate_id: String) -> void:
 	var cost: int = crate_data.get("cost", 0)
 	if not GameManager.deduct_gold(cost):
 		return
-	var loot: Array = _roll_crate_loot(crate_data)
-	for item_data in loot:
+	for item_data in _roll_crate_loot(crate_data):
 		_spawn_staging_item(item_data)
 
 
 func _roll_crate_loot(crate_data: Dictionary) -> Array[Dictionary]:
 	var pool: Array = crate_data.get("pool", [])
 	var item_count: Dictionary = crate_data.get("item_count", {"min": 1, "max": 1})
-	var min_count: int = item_count.get("min", 1)
-	var max_count: int = item_count.get("max", 1)
-	var count := randi_range(min_count, max_count)
+	var count := randi_range(item_count.get("min", 1), item_count.get("max", 1))
 	var results: Array[Dictionary] = []
 	for _i in range(count):
 		var total_weight := 0
@@ -58,10 +55,10 @@ func _roll_crate_loot(crate_data: Dictionary) -> Array[Dictionary]:
 		for entry in pool:
 			accumulated += entry.get("weight", 1)
 			if roll < accumulated:
-				var item_id: String = entry.get("item_id", "")
-				var item_data: Dictionary = RecipeResolver.get_item_data(item_id)
-				if not item_data.is_empty():
-					results.append(item_data)
+				var id: String = entry.get("item_id", "")
+				var data: Dictionary = RecipeResolver.get_item_data(id)
+				if not data.is_empty():
+					results.append(data)
 				break
 	return results
 
@@ -69,26 +66,19 @@ func _roll_crate_loot(crate_data: Dictionary) -> Array[Dictionary]:
 func _spawn_staging_item(item_data: Dictionary) -> void:
 	if _staging_container == null:
 		return
-	var floating_scene: PackedScene = load("res://board/floating_item.tscn")
-	var fi: Control = floating_scene.instantiate()
+	var fi: Control = load("res://board/floating_item.tscn").instantiate()
 	fi.setup(item_data, _board.despawn_time if _board else 12.0)
-	fi.despawn_timeout.connect(_on_staging_despawn.bind(fi))
-	fi.drag_completed.connect(_on_staging_drag_done.bind(fi))
+	fi.despawn_timeout.connect(fi.queue_free)
+	fi.drag_completed.connect(_on_staging_item_done.bind(fi))
 	_staging_container.add_child(fi)
 
 
-func _on_staging_despawn(fi: Control) -> void:
+func _on_staging_item_done(fi: Control) -> void:
 	if _staging_container and _staging_container.is_ancestor_of(fi):
 		_staging_container.remove_child(fi)
 
 
-func _on_staging_drag_done(fi: Control) -> void:
-	print("[_on_staging_drag_done] called, is_ancestor=", _staging_container.is_ancestor_of(fi) if _staging_container else "null container")
-	if _staging_container and _staging_container.is_ancestor_of(fi):
-		_staging_container.remove_child(fi)
-
-
-func _run_merge_detection() -> void:
+func _run_merge_detection(_item: Dictionary = {}, _pos: Vector2i = Vector2i.ZERO) -> void:
 	if _resolver and _resolver.is_processing:
 		return
 	if _board == null:
