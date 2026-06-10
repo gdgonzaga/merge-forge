@@ -1,6 +1,7 @@
 extends Control
 
 signal despawn_timeout()
+signal drag_completed()
 
 var item_data: Dictionary = {}
 var despawn_time: float = 12.0
@@ -74,3 +75,11 @@ func _get_drag_data(at_position: Vector2) -> Variant:
 	set_drag_preview(preview)
 	preview.position = Vector2(0, -50)
 	return item_data
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_DRAG_END:
+		if is_queued_for_deletion():
+			return
+		drag_completed.emit()
+		queue_free()
