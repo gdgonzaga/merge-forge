@@ -1,0 +1,7 @@
+[gd_scene load_steps=2 format=3 uid="uid://bfloatingitem001"]
+
+[ext_resource type="Script" path="res://board/floating_item.gd" id="1"]
+
+[node name="FloatingItem" type="Control"]
+custom_minimum_size = Vector2(56, 56)
+script = ExtResource("1")
