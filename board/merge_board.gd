@@ -6,26 +6,21 @@ var _resolver: RefCounted
 var _staging_container: HBoxContainer
 var _cell_scene: PackedScene
 var _popup_callback: Callable
-var _merge_callback: Callable
 
 
 func _ready() -> void:
 	_board = _find_node_by_name("BoardGrid")
 	_staging_container = _find_node_by_name("StagingArea")
-	print("MergeBoard: BoardGrid found: ", _board != null)
-	print("MergeBoard: StagingArea found: ", _staging_container != null)
 	_detector = load("res://board/merge_detector.gd").new()
 	_resolver = load("res://board/merge_resolver.gd").new()
 	_resolver.setup(_board, _on_merge_choice_requested)
 	if _board:
-		_board.item_placed.connect(_on_item_placed)
-		_board.item_removed.connect(_on_item_removed)
+		_board.item_placed.connect(_run_merge_detection)
 
 
 func setup(config: Dictionary) -> void:
 	_cell_scene = config.get("cell_scene", null)
 	_popup_callback = config.get("popup_callback", Callable())
-	_merge_callback = config.get("merge_triggered_callback", Callable())
 	var despawn: float = config.get("despawn_time", 12.0)
 	if _board:
 		if _cell_scene:
@@ -90,14 +85,6 @@ func _on_staging_despawn(fi: Control) -> void:
 func _on_staging_drag_done(fi: Control) -> void:
 	if _staging_container and _staging_container.is_ancestor_of(fi):
 		_staging_container.remove_child(fi)
-
-
-func _on_item_placed(item: Dictionary, pos: Vector2i) -> void:
-	_run_merge_detection()
-
-
-func _on_item_removed(pos: Vector2i) -> void:
-	pass
 
 
 func _run_merge_detection() -> void:

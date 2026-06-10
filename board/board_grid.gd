@@ -39,8 +39,6 @@ func _create_cells() -> void:
 	
 	if _cell_scene == null:
 		return
-		
-	print("BoardGrid: Creating ", grid_rows * grid_cols, " cells.")
 	for r in range(grid_rows):
 		for c in range(grid_cols):
 			var cell: Control = _cell_scene.instantiate()

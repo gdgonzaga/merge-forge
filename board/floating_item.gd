@@ -33,13 +33,21 @@ func _ready() -> void:
 	_timer_bar.color = Color(0.3, 0.8, 0.3)
 	_timer_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_timer_bar)
+	if not item_data.is_empty():
+		_apply_icon()
 
 
 func setup(data: Dictionary, time: float) -> void:
 	item_data = data
 	despawn_time = time
 	time_remaining = time
-	var icon_path: String = data.get("icon", "")
+	_apply_icon()
+
+
+func _apply_icon() -> void:
+	if _icon == null:
+		return
+	var icon_path: String = item_data.get("icon", "")
 	if icon_path != "" and ResourceLoader.exists(icon_path):
 		_icon.texture = load(icon_path)
 		_icon.visible = true

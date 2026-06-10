@@ -72,7 +72,6 @@ func process_next() -> void:
 
 
 func handle_choice(item_id: String, is_variant: bool, reagent_id: String) -> void:
-	var source_data: Dictionary = RecipeResolver.get_item_data(_last_group_item_id)
 	var fake_opt := {"item_id": item_id, "is_variant": is_variant, "reagent_id": reagent_id}
 	_place_result(fake_opt, _last_group_item_id, _last_group_count)
 
