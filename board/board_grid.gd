@@ -38,12 +38,18 @@ func _create_cells() -> void:
 			child.queue_free()
 	if _cell_scene == null:
 		return
+	var cell_size := Vector2(64, 64)
+	var test_inst: Control = _cell_scene.instantiate()
+	cell_size = test_inst.size
+	test_inst.queue_free()
 	for r in range(grid_rows):
 		for c in range(grid_cols):
 			var cell: Control = _cell_scene.instantiate()
 			cell.set_meta("is_board_cell", true)
-			cell.position = Vector2(c * cell.size.x, r * cell.size.y)
+			cell.position = Vector2(c * cell_size.x, r * cell_size.y)
+			cell.size = cell_size
 			cell.grid_pos = Vector2i(c, r)
+			cell.cell_drag_ended.connect(_on_cell_drop)
 			add_child(cell)
 
 
@@ -161,3 +167,14 @@ func _update_cell_visual(pos: Vector2i) -> void:
 		cell.call("set_item", item)
 	else:
 		cell.call("clear_item")
+
+
+func _on_cell_drop(from_pos: Vector2i, to_pos: Vector2i) -> void:
+	var drag_data = get_viewport().gui_get_drag_data()
+	if drag_data == null or not (drag_data is Dictionary) or not drag_data.has("item_id"):
+		return
+	if grid[to_pos.y][to_pos.x] == null:
+		place_item(drag_data, to_pos)
+	else:
+		if from_pos.x >= 0 and from_pos.y >= 0:
+			swap_items(from_pos, to_pos)
