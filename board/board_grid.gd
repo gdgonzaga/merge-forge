@@ -1,4 +1,4 @@
-extends Control
+extends GridContainer
 
 signal item_placed(item: Dictionary, pos: Vector2i)
 signal item_removed(pos: Vector2i)
@@ -19,6 +19,7 @@ func _ready() -> void:
 func setup(config: Dictionary) -> void:
 	grid_cols = config.get("cols", 5)
 	grid_rows = config.get("rows", 5)
+	columns = grid_cols
 	_initialize_grid()
 	_create_cells()
 
@@ -34,23 +35,20 @@ func _initialize_grid() -> void:
 
 func _create_cells() -> void:
 	for child in get_children():
-		if child.has_meta("is_board_cell"):
-			child.queue_free()
+		child.queue_free()
+	
 	if _cell_scene == null:
 		return
-	var cell_size := Vector2(64, 64)
-	var test_inst: Control = _cell_scene.instantiate()
-	cell_size = test_inst.size
-	test_inst.queue_free()
+		
+	print("BoardGrid: Creating ", grid_rows * grid_cols, " cells.")
 	for r in range(grid_rows):
 		for c in range(grid_cols):
 			var cell: Control = _cell_scene.instantiate()
 			cell.set_meta("is_board_cell", true)
-			cell.position = Vector2(c * cell_size.x, r * cell_size.y)
-			cell.size = cell_size
 			cell.grid_pos = Vector2i(c, r)
 			cell.cell_drag_ended.connect(_on_cell_drop)
 			add_child(cell)
+
 
 
 func set_cell_scene(scene: PackedScene) -> void:

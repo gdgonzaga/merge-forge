@@ -25,9 +25,9 @@ func _ready() -> void:
 
 	var merge_board_scene: PackedScene = load("res://board/merge_board.tscn")
 	_merge_board = merge_board_scene.instantiate()
-	_merge_board.position = Vector2(0, 100)
-	_merge_board.size = Vector2(1080, 1820)
 	add_child(_merge_board)
+	_merge_board.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	print("TestMerge: MergeBoard instantiated and added.")
 
 	var cell_scene: PackedScene = load("res://board/board_cell.tscn")
 	_merge_board.setup({

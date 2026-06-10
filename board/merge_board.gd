@@ -12,6 +12,8 @@ var _merge_callback: Callable
 func _ready() -> void:
 	_board = _find_node_by_name("BoardGrid")
 	_staging_container = _find_node_by_name("StagingArea")
+	print("MergeBoard: BoardGrid found: ", _board != null)
+	print("MergeBoard: StagingArea found: ", _staging_container != null)
 	_detector = load("res://board/merge_detector.gd").new()
 	_resolver = load("res://board/merge_resolver.gd").new()
 	_resolver.setup(_board, _on_merge_choice_requested)
@@ -115,7 +117,14 @@ func _on_merge_choice_requested(options: Array[Dictionary], callback: Callable) 
 
 
 func _find_node_by_name(node_name: String) -> Control:
-	for child in get_children():
-		if child.name == node_name:
-			return child
+	return _find_recursive(self, node_name)
+
+
+func _find_recursive(node: Node, node_name: String) -> Control:
+	if node.name == node_name:
+		return node as Control
+	for child in node.get_children():
+		var found = _find_recursive(child, node_name)
+		if found:
+			return found
 	return null

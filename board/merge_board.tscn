@@ -1,4 +1,4 @@
-[gd_scene format=3 uid="uid://mergeboard001"]
+[gd_scene load_steps=3 format=3 uid="uid://mergeboard001"]
 
 [ext_resource type="Script" path="res://board/merge_board.gd" id="1"]
 [ext_resource type="Script" path="res://board/board_grid.gd" id="2"]
@@ -8,23 +8,55 @@ layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 script = ExtResource("1")
 
-[node name="BoardGrid" type="Control" parent="."]
+[node name="VBox" type="VBoxContainer" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
-anchor_bottom = 0.7
-offset_top = 60.0
-script = ExtResource("2")
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 
-[node name="StagingArea" type="HBoxContainer" parent="."]
+[node name="TopPadding" type="Control" parent="VBox"]
+custom_minimum_size = Vector2(0, 120)
+layout_mode = 2
+
+[node name="BoardArea" type="Control" parent="VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="DebugBG" type="ColorRect" parent="VBox/BoardArea"]
 layout_mode = 1
-anchors_preset = 12
-anchor_top = 1.0
+anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_top = -80.0
-offset_bottom = -10.0
-offset_left = 10.0
-offset_right = -10.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.1, 0.1, 0.15, 1)
+
+[node name="CenterContainer" type="CenterContainer" parent="VBox/BoardArea"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="BoardGrid" type="GridContainer" parent="VBox/BoardArea/CenterContainer"]
+layout_mode = 2
+theme_override_constants/h_separation = 12
+theme_override_constants/v_separation = 12
+columns = 5
+script = ExtResource("2")
+
+[node name="StagingArea" type="HBoxContainer" parent="VBox"]
+custom_minimum_size = Vector2(0, 180)
+layout_mode = 2
+alignment = 1
+
+[node name="BottomPadding" type="Control" parent="VBox"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2

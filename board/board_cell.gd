@@ -6,24 +6,8 @@ signal cell_drag_ended(from_pos: Vector2i, to_pos: Vector2i)
 var grid_pos: Vector2i = Vector2i(-1, -1)
 var item: Dictionary = {}
 
-var _icon: TextureRect
-var _bg: ColorRect
-
-
-func _ready() -> void:
-	_bg = ColorRect.new()
-	_bg.color = Color(0.2, 0.2, 0.25)
-	_bg.size = size
-	_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(_bg)
-
-	_icon = TextureRect.new()
-	_icon.size = size * 0.8
-	_icon.position = size * 0.1
-	_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_icon.visible = false
-	add_child(_icon)
+@onready var _icon: TextureRect = $Icon
+@onready var _bg: ColorRect = $BG
 
 
 func set_item(item_data: Dictionary) -> void:
