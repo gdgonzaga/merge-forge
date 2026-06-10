@@ -43,7 +43,10 @@ func get_variant_options(base_item_id: String) -> Array[Dictionary]:
 
 
 func get_item_data(item_id: String) -> Dictionary:
-	return items.get(item_id, {})
+	var data: Dictionary = items.get(item_id, {})
+	if not data.is_empty():
+		data["item_id"] = item_id
+	return data
 
 
 func get_blueprint_cost(bp_id: String) -> int:

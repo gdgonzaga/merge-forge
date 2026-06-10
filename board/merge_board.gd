@@ -83,6 +83,7 @@ func _on_staging_despawn(fi: Control) -> void:
 
 
 func _on_staging_drag_done(fi: Control) -> void:
+	print("[_on_staging_drag_done] called, is_ancestor=", _staging_container.is_ancestor_of(fi) if _staging_container else "null container")
 	if _staging_container and _staging_container.is_ancestor_of(fi):
 		_staging_container.remove_child(fi)
 

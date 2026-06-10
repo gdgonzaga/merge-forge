@@ -87,6 +87,7 @@ func _get_drag_data(at_position: Vector2) -> Variant:
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_DRAG_END:
+		print("[FloatingItem] NOTIFICATION_DRAG_END item=", item_data.get("name", "?"), " queued_for_deletion=", is_queued_for_deletion())
 		if is_queued_for_deletion():
 			return
 		drag_completed.emit()
