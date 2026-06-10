@@ -8,7 +8,7 @@ signal upgrade_added(upgrade_id: String)
 signal reagent_count_changed(id: String, count: int)
 signal grid_size_changed(cols: int, rows: int)
 
-var gold: int = 50
+var gold: int = 1000
 var reputation_points: int = 0
 var unlocked_blueprints: Array[String] = []
 var reagent_inventory: Dictionary = {}

@@ -25,8 +25,6 @@ func _ready() -> void:
 	margin_container.add_child(_vbox)
 	add_child(margin_container)
 
-	about_to_popup.connect(_clear_buttons)
-
 
 func show_options(options: Array[Dictionary]) -> void:
 	_clear_buttons()

@@ -42,6 +42,8 @@ func _ready() -> void:
 	add_child(_popup)
 	_popup.choice_made.connect(_on_choice_from_popup)
 
+	GameManager.add_reagent("fire_essence", 3)
+
 
 func _on_buy_crate() -> void:
 	_merge_board.buy_crate("basic")

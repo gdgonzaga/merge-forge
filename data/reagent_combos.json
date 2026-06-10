@@ -1,0 +1,9 @@
+{
+	"herb_bundle": [
+		{
+			"variant_item_id": "healing_potion",
+			"reagent_id": "fire_essence",
+			"blueprint_required": ""
+		}
+	]
+}
