@@ -1,0 +1,101 @@
+{
+	"iron_ore": {
+		"name": "Iron Ore",
+		"family": "metal",
+		"gold_value": 5,
+		"dungeon_usable": false,
+		"dungeon_use_target": null,
+		"effect": null,
+		"icon": "res://resources/sprites/items/iron_ore.png"
+	},
+	"iron_ingot": {
+		"name": "Iron Ingot",
+		"family": "metal",
+		"gold_value": 15,
+		"dungeon_usable": false,
+		"dungeon_use_target": null,
+		"effect": null,
+		"icon": "res://resources/sprites/items/iron_ingot.png"
+	},
+	"iron_plate": {
+		"name": "Iron Plate",
+		"family": "metal",
+		"gold_value": 40,
+		"dungeon_usable": false,
+		"dungeon_use_target": null,
+		"effect": null,
+		"icon": "res://resources/sprites/items/iron_plate.png"
+	},
+	"sword": {
+		"name": "Sword",
+		"family": "metal",
+		"gold_value": 100,
+		"dungeon_usable": false,
+		"dungeon_use_target": null,
+		"effect": null,
+		"icon": "res://resources/sprites/items/sword.png"
+	},
+	"herb_leaf": {
+		"name": "Herb Leaf",
+		"family": "herb",
+		"gold_value": 5,
+		"dungeon_usable": false,
+		"dungeon_use_target": null,
+		"effect": null,
+		"icon": "res://resources/sprites/items/herb_leaf.png"
+	},
+	"herb_bundle": {
+		"name": "Herb Bundle",
+		"family": "herb",
+		"gold_value": 15,
+		"dungeon_usable": false,
+		"dungeon_use_target": null,
+		"effect": null,
+		"icon": "res://resources/sprites/items/herb_bundle.png"
+	},
+	"refined_potion": {
+		"name": "Refined Potion",
+		"family": "herb",
+		"gold_value": 40,
+		"dungeon_usable": false,
+		"dungeon_use_target": null,
+		"effect": null,
+		"icon": "res://resources/sprites/items/refined_potion.png"
+	},
+	"healing_potion": {
+		"name": "Healing Potion",
+		"family": "herb",
+		"gold_value": 40,
+		"dungeon_usable": true,
+		"dungeon_use_target": "party-individual",
+		"effect": { "type": "heal", "power": 30 },
+		"icon": "res://resources/sprites/items/healing_potion.png"
+	},
+	"battle_elixir": {
+		"name": "Battle Elixir",
+		"family": "herb",
+		"gold_value": 50,
+		"dungeon_usable": true,
+		"dungeon_use_target": "party-individual",
+		"effect": { "type": "buff_attack", "power": 5, "duration": 10 },
+		"icon": "res://resources/sprites/items/battle_elixir.png"
+	},
+	"flame_sword": {
+		"name": "Flame Sword",
+		"family": "metal",
+		"gold_value": 200,
+		"dungeon_usable": false,
+		"dungeon_use_target": null,
+		"effect": null,
+		"icon": "res://resources/sprites/items/flame_sword.png"
+	},
+	"fire_essence": {
+		"name": "Fire Essence",
+		"family": "reagent",
+		"gold_value": 100,
+		"dungeon_usable": false,
+		"dungeon_use_target": null,
+		"effect": null,
+		"icon": "res://resources/sprites/items/fire_essence.png"
+	}
+}

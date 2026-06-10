@@ -1,0 +1,39 @@
+{
+	"iron_ore": {
+		"results": [
+			{ "result_id": "iron_ingot", "blueprint_required": "" }
+		],
+		"count_required": 3
+	},
+	"iron_ingot": {
+		"results": [
+			{ "result_id": "iron_plate", "blueprint_required": "bp_iron_plate" }
+		],
+		"count_required": 3
+	},
+	"iron_plate": {
+		"results": [
+			{ "result_id": "sword", "blueprint_required": "bp_sword" }
+		],
+		"count_required": 3
+	},
+	"herb_leaf": {
+		"results": [
+			{ "result_id": "herb_bundle", "blueprint_required": "" }
+		],
+		"count_required": 3
+	},
+	"herb_bundle": {
+		"results": [
+			{ "result_id": "refined_potion", "blueprint_required": "" }
+		],
+		"count_required": 3
+	},
+	"refined_potion": {
+		"results": [
+			{ "result_id": "healing_potion", "blueprint_required": "bp_healing_potion" },
+			{ "result_id": "battle_elixir", "blueprint_required": "bp_battle_elixir" }
+		],
+		"count_required": 3
+	}
+}
