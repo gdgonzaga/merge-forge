@@ -8,7 +8,7 @@ signal upgrade_added(upgrade_id: String)
 signal reagent_count_changed(id: String, count: int)
 signal grid_size_changed(cols: int, rows: int)
 
-const DEFAULT_GOLD := 1000
+const DEFAULT_GOLD := 50
 
 var debug_mode: bool = false
 var gold: int = DEFAULT_GOLD
