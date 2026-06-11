@@ -23,7 +23,7 @@ func _ready() -> void:
 		"portraits": [],
 	}
 
-	var generator := load("res://shop/customer_generator.gd").new()
+	var generator: RefCounted = load("res://shop/customer_generator.gd").new()
 	customers = generator.generate_customers(GameManager.reputation_points)
 
 	_build_layout()
