@@ -133,17 +133,19 @@ func get_board_state() -> Array:
 	for r in range(grid_rows):
 		for c in range(grid_cols):
 			if grid[r][c] != null:
-				state.append({"pos": Vector2i(c, r), "item": grid[r][c]})
+				state.append({"col": c, "row": r, "item": grid[r][c]})
 	return state
 
 
 func load_board_state(state: Array) -> void:
 	_initialize_grid()
 	for entry in state:
-		var pos: Vector2i = entry.get("pos", Vector2i(-1, -1))
+		var c: int = entry.get("col", -1)
+		var r: int = entry.get("row", -1)
 		var item: Dictionary = entry.get("item", {})
-		if pos.x >= 0 and pos.x < grid_cols and pos.y >= 0 and pos.y < grid_rows and not item.is_empty():
-			grid[pos.y][pos.x] = item
+		if c >= 0 and c < grid_cols and r >= 0 and r < grid_rows and not item.is_empty():
+			var pos := Vector2i(c, r)
+			grid[r][c] = item
 			_update_cell_visual(pos)
 
 
