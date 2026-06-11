@@ -91,6 +91,14 @@ func _run_merge_detection() -> void:
 	_resolver.enqueue(groups)
 
 
+func get_board_grid() -> Control:
+	return _board
+
+
+func get_staging_area() -> HBoxContainer:
+	return _staging_container
+
+
 func _on_merge_choice_requested(options: Array[Dictionary], callback: Callable) -> void:
 	if _popup_callback.is_valid():
 		_popup_callback.call(options, callback)

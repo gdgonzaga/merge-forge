@@ -243,7 +243,7 @@ func _clear_orders() -> void:
 func _get_board_grid() -> Node:
 	if board == null:
 		return null
-	return board.get_node_or_null("VBox/BoardArea/CenterContainer/BoardGrid")
+	return board.get_board_grid()
 
 
 func _on_merge_choice_requested(options: Array[Dictionary], callback: Callable) -> void:
