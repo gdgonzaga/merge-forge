@@ -5,9 +5,10 @@ signal order_tapped(order_index: int)
 var order_data: Dictionary = {}
 var order_index: int = -1
 
-var _icon: TextureRect
-var _qty_label: Label
-var _reward_label: Label
+@onready var _icon: TextureRect = $HBox/Icon
+@onready var _qty_label: Label = $HBox/QtyLabel
+@onready var _reward_label: Label = $HBox/RewardLabel
+
 var _flash_tween: Tween
 var _pending_setup: bool = false
 
@@ -22,31 +23,7 @@ func setup(data: Dictionary, index: int) -> void:
 
 
 func _ready() -> void:
-	custom_minimum_size = Vector2(0, 56)
-	var hbox := HBoxContainer.new()
-	hbox.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	hbox.add_theme_constant_override("separation", 8)
-	add_child(hbox)
-
-	_icon = TextureRect.new()
-	_icon.custom_minimum_size = Vector2(48, 48)
-	_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	_icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	hbox.add_child(_icon)
-
-	_qty_label = Label.new()
-	_qty_label.add_theme_font_size_override("font_size", 20)
-	_qty_label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	hbox.add_child(_qty_label)
-
-	_reward_label = Label.new()
-	_reward_label.add_theme_font_size_override("font_size", 20)
-	_reward_label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	_reward_label.modulate = Color(1, 0.84, 0)
-	hbox.add_child(_reward_label)
-
 	gui_input.connect(_on_gui_input)
-
 	if _pending_setup:
 		_apply_data()
 
