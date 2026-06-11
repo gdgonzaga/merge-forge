@@ -21,8 +21,6 @@ var _progress_bar: ProgressBar
 var _encounter_label: Label
 var _party_container: HBoxContainer
 var _enemy_container: HBoxContainer
-var _popup: PopupPanel
-var _choice_callback: Callable
 
 
 func _ready() -> void:
@@ -41,17 +39,12 @@ func _ready() -> void:
 	combat_engine.init_party(party_data)
 	combat_engine.enemy_died.connect(_on_enemy_died)
 	combat_engine.member_ko.connect(_on_member_ko)
-	combat_engine.party_wiped.connect(_on_party_wiped)
-	combat_engine.encounter_ended.connect(_on_encounter_ended)
+	combat_engine.party_wiped.connect(end_dungeon_failed)
+	combat_engine.encounter_ended.connect(end_encounter)
 	add_child(combat_engine)
 
 	drop_mgr = load("res://dungeon/drop_manager.gd").new()
 	add_child(drop_mgr)
-
-	var popup_scene: PackedScene = load("res://board/merge_choice_popup.tscn")
-	_popup = popup_scene.instantiate()
-	add_child(_popup)
-	_popup.choice_made.connect(_on_choice_from_popup)
 
 	_walk_timer = Timer.new()
 	_walk_timer.wait_time = 0.1
@@ -119,14 +112,7 @@ func _build_layout() -> void:
 	board.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	root.add_child(board)
 
-	var cell_scene: PackedScene = load("res://board/board_cell.tscn")
-	board.setup({
-		"cols": GameManager.grid_cols,
-		"rows": GameManager.grid_rows,
-		"cell_scene": cell_scene,
-		"popup_callback": _on_merge_choice_requested,
-		"despawn_time": GameManager.get_despawn_time(),
-	})
+	board.setup({})
 
 
 func start_walking() -> void:
@@ -256,14 +242,6 @@ func _on_member_ko(member_index: int) -> void:
 		party_members[member_index].set_ko()
 
 
-func _on_party_wiped() -> void:
-	end_dungeon_failed()
-
-
-func _on_encounter_ended() -> void:
-	end_encounter()
-
-
 func _clear_enemy_displays() -> void:
 	for ed in enemy_displays:
 		if ed and is_instance_valid(ed):
@@ -275,17 +253,6 @@ func _get_board_grid() -> Node:
 	if board == null:
 		return null
 	return board.get_board_grid()
-
-
-func _on_merge_choice_requested(options: Array[Dictionary], callback: Callable) -> void:
-	_choice_callback = callback
-	_popup.call("show_options", options)
-	_popup.popup_centered()
-
-
-func _on_choice_from_popup(item_id: String, is_variant: bool, reagent_id: String) -> void:
-	if _choice_callback.is_valid():
-		_choice_callback.call(item_id, is_variant, reagent_id)
 
 
 func _dbg(msg: String) -> void:

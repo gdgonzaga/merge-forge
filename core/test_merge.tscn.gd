@@ -2,8 +2,6 @@ extends Control
 
 var _merge_board: Control
 var _gold_label: Label
-var _popup: PopupPanel
-var _choice_callback: Callable
 var _log_label: RichTextLabel
 
 
@@ -29,19 +27,7 @@ func _ready() -> void:
 	crate_btn.pressed.connect(_on_buy_crate)
 	add_child(crate_btn)
 
-	var cell_scene: PackedScene = load("res://board/board_cell.tscn")
-	_merge_board.setup({
-		"cols": 5,
-		"rows": 5,
-		"cell_scene": cell_scene,
-		"popup_callback": _on_merge_choice_requested,
-		"despawn_time": 12.0,
-	})
-
-	var popup_scene: PackedScene = load("res://board/merge_choice_popup.tscn")
-	_popup = popup_scene.instantiate()
-	add_child(_popup)
-	_popup.choice_made.connect(_on_choice_from_popup)
+	_merge_board.setup({"cols": 5, "rows": 5, "despawn_time": 12.0})
 
 	GameManager.add_reagent("fire_essence", 3)
 
@@ -345,14 +331,3 @@ func _on_buy_crate() -> void:
 
 func _on_gold_changed(new_amount: int) -> void:
 	_gold_label.text = "Gold: %d" % new_amount
-
-
-func _on_merge_choice_requested(options: Array[Dictionary], callback: Callable) -> void:
-	_choice_callback = callback
-	_popup.call("show_options", options)
-	_popup.popup_centered()
-
-
-func _on_choice_from_popup(item_id: String, is_variant: bool, reagent_id: String) -> void:
-	if _choice_callback.is_valid():
-		_choice_callback.call(item_id, is_variant, reagent_id)

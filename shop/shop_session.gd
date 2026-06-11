@@ -12,9 +12,6 @@ var _orders_container: VBoxContainer
 var _crate_panel: VBoxContainer
 var _reject_btn: Button
 var _remaining_label: Label
-var _popup: PopupPanel
-var _choice_callback: Callable
-var _generator: RefCounted
 
 
 func _ready() -> void:
@@ -26,16 +23,10 @@ func _ready() -> void:
 		"portraits": [],
 	}
 
-	_generator = load("res://shop/customer_generator.gd").new()
-	customers = _generator.generate_customers(GameManager.reputation_points)
+	var generator := load("res://shop/customer_generator.gd").new()
+	customers = generator.generate_customers(GameManager.reputation_points)
 
 	_build_layout()
-
-	var popup_scene: PackedScene = load("res://board/merge_choice_popup.tscn")
-	_popup = popup_scene.instantiate()
-	add_child(_popup)
-	_popup.choice_made.connect(_on_choice_from_popup)
-
 	advance_customer()
 
 
@@ -84,14 +75,7 @@ func _build_layout() -> void:
 	board.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	root.add_child(board)
 
-	var cell_scene: PackedScene = load("res://board/board_cell.tscn")
-	board.setup({
-		"cols": GameManager.grid_cols,
-		"rows": GameManager.grid_rows,
-		"cell_scene": cell_scene,
-		"popup_callback": _on_merge_choice_requested,
-		"despawn_time": GameManager.get_despawn_time(),
-	})
+	board.setup({})
 
 	if not GameManager.shop_board_state.is_empty():
 		var board_grid = _get_board_grid()
@@ -244,14 +228,3 @@ func _get_board_grid() -> Node:
 	if board == null:
 		return null
 	return board.get_board_grid()
-
-
-func _on_merge_choice_requested(options: Array[Dictionary], callback: Callable) -> void:
-	_choice_callback = callback
-	_popup.call("show_options", options)
-	_popup.popup_centered()
-
-
-func _on_choice_from_popup(item_id: String, is_variant: bool, reagent_id: String) -> void:
-	if _choice_callback.is_valid():
-		_choice_callback.call(item_id, is_variant, reagent_id)

@@ -4,28 +4,35 @@ var _board: Control
 var _detector: RefCounted
 var _resolver: RefCounted
 var _staging_container: HBoxContainer
-var _popup_callback: Callable
+var _popup: PopupPanel
+var _choice_callback: Callable
 
 
 func _ready() -> void:
-	_board = _find_node_by_name("BoardGrid")
-	_staging_container = _find_node_by_name("StagingArea")
+	_board = find_child("BoardGrid", true, false) as Control
+	_staging_container = find_child("StagingArea", true, false) as HBoxContainer
 	_detector = load("res://board/merge_detector.gd").new()
 	_resolver = load("res://board/merge_resolver.gd").new()
 	_resolver.setup(_board, _on_merge_choice_requested)
 	if _board:
 		_board.item_placed.connect(_on_item_placed)
+	var popup_scene: PackedScene = load("res://board/merge_choice_popup.tscn")
+	_popup = popup_scene.instantiate()
+	add_child(_popup)
+	_popup.choice_made.connect(_on_choice_from_popup)
 
 
 func setup(config: Dictionary) -> void:
-	_popup_callback = config.get("popup_callback", Callable())
-	var despawn: float = config.get("despawn_time", 12.0)
+	var cell_scene: PackedScene = config.get("cell_scene", load("res://board/board_cell.tscn"))
+	var despawn: float = config.get("despawn_time", GameManager.get_despawn_time())
 	if _board:
-		var cell_scene: PackedScene = config.get("cell_scene", null)
 		if cell_scene:
 			_board.set_cell_scene(cell_scene)
 		_board.despawn_time = despawn
-		_board.setup(config)
+		_board.setup({
+			"cols": config.get("cols", GameManager.grid_cols),
+			"rows": config.get("rows", GameManager.grid_rows),
+		})
 		_resolver.setup(_board, _on_merge_choice_requested)
 
 
@@ -100,19 +107,11 @@ func get_staging_area() -> HBoxContainer:
 
 
 func _on_merge_choice_requested(options: Array[Dictionary], callback: Callable) -> void:
-	if _popup_callback.is_valid():
-		_popup_callback.call(options, callback)
+	_choice_callback = callback
+	_popup.call("show_options", options)
+	_popup.popup_centered()
 
 
-func _find_node_by_name(node_name: String) -> Control:
-	return _find_recursive(self, node_name)
-
-
-func _find_recursive(node: Node, node_name: String) -> Control:
-	if node.name == node_name:
-		return node as Control
-	for child in node.get_children():
-		var found = _find_recursive(child, node_name)
-		if found:
-			return found
-	return null
+func _on_choice_from_popup(item_id: String, is_variant: bool, reagent_id: String) -> void:
+	if _choice_callback.is_valid():
+		_choice_callback.call(item_id, is_variant, reagent_id)
