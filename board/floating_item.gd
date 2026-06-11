@@ -6,32 +6,11 @@ var item_data: Dictionary = {}
 var despawn_time: float = 12.0
 var time_remaining: float = 12.0
 
-var _icon: TextureRect
-var _timer_bar: ColorRect
-var _bg: ColorRect
+@onready var _icon: TextureRect = $Icon
+@onready var _timer_bar: ColorRect = $TimerBar
 
 
 func _ready() -> void:
-	_bg = ColorRect.new()
-	_bg.color = Color(0.15, 0.25, 0.15)
-	_bg.size = Vector2(56, 56)
-	_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(_bg)
-
-	_icon = TextureRect.new()
-	_icon.size = Vector2(44, 44)
-	_icon.position = Vector2(6, 2)
-	_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_icon.visible = false
-	add_child(_icon)
-
-	_timer_bar = ColorRect.new()
-	_timer_bar.size = Vector2(52, 4)
-	_timer_bar.position = Vector2(2, 52)
-	_timer_bar.color = Color(0.3, 0.8, 0.3)
-	_timer_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(_timer_bar)
 	if not item_data.is_empty():
 		_apply_icon()
 
