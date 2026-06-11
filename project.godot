@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="MergeForge"
-run/main_scene="res://core/main.tscn"
+run/main_scene="uid://testmerge001"
 config/features=PackedStringArray("4.6", "Mobile")
 config/icon="res://icon.svg"
 

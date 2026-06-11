@@ -25,7 +25,7 @@ func get_options(item_id: String) -> Array[Dictionary]:
 	var available: Array[Dictionary] = []
 	for result in results:
 		var bp_required: String = result.get("blueprint_required", "")
-		if bp_required == "" or GameManager.has_blueprint(bp_required):
+		if bp_required == "" or has_blueprint(bp_required):
 			available.append(result)
 	return available
 
@@ -36,7 +36,7 @@ func get_variant_options(base_item_id: String) -> Array[Dictionary]:
 	for combo in combos:
 		var bp_required: String = combo.get("blueprint_required", "")
 		var reagent_id: String = combo.get("reagent_id", "")
-		if bp_required == "" or GameManager.has_blueprint(bp_required):
+		if bp_required == "" or has_blueprint(bp_required):
 			if GameManager.reagent_inventory.get(reagent_id, 0) >= 1:
 				available.append(combo)
 	return available
