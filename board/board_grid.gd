@@ -117,6 +117,8 @@ func find_safe_cell(item_id: String) -> Vector2i:
 func place_or_stage(item: Dictionary) -> bool:
 	var item_id: String = item.get("item_id", "")
 	var safe_pos := find_safe_cell(item_id)
+	if GameManager.debug_mode:
+		print("[BoardGrid] place_or_stage: item=%s safe_pos=%s" % [item_id, str(safe_pos)])
 	if safe_pos.x >= 0:
 		place_item(item, safe_pos)
 		return true
