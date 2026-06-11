@@ -113,6 +113,11 @@ func _build_layout() -> void:
 
 	board.setup({})
 
+	if not GameManager.dungeon_board_state.is_empty():
+		var board_grid = _get_board_grid()
+		if board_grid:
+			board_grid.load_board_state(GameManager.dungeon_board_state)
+
 
 func start_walking() -> void:
 	_walk_timer.start()
@@ -187,6 +192,8 @@ func end_dungeon_cleared() -> void:
 	GameManager.add_reputation(25)
 	if bp_reward and bp_reward != null:
 		GameManager.add_blueprint(bp_reward)
+	_save_board_state()
+	EventBus.save_requested.emit()
 	EventBus.dungeon_cleared.emit({
 		"cleared": true,
 		"gold_reward": gold_reward,
@@ -199,6 +206,8 @@ func end_dungeon_failed() -> void:
 	stop_walking()
 	_dbg("DUNGEON FAILED")
 	GameManager.add_reputation(-20)
+	_save_board_state()
+	EventBus.save_requested.emit()
 	EventBus.dungeon_failed.emit({
 		"cleared": false,
 		"gold_reward": 0,
@@ -255,3 +264,9 @@ func _get_board_grid() -> Node:
 func _dbg(msg: String) -> void:
 	if GameManager.debug_mode:
 		print("[DungeonController] %s" % msg)
+
+
+func _save_board_state() -> void:
+	var board_grid = _get_board_grid()
+	if board_grid and is_instance_valid(board_grid):
+		GameManager.dungeon_board_state = board_grid.get_board_state()

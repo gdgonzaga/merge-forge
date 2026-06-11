@@ -17,6 +17,7 @@ var unlocked_blueprints: Array[String] = []
 var reagent_inventory: Dictionary = {}
 var purchased_upgrades: Array[String] = []
 var shop_board_state: Array = []
+var dungeon_board_state: Array = []
 var grid_cols: int = 5
 var grid_rows: int = 5
 
@@ -99,6 +100,7 @@ func serialize() -> Dictionary:
 		"reagent_inventory": reagent_inventory,
 		"purchased_upgrades": purchased_upgrades,
 		"shop_board_state": shop_board_state,
+		"dungeon_board_state": dungeon_board_state,
 		"grid_cols": grid_cols,
 		"grid_rows": grid_rows,
 	}
@@ -111,6 +113,7 @@ func deserialize(data: Dictionary) -> void:
 	reagent_inventory = data.get("reagent_inventory", {})
 	purchased_upgrades.assign(data.get("purchased_upgrades", []))
 	shop_board_state = data.get("shop_board_state", [])
+	dungeon_board_state = data.get("dungeon_board_state", [])
 	grid_cols = data.get("grid_cols", 5)
 	grid_rows = data.get("grid_rows", 5)
 	gold_changed.emit(gold)
