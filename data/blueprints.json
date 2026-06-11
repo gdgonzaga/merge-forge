@@ -1,0 +1,32 @@
+{
+	"bp_iron_plate": {
+		"name": "Iron Plate Blueprint",
+		"cost": 50,
+		"dependencies": [],
+		"unlocks_item": "iron_plate"
+	},
+	"bp_sword": {
+		"name": "Sword Blueprint",
+		"cost": 120,
+		"dependencies": ["bp_iron_plate"],
+		"unlocks_item": "sword"
+	},
+	"bp_healing_potion": {
+		"name": "Healing Potion Blueprint",
+		"cost": 60,
+		"dependencies": [],
+		"unlocks_item": "healing_potion"
+	},
+	"bp_battle_elixir": {
+		"name": "Battle Elixir Blueprint",
+		"cost": 80,
+		"dependencies": [],
+		"unlocks_item": "battle_elixir"
+	},
+	"bp_flame_sword": {
+		"name": "Flame Sword Blueprint",
+		"cost": 250,
+		"dependencies": ["bp_sword"],
+		"unlocks_item": "flame_sword"
+	}
+}

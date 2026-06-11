@@ -1,0 +1,15 @@
+{
+	"goblin_cave": {
+		"name": "Goblin Cave",
+		"reputation_required": 150,
+		"walk_speed": 0.02,
+		"encounter_points": [0.2, 0.5, 0.8],
+		"encounters": [
+			[{ "enemy_id": "slime", "count": 2 }],
+			[{ "enemy_id": "slime", "count": 1 }, { "enemy_id": "goblin", "count": 1 }],
+			[{ "enemy_id": "goblin", "count": 2 }]
+		],
+		"gold_reward": 80,
+		"blueprint_reward": null
+	}
+}

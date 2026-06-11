@@ -1,0 +1,20 @@
+{
+	"grid_expand": {
+		"name": "Board Expansion",
+		"cost": 100,
+		"effect_type": "grid_size",
+		"effect_value": { "cols": 1, "rows": 1 }
+	},
+	"slow_timer": {
+		"name": "Patience Clock",
+		"cost": 80,
+		"effect_type": "despawn_time",
+		"effect_value": 15.0
+	},
+	"crate_discount": {
+		"name": "Bulk Deal",
+		"cost": 150,
+		"effect_type": "crate_discount",
+		"effect_value": 0.8
+	}
+}

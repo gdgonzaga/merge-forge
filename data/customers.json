@@ -1,0 +1,82 @@
+{
+	"customers": [
+		{
+			"id": "cust_01",
+			"portrait_id": "res://resources/sprites/portraits/customer_01.png",
+			"orders": [
+				{ "item_id": "iron_ingot", "quantity": 2, "gold_reward": 30 }
+			]
+		},
+		{
+			"id": "cust_02",
+			"portrait_id": "res://resources/sprites/portraits/customer_02.png",
+			"orders": [
+				{ "item_id": "herb_bundle", "quantity": 1, "gold_reward": 15 },
+				{ "item_id": "iron_ingot", "quantity": 1, "gold_reward": 15 }
+			]
+		},
+		{
+			"id": "cust_03",
+			"portrait_id": "res://resources/sprites/portraits/customer_03.png",
+			"orders": [
+				{ "item_id": "iron_plate", "quantity": 1, "gold_reward": 40 }
+			]
+		},
+		{
+			"id": "cust_04",
+			"portrait_id": "res://resources/sprites/portraits/customer_04.png",
+			"orders": [
+				{ "item_id": "refined_potion", "quantity": 2, "gold_reward": 80 },
+				{ "item_id": "iron_plate", "quantity": 1, "gold_reward": 40 }
+			]
+		},
+		{
+			"id": "cust_05",
+			"portrait_id": "res://resources/sprites/portraits/customer_05.png",
+			"orders": [
+				{ "item_id": "sword", "quantity": 1, "gold_reward": 100 }
+			]
+		},
+		{
+			"id": "cust_06",
+			"portrait_id": "res://resources/sprites/portraits/customer_06.png",
+			"orders": [
+				{ "item_id": "herb_bundle", "quantity": 3, "gold_reward": 45 },
+				{ "item_id": "iron_ingot", "quantity": 2, "gold_reward": 30 }
+			]
+		},
+		{
+			"id": "cust_07",
+			"portrait_id": "res://resources/sprites/portraits/customer_07.png",
+			"orders": [
+				{ "item_id": "healing_potion", "quantity": 1, "gold_reward": 40 },
+				{ "item_id": "battle_elixir", "quantity": 1, "gold_reward": 50 }
+			]
+		},
+		{
+			"id": "cust_08",
+			"portrait_id": "res://resources/sprites/portraits/customer_08.png",
+			"orders": [
+				{ "item_id": "iron_ingot", "quantity": 3, "gold_reward": 45 },
+				{ "item_id": "herb_bundle", "quantity": 2, "gold_reward": 30 },
+				{ "item_id": "iron_plate", "quantity": 1, "gold_reward": 40 }
+			]
+		},
+		{
+			"id": "cust_09",
+			"portrait_id": "res://resources/sprites/portraits/customer_09.png",
+			"orders": [
+				{ "item_id": "sword", "quantity": 1, "gold_reward": 100 },
+				{ "item_id": "flame_sword", "quantity": 1, "gold_reward": 200 }
+			]
+		},
+		{
+			"id": "cust_10",
+			"portrait_id": "res://resources/sprites/portraits/customer_10.png",
+			"orders": [
+				{ "item_id": "battle_elixir", "quantity": 2, "gold_reward": 100 },
+				{ "item_id": "healing_potion", "quantity": 2, "gold_reward": 80 }
+			]
+		}
+	]
+}

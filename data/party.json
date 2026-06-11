@@ -1,0 +1,22 @@
+{
+	"party_members": {
+		"fighter": {
+			"name": "Fighter",
+			"sprite": "res://resources/sprites/party/fighter.png",
+			"max_hp": 90,
+			"attack": 14
+		},
+		"mage": {
+			"name": "Mage",
+			"sprite": "res://resources/sprites/party/mage.png",
+			"max_hp": 50,
+			"attack": 18
+		},
+		"healer": {
+			"name": "Healer",
+			"sprite": "res://resources/sprites/party/healer.png",
+			"max_hp": 60,
+			"attack": 5
+		}
+	}
+}

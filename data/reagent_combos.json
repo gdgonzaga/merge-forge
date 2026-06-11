@@ -5,5 +5,12 @@
 			"reagent_id": "fire_essence",
 			"blueprint_required": ""
 		}
+	],
+	"sword": [
+		{
+			"variant_item_id": "flame_sword",
+			"reagent_id": "fire_essence",
+			"blueprint_required": "bp_flame_sword"
+		}
 	]
 }

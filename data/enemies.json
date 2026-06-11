@@ -1,0 +1,25 @@
+{
+	"slime": {
+		"name": "Slime",
+		"max_hp": 30,
+		"attack": 5,
+		"drop_count": { "min": 1, "max": 2 },
+		"drop_pool": [
+			{ "item_id": "iron_ore", "weight": 3 },
+			{ "item_id": "herb_leaf", "weight": 2 }
+		],
+		"sprite": "res://resources/sprites/enemies/slime.png"
+	},
+	"goblin": {
+		"name": "Goblin",
+		"max_hp": 50,
+		"attack": 8,
+		"drop_count": { "min": 2, "max": 3 },
+		"drop_pool": [
+			{ "item_id": "iron_ore", "weight": 2 },
+			{ "item_id": "iron_ingot", "weight": 1 },
+			{ "item_id": "herb_leaf", "weight": 2 }
+		],
+		"sprite": "res://resources/sprites/enemies/goblin.png"
+	}
+}
