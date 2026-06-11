@@ -7,6 +7,9 @@ var reagent_combos: Dictionary = {}
 var crates: Dictionary = {}
 var upgrades: Dictionary = {}
 var reagents: Dictionary = {}
+var enemies: Dictionary = {}
+var dungeons: Dictionary = {}
+var party: Dictionary = {}
 
 
 func _ready() -> void:
@@ -17,6 +20,9 @@ func _ready() -> void:
 	crates = _load_json("res://data/crates.json")
 	upgrades = _load_json("res://data/upgrades.json")
 	reagents = _load_json("res://data/reagents.json")
+	enemies = _load_json("res://data/enemies.json")
+	dungeons = _load_json("res://data/dungeons.json")
+	party = _load_json("res://data/party.json")
 
 
 func get_options(item_id: String) -> Array[Dictionary]:

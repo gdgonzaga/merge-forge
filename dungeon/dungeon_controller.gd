@@ -27,17 +27,7 @@ var _choice_callback: Callable
 
 func _ready() -> void:
 	var dungeon_id := "goblin_cave"
-	var dungeons: Dictionary = RecipeResolver.reagents
-	var all_dungeons: Dictionary = {}
-	var path := "res://data/dungeons.json"
-	if FileAccess.file_exists(path):
-		var file := FileAccess.open(path, FileAccess.READ)
-		if file:
-			var json := JSON.new()
-			if json.parse(file.get_as_text()) == OK and json.data is Dictionary:
-				all_dungeons = json.data
-			file.close()
-	_dungeon_data = all_dungeons.get(dungeon_id, {})
+	_dungeon_data = RecipeResolver.dungeons.get(dungeon_id, {})
 	walk_speed = _dungeon_data.get("walk_speed", 0.02)
 	encounter_points = _dungeon_data.get("encounter_points", [])
 	encounters_data = _dungeon_data.get("encounters", [])
@@ -70,16 +60,7 @@ func _ready() -> void:
 
 
 func _load_party() -> void:
-	var party_json: Dictionary = {}
-	var ppath := "res://data/party.json"
-	if FileAccess.file_exists(ppath):
-		var file := FileAccess.open(ppath, FileAccess.READ)
-		if file:
-			var json := JSON.new()
-			if json.parse(file.get_as_text()) == OK and json.data is Dictionary:
-				party_json = json.data
-			file.close()
-	var members: Dictionary = party_json.get("party_members", {})
+	var members: Dictionary = RecipeResolver.party.get("party_members", {})
 	var idx := 0
 	for role in ["fighter", "mage", "healer"]:
 		var data: Dictionary = members.get(role, {})

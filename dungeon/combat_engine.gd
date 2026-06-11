@@ -23,9 +23,6 @@ func start_combat(enemy_definitions: Array) -> void:
 	for edef in enemy_definitions:
 		var enemy_id: String = edef.get("enemy_id", "")
 		var count: int = edef.get("count", 1)
-		var base_data: Dictionary = RecipeResolver.get_reagent_data(enemy_id)
-		if base_data.is_empty():
-			base_data = load("res://data/enemies.json") as Dictionary
 		for _i in range(count):
 			enemies.append(_make_enemy(enemy_id))
 	tick_timer.start()
