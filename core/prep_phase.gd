@@ -1,63 +1,25 @@
 extends Control
 
-var _tab_container: TabContainer
-var _bp_scroll: VBoxContainer
-var _upgrade_scroll: VBoxContainer
-var _reagent_scroll: VBoxContainer
+@onready var _bp_scroll: VBoxContainer = $VBox/TabContainer/Blueprints/BpContent
+@onready var _upgrade_scroll: VBoxContainer = $VBox/TabContainer/Upgrades/UpgradeContent
+@onready var _reagent_scroll: VBoxContainer = $VBox/TabContainer/Reagents/ReagentContent
 
 
 func _ready() -> void:
-	var bg := ColorRect.new()
-	bg.color = Color(0.1, 0.1, 0.2)
-	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(bg)
+	for child in _bp_scroll.get_children():
+		child.queue_free()
+	for child in _upgrade_scroll.get_children():
+		child.queue_free()
+	for child in _reagent_scroll.get_children():
+		child.queue_free()
 
-	var root := VBoxContainer.new()
-	root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	root.add_theme_constant_override("separation", 12)
-	add_child(root)
-
-	var title := Label.new()
-	title.text = "Prep Phase"
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 36)
-	root.add_child(title)
-
-	_tab_container = TabContainer.new()
-	_tab_container.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_tab_container.add_theme_constant_override("h_separation", 8)
-	root.add_child(_tab_container)
-
-	_bp_scroll = _build_tab("Blueprints")
-	_upgrade_scroll = _build_tab("Upgrades")
-	_reagent_scroll = _build_tab("Reagents")
-	_refresh_all()
-
-	var btn_box := HBoxContainer.new()
-	btn_box.add_theme_constant_override("separation", 16)
-	btn_box.alignment = BoxContainer.ALIGNMENT_CENTER
-	root.add_child(btn_box)
-
-	_make_btn(btn_box, "Quit to Menu", EventBus.prep_quit_to_menu.emit)
-	_make_btn(btn_box, "Start Session", EventBus.prep_start_session.emit)
-
-	var dungeon_btn := Button.new()
-	dungeon_btn.text = "Enter Dungeon"
-	dungeon_btn.add_theme_font_size_override("font_size", 22)
-	dungeon_btn.custom_minimum_size = Vector2(280, 70)
+	var dungeon_btn: Button = $VBox/BtnBox/DungeonBtn
 	dungeon_btn.disabled = not GameManager.is_dungeon_unlocked()
 	dungeon_btn.tooltip_text = "Requires 150 reputation"
+	$VBox/BtnBox/QuitBtn.pressed.connect(EventBus.prep_quit_to_menu.emit)
+	$VBox/BtnBox/SessionBtn.pressed.connect(EventBus.prep_start_session.emit)
 	dungeon_btn.pressed.connect(EventBus.prep_enter_dungeon.emit)
-	btn_box.add_child(dungeon_btn)
-
-	var debug_btn := Button.new()
-	debug_btn.text = "DBG: Unlock All + 2000g + 1000rep"
-	debug_btn.add_theme_font_size_override("font_size", 16)
-	debug_btn.custom_minimum_size = Vector2(280, 50)
-	debug_btn.pressed.connect(_debug_unlock_all)
-	btn_box.add_child(debug_btn)
-
+	$VBox/BtnBox/DebugBtn.pressed.connect(_debug_unlock_all)
 	GameManager.gold_changed.connect(func(_v): if is_instance_valid(self): _refresh_all())
 	GameManager.blueprint_added.connect(func(_v): if is_instance_valid(self): _refresh_blueprints())
 	GameManager.upgrade_added.connect(func(_v): if is_instance_valid(self): _refresh_upgrades())
@@ -66,6 +28,7 @@ func _ready() -> void:
 		if is_instance_valid(dungeon_btn):
 			dungeon_btn.disabled = v < 150
 	)
+	_refresh_all()
 
 
 func try_purchase(type: String, id: String) -> bool:
@@ -128,19 +91,6 @@ func _buy_reagent(reagent_id: String) -> bool:
 	return true
 
 
-func _build_tab(tab_name: String) -> VBoxContainer:
-	var scroll := ScrollContainer.new()
-	scroll.name = tab_name
-	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_tab_container.add_child(scroll)
-	var content := VBoxContainer.new()
-	content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	content.add_theme_constant_override("separation", 6)
-	scroll.add_child(content)
-	return content
-
-
 func _refresh_all() -> void:
 	_refresh_blueprints()
 	_refresh_upgrades()
@@ -162,7 +112,7 @@ func _refresh_blueprints() -> void:
 				deps_met = false
 				break
 		var cost: int = data.get("cost", 0)
-		var desc := ""
+		var desc: String = ""
 		var desc_color := Color(0.7, 0.7, 0.7)
 		if not deps_met:
 			desc = "Requires: %s" % ", ".join(deps)
@@ -222,15 +172,6 @@ func _describe_upgrade(effect_type: String, value) -> String:
 		"crate_discount":
 			return "Crate prices x%.0f%%" % (float(value) * 100)
 	return effect_type
-
-
-func _make_btn(parent: BoxContainer, text: String, on_press: Callable) -> void:
-	var btn := Button.new()
-	btn.text = text
-	btn.add_theme_font_size_override("font_size", 22)
-	btn.custom_minimum_size = Vector2(280, 70)
-	btn.pressed.connect(on_press)
-	parent.add_child(btn)
 
 
 func _debug_unlock_all() -> void:

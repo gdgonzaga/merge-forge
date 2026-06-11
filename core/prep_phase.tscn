@@ -1,6 +1,7 @@
 [gd_scene format=3 uid="uid://prepphase001"]
 
 [ext_resource type="Script" uid="uid://c2iwcumfnivmg" path="res://core/prep_phase.gd" id="1"]
+[ext_resource type="PackedScene" uid="uid://diyic0gvjt66w" path="res://shop/purchase_card.tscn" id="2"]
 
 [node name="PrepPhase" type="Control" unique_id=504126686]
 layout_mode = 3
@@ -10,3 +11,107 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1")
+
+[node name="BG" type="ColorRect" parent="." unique_id=978197566]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.1, 0.1, 0.2, 1)
+
+[node name="VBox" type="VBoxContainer" parent="." unique_id=1363721810]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 12
+
+[node name="Title" type="Label" parent="VBox" unique_id=1976017540]
+layout_mode = 2
+theme_override_font_sizes/font_size = 36
+text = "Prep Phase"
+horizontal_alignment = 1
+
+[node name="TabContainer" type="TabContainer" parent="VBox" unique_id=1747397318]
+layout_mode = 2
+size_flags_vertical = 3
+current_tab = 0
+
+[node name="Blueprints" type="ScrollContainer" parent="VBox/TabContainer" unique_id=1466132517]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+metadata/_tab_index = 0
+
+[node name="BpContent" type="VBoxContainer" parent="VBox/TabContainer/Blueprints" unique_id=504126687]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+
+[node name="PlaceholderCard" parent="VBox/TabContainer/Blueprints/BpContent" unique_id=2031856559 instance=ExtResource("2")]
+visible = false
+layout_mode = 2
+
+[node name="Upgrades" type="ScrollContainer" parent="VBox/TabContainer" unique_id=1039999185]
+visible = false
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+metadata/_tab_index = 1
+
+[node name="UpgradeContent" type="VBoxContainer" parent="VBox/TabContainer/Upgrades" unique_id=504126688]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+
+[node name="PlaceholderCard" parent="VBox/TabContainer/Upgrades/UpgradeContent" unique_id=401739962 instance=ExtResource("2")]
+layout_mode = 2
+
+[node name="Reagents" type="ScrollContainer" parent="VBox/TabContainer" unique_id=622098883]
+visible = false
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+metadata/_tab_index = 2
+
+[node name="ReagentContent" type="VBoxContainer" parent="VBox/TabContainer/Reagents" unique_id=504126689]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+
+[node name="PlaceholderCard" parent="VBox/TabContainer/Reagents/ReagentContent" unique_id=839663364 instance=ExtResource("2")]
+layout_mode = 2
+
+[node name="BtnBox" type="HBoxContainer" parent="VBox" unique_id=1620198718]
+layout_mode = 2
+theme_override_constants/separation = 16
+alignment = 1
+
+[node name="QuitBtn" type="Button" parent="VBox/BtnBox" unique_id=504126690]
+custom_minimum_size = Vector2(250, 70)
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "Quit to Menu"
+
+[node name="SessionBtn" type="Button" parent="VBox/BtnBox" unique_id=504126691]
+custom_minimum_size = Vector2(250, 70)
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "Start Session"
+
+[node name="DungeonBtn" type="Button" parent="VBox/BtnBox" unique_id=504126692]
+custom_minimum_size = Vector2(250, 70)
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+disabled = true
+text = "Enter Dungeon"
+
+[node name="DebugBtn" type="Button" parent="VBox/BtnBox" unique_id=504126693]
+custom_minimum_size = Vector2(250, 50)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "DBG: Unlock All + 2000g + 1000rep"
