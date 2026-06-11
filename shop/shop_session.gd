@@ -67,6 +67,7 @@ func _build_layout() -> void:
 	_reject_btn = Button.new()
 	_reject_btn.text = "Reject (-2 rep)"
 	_reject_btn.add_theme_font_size_override("font_size", 18)
+	_reject_btn.custom_minimum_size = Vector2(0, 48)
 	_reject_btn.pressed.connect(reject_customer)
 	_customer_display.add_child(_reject_btn)
 
@@ -100,6 +101,7 @@ func _build_layout() -> void:
 		var btn := Button.new()
 		var cost: int = int(crate_data.get("cost", 0) * GameManager.get_crate_discount())
 		btn.text = "%s (%dg)" % [crate_data.get("name", crate_id), cost]
+		btn.custom_minimum_size = Vector2(0, 48)
 		btn.add_theme_font_size_override("font_size", 18)
 		btn.pressed.connect(try_buy_crate.bind(crate_id))
 		_crate_panel.add_child(btn)

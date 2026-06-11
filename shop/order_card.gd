@@ -22,6 +22,7 @@ func setup(data: Dictionary, index: int) -> void:
 
 
 func _ready() -> void:
+	custom_minimum_size = Vector2(0, 56)
 	var hbox := HBoxContainer.new()
 	hbox.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	hbox.add_theme_constant_override("separation", 8)
