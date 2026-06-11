@@ -13,7 +13,6 @@ func _ready() -> void:
 	_staging_container = find_child("StagingArea", true, false) as HBoxContainer
 	_detector = load("res://board/merge_detector.gd").new()
 	_resolver = load("res://board/merge_resolver.gd").new()
-	_resolver.setup(_board, _on_merge_choice_requested)
 	if _board:
 		_board.item_placed.connect(_on_item_placed)
 	var popup_scene: PackedScene = load("res://board/merge_choice_popup.tscn")

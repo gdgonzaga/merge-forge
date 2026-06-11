@@ -38,8 +38,8 @@ func _ready() -> void:
 	btn_box.alignment = BoxContainer.ALIGNMENT_CENTER
 	root.add_child(btn_box)
 
-	_make_btn(btn_box, "Quit to Menu", _on_quit)
-	_make_btn(btn_box, "Start Session", _on_start_session)
+	_make_btn(btn_box, "Quit to Menu", EventBus.prep_quit_to_menu.emit)
+	_make_btn(btn_box, "Start Session", EventBus.prep_start_session.emit)
 
 	var dungeon_btn := Button.new()
 	dungeon_btn.text = "Enter Dungeon"
@@ -47,7 +47,7 @@ func _ready() -> void:
 	dungeon_btn.custom_minimum_size = Vector2(280, 70)
 	dungeon_btn.disabled = not GameManager.is_dungeon_unlocked()
 	dungeon_btn.tooltip_text = "Requires 150 reputation"
-	dungeon_btn.pressed.connect(_on_enter_dungeon)
+	dungeon_btn.pressed.connect(EventBus.prep_enter_dungeon.emit)
 	btn_box.add_child(dungeon_btn)
 
 	var debug_btn := Button.new()
@@ -346,18 +346,6 @@ func _make_btn(parent: BoxContainer, text: String, on_press: Callable) -> void:
 	btn.custom_minimum_size = Vector2(280, 70)
 	btn.pressed.connect(on_press)
 	parent.add_child(btn)
-
-
-func _on_quit() -> void:
-	EventBus.prep_quit_to_menu.emit()
-
-
-func _on_start_session() -> void:
-	EventBus.prep_start_session.emit()
-
-
-func _on_enter_dungeon() -> void:
-	EventBus.prep_enter_dungeon.emit()
 
 
 func _debug_unlock_all() -> void:
