@@ -9,17 +9,18 @@ var next_encounter_idx: int = 0
 
 var combat_engine: Node
 var drop_mgr: Node
-var board: Control
 var party_data: Array[Dictionary] = []
 var party_members: Array = []
 var enemy_displays: Array = []
 
 var _dungeon_data: Dictionary = {}
 var _walk_timer: Timer
-var _progress_bar: ProgressBar
-var _encounter_label: Label
-var _party_container: HBoxContainer
-var _enemy_container: HBoxContainer
+
+@onready var board: Control = $VBox/Board
+@onready var _progress_bar: ProgressBar = $VBox/TopBar/ProgressBar
+@onready var _encounter_label: Label = $VBox/TopBar/EncounterLabel
+@onready var _party_container: HBoxContainer = $VBox/PartyContainer
+@onready var _enemy_container: HBoxContainer = $VBox/EnemyContainer
 
 
 func _ready() -> void:
@@ -32,8 +33,23 @@ func _ready() -> void:
 	_dbg("walk_speed=%s encounter_points=%s encounters_count=%d" % [str(walk_speed), str(encounter_points), encounters_data.size()])
 
 	_load_party()
-	_build_layout()
 	AudioManager.play_sfx("dungeon_start")
+
+	for child in _party_container.get_children():
+		child.queue_free()
+
+	var pm_scene: PackedScene = load("res://dungeon/party_member.tscn")
+	for i in range(party_data.size()):
+		var pm: Control = pm_scene.instantiate()
+		_party_container.add_child(pm)
+		pm.setup(party_data[i])
+		party_members.append(pm)
+
+	board.setup({})
+	if not GameManager.dungeon_board_state.is_empty():
+		var board_grid = _get_board_grid()
+		if board_grid:
+			board_grid.load_board_state(GameManager.dungeon_board_state)
 
 	combat_engine = load("res://dungeon/combat_engine.gd").new()
 	combat_engine.init_party(party_data)
@@ -68,56 +84,6 @@ func _load_party() -> void:
 			"member_index": idx,
 		})
 		idx += 1
-
-
-func _build_layout() -> void:
-	var root := VBoxContainer.new()
-	root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	root.add_theme_constant_override("separation", 8)
-	add_child(root)
-
-	var top_bar := HBoxContainer.new()
-	top_bar.add_theme_constant_override("separation", 12)
-	root.add_child(top_bar)
-
-	_progress_bar = ProgressBar.new()
-	_progress_bar.max_value = 100
-	_progress_bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	top_bar.add_child(_progress_bar)
-
-	_encounter_label = Label.new()
-	_encounter_label.add_theme_font_size_override("font_size", 18)
-	_encounter_label.text = "Walking..."
-	top_bar.add_child(_encounter_label)
-
-	_party_container = HBoxContainer.new()
-	_party_container.add_theme_constant_override("separation", 8)
-	_party_container.alignment = BoxContainer.ALIGNMENT_CENTER
-	root.add_child(_party_container)
-
-	var pm_scene: PackedScene = load("res://dungeon/party_member.tscn")
-	for i in range(party_data.size()):
-		var pm: Control = pm_scene.instantiate()
-		_party_container.add_child(pm)
-		pm.setup(party_data[i])
-		party_members.append(pm)
-
-	_enemy_container = HBoxContainer.new()
-	_enemy_container.add_theme_constant_override("separation", 8)
-	_enemy_container.alignment = BoxContainer.ALIGNMENT_CENTER
-	root.add_child(_enemy_container)
-
-	var merge_board_scene: PackedScene = load("res://board/merge_board.tscn")
-	board = merge_board_scene.instantiate()
-	board.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	root.add_child(board)
-
-	board.setup({})
-
-	if not GameManager.dungeon_board_state.is_empty():
-		var board_grid = _get_board_grid()
-		if board_grid:
-			board_grid.load_board_state(GameManager.dungeon_board_state)
 
 
 func start_walking() -> void:
