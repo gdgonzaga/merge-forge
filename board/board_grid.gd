@@ -102,16 +102,35 @@ func find_safe_cell(item_id: String) -> Vector2i:
 			if grid[r][c] != null:
 				continue
 			var pos := Vector2i(c, r)
-			var adjacent_count := 0
-			for neighbor in [Vector2i(c - 1, r), Vector2i(c + 1, r), Vector2i(c, r - 1), Vector2i(c, r + 1)]:
-				if neighbor.x < 0 or neighbor.x >= grid_cols or neighbor.y < 0 or neighbor.y >= grid_rows:
-					continue
-				var cell = grid[neighbor.y][neighbor.x]
-				if cell != null and cell is Dictionary and cell.get("item_id", "") == item_id:
-					adjacent_count += 1
-			if adjacent_count < 2:
+			grid[r][c] = {"item_id": item_id, "_temp": true}
+			var group_size := _count_connected(pos, item_id)
+			grid[r][c] = null
+			if group_size < 3:
 				return pos
 	return Vector2i(-1, -1)
+
+
+func _count_connected(start: Vector2i, item_id: String) -> int:
+	var visited: Dictionary = {}
+	var stack: Array[Vector2i] = [start]
+	var count := 0
+	while stack.size() > 0:
+		var pos: Vector2i = stack.pop_back()
+		var key := pos.x + pos.y * 10000
+		if visited.has(key):
+			continue
+		if pos.x < 0 or pos.x >= grid_cols or pos.y < 0 or pos.y >= grid_rows:
+			continue
+		var cell = grid[pos.y][pos.x]
+		if cell == null or cell.get("item_id", "") != item_id:
+			continue
+		visited[key] = true
+		count += 1
+		stack.append(Vector2i(pos.x + 1, pos.y))
+		stack.append(Vector2i(pos.x - 1, pos.y))
+		stack.append(Vector2i(pos.x, pos.y + 1))
+		stack.append(Vector2i(pos.x, pos.y - 1))
+	return count
 
 
 func place_or_stage(item: Dictionary) -> bool:
@@ -120,9 +139,9 @@ func place_or_stage(item: Dictionary) -> bool:
 	if GameManager.debug_mode:
 		print("[BoardGrid] place_or_stage: item=%s safe_pos=%s" % [item_id, str(safe_pos)])
 	if safe_pos.x >= 0:
-		place_item(item, safe_pos)
+		grid[safe_pos.y][safe_pos.x] = item
+		_update_cell_visual(safe_pos)
 		return true
-	add_to_staging(item)
 	return false
 
 
