@@ -6,7 +6,6 @@ var encounter_points: Array = []
 var encounters_data: Array = []
 var encounters_cleared: int = 0
 var next_encounter_idx: int = 0
-var is_walking: bool = false
 
 var combat_engine: Node
 var drop_mgr: Node
@@ -116,13 +115,11 @@ func _build_layout() -> void:
 
 
 func start_walking() -> void:
-	is_walking = true
 	_walk_timer.start()
 	_encounter_label.text = "Walking..."
 
 
 func stop_walking() -> void:
-	is_walking = false
 	_walk_timer.stop()
 
 

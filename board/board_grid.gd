@@ -6,7 +6,6 @@ signal item_removed(pos: Vector2i)
 var grid: Array[Array] = []
 var grid_cols: int = 5
 var grid_rows: int = 5
-var staging_items: Array = []
 var despawn_time: float = 12.0
 
 var _cell_scene: PackedScene
@@ -92,10 +91,6 @@ func discard_item(pos: Vector2i) -> void:
 	item_removed.emit(pos)
 
 
-func add_to_staging(item: Dictionary) -> void:
-	staging_items.append(item)
-
-
 func find_safe_cell(item_id: String) -> Vector2i:
 	for r in range(grid_rows):
 		for c in range(grid_cols):
@@ -176,7 +171,6 @@ func clear_board() -> void:
 		for c in range(grid_cols):
 			grid[r][c] = null
 			_update_cell_visual(Vector2i(c, r))
-	staging_items.clear()
 
 
 func get_board_state() -> Array:

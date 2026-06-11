@@ -2,11 +2,9 @@ extends Control
 
 var _sprite: TextureRect
 var _hp_bar: ProgressBar
-var enemy_data: Dictionary = {}
 
 
 func setup(data: Dictionary) -> void:
-	enemy_data = data
 	var sprite_path: String = data.get("sprite", "")
 	if sprite_path != "" and FileAccess.file_exists(sprite_path):
 		_sprite.texture = load(sprite_path)

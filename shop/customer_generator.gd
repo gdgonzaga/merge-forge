@@ -3,7 +3,7 @@ extends RefCounted
 var _customers: Array = []
 
 
-func generate_customers(_reputation_points: int) -> Array[Dictionary]:
+func generate_customers() -> Array[Dictionary]:
 	if _customers.is_empty():
 		_load()
 	var result: Array[Dictionary] = []
