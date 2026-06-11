@@ -50,12 +50,13 @@ func _ready() -> void:
 	dungeon_btn.pressed.connect(_on_enter_dungeon)
 	btn_box.add_child(dungeon_btn)
 
-	GameManager.gold_changed.connect(func(_v): _refresh_all())
-	GameManager.blueprint_added.connect(func(_v): _refresh_blueprints())
-	GameManager.upgrade_added.connect(func(_v): _refresh_upgrades())
-	GameManager.reagent_count_changed.connect(func(_v, _c): _refresh_reagents())
+	GameManager.gold_changed.connect(func(_v): if is_instance_valid(self): _refresh_all())
+	GameManager.blueprint_added.connect(func(_v): if is_instance_valid(self): _refresh_blueprints())
+	GameManager.upgrade_added.connect(func(_v): if is_instance_valid(self): _refresh_upgrades())
+	GameManager.reagent_count_changed.connect(func(_v, _c): if is_instance_valid(self): _refresh_reagents())
 	GameManager.reputation_changed.connect(func(v):
-		dungeon_btn.disabled = v < 150
+		if is_instance_valid(dungeon_btn):
+			dungeon_btn.disabled = v < 150
 	)
 
 

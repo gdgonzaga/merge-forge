@@ -191,14 +191,18 @@ func reject_customer() -> void:
 
 func end_session() -> void:
 	_clear_orders()
-	_customer_label.text = "Session Complete!"
-	_remaining_label.text = ""
-	_portrait_rect.texture = null
-	_reject_btn.disabled = true
-	_reject_btn.visible = false
+	if is_instance_valid(_customer_label):
+		_customer_label.text = "Session Complete!"
+	if is_instance_valid(_remaining_label):
+		_remaining_label.text = ""
+	if is_instance_valid(_portrait_rect):
+		_portrait_rect.texture = null
+	if is_instance_valid(_reject_btn):
+		_reject_btn.disabled = true
+		_reject_btn.visible = false
 
 	var board_ref = _get_board_grid()
-	if board_ref:
+	if board_ref and is_instance_valid(board_ref):
 		GameManager.shop_board_state = board_ref.get_board_state()
 
 	EventBus.session_ended.emit(summary_data)
