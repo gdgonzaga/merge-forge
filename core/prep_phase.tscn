@@ -1,8 +1,8 @@
 [gd_scene format=3 uid="uid://prepphase001"]
 
-[ext_resource type="Script" path="res://core/prep_phase.gd" id="1"]
+[ext_resource type="Script" uid="uid://c2iwcumfnivmg" path="res://core/prep_phase.gd" id="1"]
 
-[node name="PrepPhase" type="Control"]
+[node name="PrepPhase" type="Control" unique_id=504126686]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
