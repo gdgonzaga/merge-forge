@@ -56,6 +56,7 @@ func _process(delta: float) -> void:
 	time_remaining -= delta
 	if time_remaining <= 0.0:
 		time_remaining = 0.0
+		AudioManager.play_sfx("despawn")
 		despawn_timeout.emit()
 		queue_free()
 		return

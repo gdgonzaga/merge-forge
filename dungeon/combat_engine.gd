@@ -106,6 +106,7 @@ func tick() -> void:
 
 	for idx in kos:
 		_dbg("member %d KO'd" % idx)
+		AudioManager.play_sfx("ko")
 		member_ko.emit(idx)
 
 	if get_active_member_count() == 0:

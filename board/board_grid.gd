@@ -55,6 +55,7 @@ func place_item(item: Dictionary, pos: Vector2i) -> bool:
 		return false
 	grid[pos.y][pos.x] = item
 	_update_cell_visual(pos)
+	AudioManager.play_sfx("item_place")
 	item_placed.emit(item, pos)
 	return true
 

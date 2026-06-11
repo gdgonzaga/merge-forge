@@ -42,6 +42,7 @@ func buy_crate(crate_id: String) -> bool:
 	var cost: int = int(crate_data.get("cost", 0) * GameManager.get_crate_discount())
 	if not GameManager.deduct_gold(cost):
 		return false
+	AudioManager.play_sfx("crate_open")
 	var pool: Array = crate_data.get("pool", [])
 	var item_count: Dictionary = crate_data.get("item_count", {"min": 1, "max": 1})
 	for entry in RecipeResolver.roll_weighted_pool(pool, item_count):

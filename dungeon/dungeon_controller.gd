@@ -33,6 +33,7 @@ func _ready() -> void:
 
 	_load_party()
 	_build_layout()
+	AudioManager.play_sfx("dungeon_start")
 
 	combat_engine = load("res://dungeon/combat_engine.gd").new()
 	combat_engine.init_party(party_data)

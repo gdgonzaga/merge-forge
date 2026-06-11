@@ -77,3 +77,13 @@ func _transition_to(scene_path: String) -> void:
 		scene_container.add_child(scene.instantiate())
 	else:
 		push_error("[Main] FAILED to load scene: " + scene_path)
+	_play_scene_music(scene_path)
+
+
+func _play_scene_music(scene_path: String) -> void:
+	if "dungeon" in scene_path:
+		AudioManager.play_music("dungeon_theme")
+	elif "main_menu" in scene_path:
+		AudioManager.stop_music()
+	else:
+		AudioManager.play_music("shop_theme")

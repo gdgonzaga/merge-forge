@@ -26,6 +26,7 @@ func _ready() -> void:
 	var generator: RefCounted = load("res://shop/customer_generator.gd").new()
 	customers = generator.generate_customers()
 
+	AudioManager.play_sfx("session_start")
 	_build_layout()
 	advance_customer()
 
