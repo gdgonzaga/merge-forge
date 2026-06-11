@@ -96,6 +96,34 @@ func add_to_staging(item: Dictionary) -> void:
 	staging_items.append(item)
 
 
+func find_safe_cell(item_id: String) -> Vector2i:
+	for r in range(grid_rows):
+		for c in range(grid_cols):
+			if grid[r][c] != null:
+				continue
+			var pos := Vector2i(c, r)
+			var adjacent_count := 0
+			for neighbor in [Vector2i(c - 1, r), Vector2i(c + 1, r), Vector2i(c, r - 1), Vector2i(c, r + 1)]:
+				if neighbor.x < 0 or neighbor.x >= grid_cols or neighbor.y < 0 or neighbor.y >= grid_rows:
+					continue
+				var cell = grid[neighbor.y][neighbor.x]
+				if cell != null and cell is Dictionary and cell.get("item_id", "") == item_id:
+					adjacent_count += 1
+			if adjacent_count < 2:
+				return pos
+	return Vector2i(-1, -1)
+
+
+func place_or_stage(item: Dictionary) -> bool:
+	var item_id: String = item.get("item_id", "")
+	var safe_pos := find_safe_cell(item_id)
+	if safe_pos.x >= 0:
+		place_item(item, safe_pos)
+		return true
+	add_to_staging(item)
+	return false
+
+
 func count_items_on_board(item_id: String) -> int:
 	var count := 0
 	for r in range(grid_rows):

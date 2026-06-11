@@ -246,7 +246,7 @@ func _on_enemy_died(enemy_index: int) -> void:
 		var data: Dictionary = combat_engine.get_enemy_data(enemy_index)
 		var drops: Array[Dictionary] = drop_mgr.spawn_drops(data)
 		if board:
-			drop_mgr.add_drops_to_staging(drops, board)
+			drop_mgr.add_drops_to_board(drops, board)
 		ed.play_death()
 		enemy_displays[enemy_index] = null
 

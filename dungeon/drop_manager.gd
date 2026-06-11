@@ -13,12 +13,21 @@ func spawn_drops(enemy_data: Dictionary) -> Array[Dictionary]:
 	return results
 
 
-func add_drops_to_staging(drops: Array[Dictionary], board: Node) -> void:
+func add_drops_to_board(drops: Array[Dictionary], board: Node) -> void:
+	var board_grid = board.get_node_or_null("VBox/BoardArea/CenterContainer/BoardGrid")
 	var staging = board.get_node_or_null("VBox/StagingArea")
-	if staging == null:
-		return
 	for drop_data in drops:
-		var fi: Control = load("res://board/floating_item.tscn").instantiate()
-		fi.setup(drop_data, 18.0)
-		fi.despawn_timeout.connect(fi.queue_free)
-		staging.add_child(fi)
+		if board_grid and is_instance_valid(board_grid):
+			if not board_grid.place_or_stage(drop_data):
+				_spawn_to_staging(drop_data, staging)
+		elif staging and is_instance_valid(staging):
+			_spawn_to_staging(drop_data, staging)
+
+
+func _spawn_to_staging(data: Dictionary, staging: Node) -> void:
+	if staging == null or not is_instance_valid(staging):
+		return
+	var fi: Control = load("res://board/floating_item.tscn").instantiate()
+	fi.setup(data, 18.0)
+	fi.despawn_timeout.connect(fi.queue_free)
+	staging.add_child(fi)

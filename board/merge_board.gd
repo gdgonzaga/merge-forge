@@ -40,7 +40,12 @@ func buy_crate(crate_id: String) -> void:
 	var item_count: Dictionary = crate_data.get("item_count", {"min": 1, "max": 1})
 	for entry in RecipeResolver.roll_weighted_pool(pool, item_count):
 		var data: Dictionary = RecipeResolver.get_item_data(entry.get("item_id", ""))
-		if not data.is_empty():
+		if data.is_empty():
+			continue
+		if _board and is_instance_valid(_board):
+			if not _board.place_or_stage(data):
+				_spawn_staging_item(data)
+		else:
 			_spawn_staging_item(data)
 
 
