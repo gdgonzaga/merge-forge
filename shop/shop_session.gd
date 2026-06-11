@@ -168,7 +168,7 @@ func try_fulfill_order(order_index: int) -> void:
 	summary_data["portraits"].append(customer.get("portrait_id", ""))
 
 	current_index += 1
-	advance_customer()
+	advance_customer.call_deferred()
 
 
 func reject_customer() -> void:
