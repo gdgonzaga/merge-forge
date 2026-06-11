@@ -4,7 +4,6 @@ var _board: Control
 var _detector: RefCounted
 var _resolver: RefCounted
 var _staging_container: HBoxContainer
-var _cell_scene: PackedScene
 var _popup_callback: Callable
 
 
@@ -19,12 +18,12 @@ func _ready() -> void:
 
 
 func setup(config: Dictionary) -> void:
-	_cell_scene = config.get("cell_scene", null)
 	_popup_callback = config.get("popup_callback", Callable())
 	var despawn: float = config.get("despawn_time", 12.0)
 	if _board:
-		if _cell_scene:
-			_board.set_cell_scene(_cell_scene)
+		var cell_scene: PackedScene = config.get("cell_scene", null)
+		if cell_scene:
+			_board.set_cell_scene(cell_scene)
 		_board.despawn_time = despawn
 		_board.setup(config)
 		_resolver.setup(_board, _on_merge_choice_requested)
@@ -37,30 +36,12 @@ func buy_crate(crate_id: String) -> void:
 	var cost: int = crate_data.get("cost", 0)
 	if not GameManager.deduct_gold(cost):
 		return
-	for item_data in _roll_crate_loot(crate_data):
-		_spawn_staging_item(item_data)
-
-
-func _roll_crate_loot(crate_data: Dictionary) -> Array[Dictionary]:
 	var pool: Array = crate_data.get("pool", [])
 	var item_count: Dictionary = crate_data.get("item_count", {"min": 1, "max": 1})
-	var count := randi_range(item_count.get("min", 1), item_count.get("max", 1))
-	var results: Array[Dictionary] = []
-	for _i in range(count):
-		var total_weight := 0
-		for entry in pool:
-			total_weight += entry.get("weight", 1)
-		var roll := randf() * total_weight
-		var accumulated := 0
-		for entry in pool:
-			accumulated += entry.get("weight", 1)
-			if roll < accumulated:
-				var id: String = entry.get("item_id", "")
-				var data: Dictionary = RecipeResolver.get_item_data(id)
-				if not data.is_empty():
-					results.append(data)
-				break
-	return results
+	for entry in RecipeResolver.roll_weighted_pool(pool, item_count):
+		var data: Dictionary = RecipeResolver.get_item_data(entry.get("item_id", ""))
+		if not data.is_empty():
+			_spawn_staging_item(data)
 
 
 func _spawn_staging_item(item_data: Dictionary) -> void:

@@ -82,6 +82,23 @@ func get_reagent_data(reagent_id: String) -> Dictionary:
 	return reagents.get(reagent_id, {})
 
 
+static func roll_weighted_pool(pool: Array, count: Dictionary) -> Array[Dictionary]:
+	var results: Array[Dictionary] = []
+	var rolls := randi_range(count.get("min", 1), count.get("max", 1))
+	for _i in range(rolls):
+		var total_weight := 0
+		for entry in pool:
+			total_weight += entry.get("weight", 1)
+		var roll := randf() * total_weight
+		var accumulated := 0
+		for entry in pool:
+			accumulated += entry.get("weight", 1)
+			if roll < accumulated:
+				results.append(entry)
+				break
+	return results
+
+
 func _load_json(path: String) -> Dictionary:
 	if not FileAccess.file_exists(path):
 		return {}

@@ -4,14 +4,12 @@ var _gold_label: Label
 var _sold_label: Label
 var _fulfilled_label: Label
 var _rejected_label: Label
-var _gold_count: int = 0
 var _target_gold: int = 0
 var _countup_tween: Tween
 
 
 func display_summary(data: Dictionary) -> void:
 	_target_gold = data.get("gold_earned", 0)
-	_gold_count = 0
 	_sold_label.text = "Items Sold: %d" % data.get("items_sold", 0)
 	_fulfilled_label.text = "Fulfilled: %d" % data.get("fulfilled", 0)
 	_rejected_label.text = "Rejected: %d" % data.get("rejected", 0)
@@ -95,5 +93,4 @@ func _ready() -> void:
 
 
 func _set_gold_count(value: int) -> void:
-	_gold_count = value
 	_gold_label.text = "Gold Earned: %d" % value
