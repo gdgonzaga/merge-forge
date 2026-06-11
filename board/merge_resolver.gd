@@ -111,9 +111,14 @@ func _spawn_results(result_data: Dictionary, count: int) -> void:
 	if count <= 0:
 		return
 	var center := calculate_center_of_mass(_last_group_positions)
-	_dbg("_spawn_results: center=%s grid_at_center=%s" % [str(center), str(board.grid[center.y][center.x])])
-	var placed: bool = board.place_item(result_data, center)
-	_dbg("_spawn_results: place_item returned %s" % str(placed))
+	if board.grid[center.y][center.x] != null:
+		_dbg("_spawn_results: center %s occupied, finding nearest empty" % str(center))
+		center = board.find_nearest_empty(center)
+	if center.x >= 0:
+		_dbg("_spawn_results: placing at %s" % str(center))
+		board.place_item(result_data, center)
+	else:
+		_dbg("_spawn_results: NO empty cell found for result!")
 	for i in range(1, count):
 		var pos: Vector2i = board.find_nearest_empty(center)
 		_dbg("_spawn_results: extra #%d nearest_empty=%s" % [i, str(pos)])
