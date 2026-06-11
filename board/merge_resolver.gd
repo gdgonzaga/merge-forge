@@ -29,20 +29,21 @@ func process_next() -> void:
 	var group: Dictionary = merge_queue.pop_front()
 	var item_id: String = group.get("item_id", "")
 	var positions: Array = group.get("positions", [])
+	var all_options := _build_options(item_id)
+	if all_options.size() == 0:
+		is_processing = false
+		process_next()
+		return
 	_last_group_positions.clear()
 	for pos in positions:
 		_last_group_positions.append(pos)
 	_last_group_item_id = item_id
 	_last_group_count = positions.size()
 	board.remove_items(positions)
-	var all_options := _build_options(item_id)
 	if all_options.size() == 1:
 		_place_results(all_options[0])
-	elif all_options.size() >= 2:
-		_popup_callback.call(all_options, handle_choice)
 	else:
-		is_processing = false
-		process_next()
+		_popup_callback.call(all_options, handle_choice)
 
 
 func handle_choice(item_id: String, is_variant: bool, reagent_id: String) -> void:
