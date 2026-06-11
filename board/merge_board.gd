@@ -33,7 +33,7 @@ func buy_crate(crate_id: String) -> void:
 	var crate_data: Dictionary = RecipeResolver.get_crate_data(crate_id)
 	if crate_data.is_empty():
 		return
-	var cost: int = crate_data.get("cost", 0)
+	var cost: int = int(crate_data.get("cost", 0) * GameManager.get_crate_discount())
 	if not GameManager.deduct_gold(cost):
 		return
 	var pool: Array = crate_data.get("pool", [])
