@@ -206,28 +206,9 @@ func end_session() -> void:
 
 
 func try_buy_crate(crate_id: String) -> bool:
-	var crate_data: Dictionary = RecipeResolver.get_crate_data(crate_id)
-	if crate_data.is_empty():
-		return false
-	var cost: int = int(crate_data.get("cost", 0) * GameManager.get_crate_discount())
-	if not GameManager.deduct_gold(cost):
-		return false
-
-	var board_grid = _get_board_grid()
-	var staging = _get_staging()
-	var pool: Array = crate_data.get("pool", [])
-	var item_count: Dictionary = crate_data.get("item_count", {"min": 1, "max": 1})
-	for entry in RecipeResolver.roll_weighted_pool(pool, item_count):
-		var data: Dictionary = RecipeResolver.get_item_data(entry.get("item_id", ""))
-		if data.is_empty():
-			continue
-		if board_grid and is_instance_valid(board_grid):
-			if not board_grid.place_or_stage(data):
-				_spawn_to_staging(data, staging)
-		elif staging and is_instance_valid(staging):
-			_spawn_to_staging(data, staging)
-	EventBus.save_requested.emit()
-	return true
+	if board and is_instance_valid(board):
+		return board.buy_crate(crate_id)
+	return false
 
 
 func _display_customer(customer: Dictionary) -> void:
@@ -263,21 +244,6 @@ func _get_board_grid() -> Node:
 	if board == null:
 		return null
 	return board.get_node_or_null("VBox/BoardArea/CenterContainer/BoardGrid")
-
-
-func _get_staging() -> Node:
-	if board == null:
-		return null
-	return board.get_node_or_null("VBox/StagingArea")
-
-
-func _spawn_to_staging(data: Dictionary, staging: Node) -> void:
-	if staging == null or not is_instance_valid(staging):
-		return
-	var fi: Control = load("res://board/floating_item.tscn").instantiate()
-	fi.setup(data, GameManager.get_despawn_time())
-	fi.despawn_timeout.connect(fi.queue_free)
-	staging.add_child(fi)
 
 
 func _on_merge_choice_requested(options: Array[Dictionary], callback: Callable) -> void:

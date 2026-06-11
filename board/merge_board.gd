@@ -29,24 +29,29 @@ func setup(config: Dictionary) -> void:
 		_resolver.setup(_board, _on_merge_choice_requested)
 
 
-func buy_crate(crate_id: String) -> void:
+func buy_crate(crate_id: String) -> bool:
 	var crate_data: Dictionary = RecipeResolver.get_crate_data(crate_id)
 	if crate_data.is_empty():
-		return
+		return false
 	var cost: int = int(crate_data.get("cost", 0) * GameManager.get_crate_discount())
 	if not GameManager.deduct_gold(cost):
-		return
+		return false
 	var pool: Array = crate_data.get("pool", [])
 	var item_count: Dictionary = crate_data.get("item_count", {"min": 1, "max": 1})
 	for entry in RecipeResolver.roll_weighted_pool(pool, item_count):
 		var data: Dictionary = RecipeResolver.get_item_data(entry.get("item_id", ""))
-		if data.is_empty():
-			continue
-		if _board and is_instance_valid(_board):
-			if not _board.place_or_stage(data):
-				_spawn_staging_item(data)
-		else:
-			_spawn_staging_item(data)
+		if not data.is_empty():
+			place_drop(data)
+	EventBus.save_requested.emit()
+	return true
+
+
+func place_drop(item_data: Dictionary) -> void:
+	if _board and is_instance_valid(_board):
+		if not _board.place_or_stage(item_data):
+			_spawn_staging_item(item_data)
+	else:
+		_spawn_staging_item(item_data)
 
 
 func _spawn_staging_item(item_data: Dictionary) -> void:
