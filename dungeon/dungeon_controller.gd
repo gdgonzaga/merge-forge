@@ -28,9 +28,11 @@ var _choice_callback: Callable
 func _ready() -> void:
 	var dungeon_id := "goblin_cave"
 	_dungeon_data = RecipeResolver.dungeons.get(dungeon_id, {})
+	_dbg("dungeon_data: %s" % str(_dungeon_data))
 	walk_speed = _dungeon_data.get("walk_speed", 0.02)
 	encounter_points = _dungeon_data.get("encounter_points", [])
 	encounters_data = _dungeon_data.get("encounters", [])
+	_dbg("walk_speed=%s encounter_points=%s encounters_count=%d" % [str(walk_speed), str(encounter_points), encounters_data.size()])
 
 	_load_party()
 	_build_layout()
@@ -141,11 +143,14 @@ func stop_walking() -> void:
 func start_encounter(encounter_idx: int) -> void:
 	stop_walking()
 	_encounter_label.text = "Encounter %d!" % (encounter_idx + 1)
+	_dbg("start_encounter: idx=%d" % encounter_idx)
 
 	if encounter_idx >= encounters_data.size():
+		_dbg("start_encounter: idx out of range")
 		return
 
 	var encounter: Array = encounters_data[encounter_idx]
+	_dbg("encounter data: %s" % str(encounter))
 	_clear_enemy_displays()
 
 	var ed_scene: PackedScene = load("res://dungeon/enemy_display.tscn")
@@ -192,6 +197,7 @@ func apply_usable_item(member_index: int, item_data: Dictionary) -> void:
 
 func end_dungeon_cleared() -> void:
 	stop_walking()
+	_dbg("DUNGEON CLEARED")
 	var gold_reward: int = _dungeon_data.get("gold_reward", 0)
 	var bp_reward = _dungeon_data.get("blueprint_reward")
 	GameManager.add_gold(gold_reward)
@@ -208,6 +214,7 @@ func end_dungeon_cleared() -> void:
 
 func end_dungeon_failed() -> void:
 	stop_walking()
+	_dbg("DUNGEON FAILED")
 	GameManager.add_reputation(-20)
 	EventBus.dungeon_failed.emit({
 		"cleared": false,
@@ -279,3 +286,8 @@ func _on_merge_choice_requested(options: Array[Dictionary], callback: Callable) 
 func _on_choice_from_popup(item_id: String, is_variant: bool, reagent_id: String) -> void:
 	if _choice_callback.is_valid():
 		_choice_callback.call(item_id, is_variant, reagent_id)
+
+
+func _dbg(msg: String) -> void:
+	if GameManager.debug_mode:
+		print("[DungeonController] %s" % msg)

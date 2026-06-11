@@ -25,6 +25,7 @@ func start_combat(enemy_definitions: Array) -> void:
 		var count: int = edef.get("count", 1)
 		for _i in range(count):
 			enemies.append(_make_enemy(enemy_id))
+	_dbg("start_combat: %d enemies" % enemies.size())
 	tick_timer.start()
 
 
@@ -53,6 +54,8 @@ func tick() -> void:
 	if alive_enemies == 0 or active_members == 0:
 		return
 
+	_dbg("tick: alive_enemies=%d active_members=%d" % [alive_enemies, active_members])
+
 	for member in party_members:
 		if member.get("is_ko", false):
 			continue
@@ -61,9 +64,11 @@ func tick() -> void:
 			if buff.get("effect", "") == "buff_attack":
 				atk += int(buff.get("power", 0))
 		var dmg_per_enemy := maxi(floori(atk / alive_enemies), 1)
+		_dbg("  %s atk=%d -> %d dmg to each of %d enemies" % [member.get("name", "?"), atk, dmg_per_enemy, alive_enemies])
 		for i in range(enemies.size()):
 			if enemies[i].get("alive", false):
 				enemies[i]["current_hp"] = enemies[i].get("current_hp", 0) - dmg_per_enemy
+				_dbg("    enemy[%d] %s hp now %d/%d" % [i, enemies[i].get("name", "?"), enemies[i].get("current_hp", 0), enemies[i].get("max_hp", 30)])
 
 	var deaths: Array[int] = []
 	for i in range(enemies.size()):
@@ -72,9 +77,11 @@ func tick() -> void:
 			deaths.append(i)
 
 	for idx in deaths:
+		_dbg("enemy %d died: %s" % [idx, enemies[idx].get("name", "?")])
 		enemy_died.emit(idx)
 
 	if get_alive_enemy_count() == 0:
+		_dbg("all enemies dead — encounter ended")
 		encounter_ended.emit()
 		stop_combat()
 		return
@@ -84,9 +91,11 @@ func tick() -> void:
 			continue
 		var eatk: int = enemy.get("attack", 5)
 		var dmg_per_member := maxi(floori(eatk / active_members), 1)
+		_dbg("  %s atk=%d -> %d dmg to each of %d members" % [enemy.get("name", "?"), eatk, dmg_per_member, active_members])
 		for member in party_members:
 			if not member.get("is_ko", false):
 				member["current_hp"] = member.get("current_hp", 0) - dmg_per_member
+				_dbg("    %s hp now %d/%d" % [member.get("name", "?"), member.get("current_hp", 0), member.get("max_hp", 50)])
 
 	var kos: Array[int] = []
 	for i in range(party_members.size()):
@@ -96,9 +105,11 @@ func tick() -> void:
 			kos.append(i)
 
 	for idx in kos:
+		_dbg("member %d KO'd" % idx)
 		member_ko.emit(idx)
 
 	if get_active_member_count() == 0:
+		_dbg("party wiped!")
 		party_wiped.emit()
 		stop_combat()
 		return
@@ -172,3 +183,8 @@ func _make_enemy(enemy_id: String) -> Dictionary:
 		"drop_pool": base.get("drop_pool", []),
 		"alive": true,
 	}
+
+
+func _dbg(msg: String) -> void:
+	if GameManager.debug_mode:
+		print("[CombatEngine] %s" % msg)
