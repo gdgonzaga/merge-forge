@@ -6,6 +6,21 @@ var _dungeon_btn: Button
 
 
 func _ready() -> void:
+	var bg := ColorRect.new()
+	bg.color = Color(0.1, 0.1, 0.2)
+	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(bg)
+
+	var title := Label.new()
+	title.text = "Prep Phase"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.position = Vector2(340, 400)
+	title.size = Vector2(400, 60)
+	title.add_theme_font_size_override("font_size", 36)
+	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(title)
+
 	_quit_btn = Button.new()
 	_quit_btn.text = "Quit to Menu"
 	_quit_btn.position = Vector2(340, 1200)

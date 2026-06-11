@@ -12,7 +12,7 @@ var scene_map: Dictionary = {
 	"dungeon_failed": "res://dungeon/dungeon_summary.tscn",
 	"dungeon_summary_dismissed": "res://core/prep_phase.tscn",
 	"prep_quit_to_menu": "res://core/main_menu.tscn",
-	"new_game_started": "res://shop/shop_session.tscn",
+	"new_game_started": "res://core/prep_phase.tscn",
 	"continue_game": "res://core/prep_phase.tscn",
 }
 
@@ -57,3 +57,5 @@ func _transition_to(scene_path: String) -> void:
 	if scene:
 		var instance := scene.instantiate()
 		scene_container.add_child(instance)
+	else:
+		push_error("[Main] FAILED to load scene: " + scene_path)

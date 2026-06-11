@@ -5,6 +5,21 @@ var _continue_btn: Button
 
 
 func _ready() -> void:
+	var bg := ColorRect.new()
+	bg.color = Color(0.15, 0.1, 0.2)
+	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(bg)
+
+	var title := Label.new()
+	title.text = "MergeForge"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.position = Vector2(340, 500)
+	title.size = Vector2(400, 60)
+	title.add_theme_font_size_override("font_size", 48)
+	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(title)
+
 	_new_game_btn = Button.new()
 	_new_game_btn.text = "New Game"
 	_new_game_btn.position = Vector2(340, 700)
