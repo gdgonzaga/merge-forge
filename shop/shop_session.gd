@@ -2,16 +2,15 @@ extends Control
 
 var customers: Array[Dictionary] = []
 var current_index: int = 0
-var board: Control
 var summary_data: Dictionary = {}
 
-var _customer_display: VBoxContainer
-var _portrait_rect: TextureRect
-var _customer_label: Label
-var _orders_container: VBoxContainer
-var _crate_panel: VBoxContainer
-var _reject_btn: Button
-var _remaining_label: Label
+@onready var board: Control = $HBox/Board
+@onready var _portrait_rect: TextureRect = $HBox/CustomerPanel/PortraitRect
+@onready var _customer_label: Label = $HBox/CustomerPanel/CustomerLabel
+@onready var _remaining_label: Label = $HBox/CustomerPanel/RemainingLabel
+@onready var _orders_container: VBoxContainer = $HBox/CustomerPanel/OrdersContainer
+@onready var _crate_panel: VBoxContainer = $HBox/CratePanel
+@onready var _reject_btn: Button = $HBox/CustomerPanel/RejectBtn
 
 
 func _ready() -> void:
@@ -27,74 +26,25 @@ func _ready() -> void:
 	customers = generator.generate_customers()
 
 	AudioManager.play_sfx("session_start")
-	_build_layout()
-	advance_customer()
 
-
-func _build_layout() -> void:
-	var root := HBoxContainer.new()
-	root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	root.add_theme_constant_override("separation", 8)
-	add_child(root)
-
-	_customer_display = VBoxContainer.new()
-	_customer_display.custom_minimum_size = Vector2(220, 0)
-	_customer_display.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	root.add_child(_customer_display)
-
-	_portrait_rect = TextureRect.new()
-	_portrait_rect.custom_minimum_size = Vector2(200, 200)
-	_portrait_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	_portrait_rect.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	_customer_display.add_child(_portrait_rect)
-
-	_customer_label = Label.new()
-	_customer_label.add_theme_font_size_override("font_size", 20)
-	_customer_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_customer_display.add_child(_customer_label)
-
-	_remaining_label = Label.new()
-	_remaining_label.add_theme_font_size_override("font_size", 16)
-	_remaining_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_remaining_label.modulate = Color(0.7, 0.7, 0.7)
-	_customer_display.add_child(_remaining_label)
-
-	_orders_container = VBoxContainer.new()
-	_orders_container.add_theme_constant_override("separation", 8)
-	_orders_container.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_customer_display.add_child(_orders_container)
-
-	_reject_btn = Button.new()
-	_reject_btn.text = "Reject (-2 rep)"
-	_reject_btn.add_theme_font_size_override("font_size", 18)
-	_reject_btn.custom_minimum_size = Vector2(0, 48)
-	_reject_btn.pressed.connect(reject_customer)
-	_customer_display.add_child(_reject_btn)
-
-	var merge_board_scene: PackedScene = load("res://board/merge_board.tscn")
-	board = merge_board_scene.instantiate()
-	board.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	board.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	root.add_child(board)
+	for child in _orders_container.get_children():
+		child.queue_free()
+	for child in _crate_panel.get_children():
+		if child is Button:
+			child.queue_free()
 
 	board.setup({})
-
 	if not GameManager.shop_board_state.is_empty():
 		var board_grid = _get_board_grid()
 		if board_grid:
 			board_grid.load_board_state(GameManager.shop_board_state)
 
-	_crate_panel = VBoxContainer.new()
-	_crate_panel.custom_minimum_size = Vector2(220, 0)
-	_crate_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	root.add_child(_crate_panel)
+	_build_crate_buttons()
+	_reject_btn.pressed.connect(reject_customer)
+	advance_customer()
 
-	var crate_title := Label.new()
-	crate_title.text = "Crates"
-	crate_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	crate_title.add_theme_font_size_override("font_size", 20)
-	_crate_panel.add_child(crate_title)
 
+func _build_crate_buttons() -> void:
 	var crate_ids: Array[String] = RecipeResolver.get_all_crate_ids()
 	for crate_id in crate_ids:
 		var crate_data: Dictionary = RecipeResolver.get_crate_data(crate_id)
@@ -206,7 +156,6 @@ func _display_customer(customer: Dictionary) -> void:
 		_portrait_rect.texture = null
 
 	_customer_label.text = customer.get("id", "Customer")
-	var remaining := customers.size() - current_index
 	_remaining_label.text = "Customer %d of %d" % [current_index + 1, customers.size()]
 
 	_clear_orders()
