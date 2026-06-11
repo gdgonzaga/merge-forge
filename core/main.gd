@@ -21,41 +21,41 @@ func _ready() -> void:
 	_transition_to("res://core/main_menu.tscn")
 	EventBus.new_game_started.connect(_on_new_game)
 	EventBus.continue_game.connect(_on_continue_game)
-	EventBus.session_ended.connect(func(_s): _on_scene_signal("session_ended"))
-	EventBus.session_summary_dismissed.connect(func(): _on_scene_signal("session_summary_dismissed"))
-	EventBus.prep_start_session.connect(func(): _on_scene_signal("prep_start_session"))
-	EventBus.prep_enter_dungeon.connect(func(): _on_scene_signal("prep_enter_dungeon"))
-	EventBus.dungeon_cleared.connect(func(_r): _on_scene_signal("dungeon_cleared"))
-	EventBus.dungeon_failed.connect(func(_s): _on_scene_signal("dungeon_failed"))
-	EventBus.dungeon_summary_dismissed.connect(func(): _on_scene_signal("dungeon_summary_dismissed"))
-	EventBus.prep_quit_to_menu.connect(func(): _on_scene_signal("prep_quit_to_menu"))
+	EventBus.session_ended.connect(_go_to.bind("session_ended"))
+	EventBus.session_summary_dismissed.connect(_go_to.bind("session_summary_dismissed"))
+	EventBus.prep_start_session.connect(_go_to.bind("prep_start_session"))
+	EventBus.prep_enter_dungeon.connect(_go_to.bind("prep_enter_dungeon"))
+	EventBus.dungeon_cleared.connect(_go_to.bind("dungeon_cleared"))
+	EventBus.dungeon_failed.connect(_go_to.bind("dungeon_failed"))
+	EventBus.dungeon_summary_dismissed.connect(_go_to.bind("dungeon_summary_dismissed"))
+	EventBus.prep_quit_to_menu.connect(_go_to.bind("prep_quit_to_menu"))
 
 
-func _on_scene_signal(signal_name: String) -> void:
-	var scene_path: String = scene_map.get(signal_name, "")
-	if scene_path != "":
-		_transition_to(scene_path)
+func _go_to(_data = null, scene_key: String = "") -> void:
+	var key: String = scene_key if scene_key != "" else str(_data)
+	_transition_to(scene_map.get(key, ""))
 
 
 func _on_new_game() -> void:
 	SaveManager.delete_save()
 	GameManager.deserialize({})
-	_transition_to(scene_map["new_game_started"])
+	_go_to(null, "new_game_started")
 
 
 func _on_continue_game() -> void:
 	var data: Dictionary = SaveManager.load_game()
 	if not data.is_empty():
 		GameManager.deserialize(data)
-	_transition_to(scene_map["continue_game"])
+	_go_to(null, "continue_game")
 
 
 func _transition_to(scene_path: String) -> void:
+	if scene_path == "":
+		return
 	for child in scene_container.get_children():
 		child.queue_free()
 	var scene: PackedScene = load(scene_path)
 	if scene:
-		var instance := scene.instantiate()
-		scene_container.add_child(instance)
+		scene_container.add_child(scene.instantiate())
 	else:
 		push_error("[Main] FAILED to load scene: " + scene_path)
