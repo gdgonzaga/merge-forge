@@ -1,7 +1,11 @@
-[gd_scene format=3 uid="uid://b4gnyy3myl0k7"]
+[gd_scene load_steps=3 format=3 uid="uid://b4gnyy3myl0k7"]
 
 [ext_resource type="Script" path="res://dungeon/enemy_display.gd" id="1"]
+[ext_resource type="PackedScene" path="res://dungeon/combat_unit.tscn" id="2"]
 
 [node name="EnemyDisplay" type="PanelContainer"]
 custom_minimum_size = Vector2(100, 110)
 script = ExtResource("1")
+
+[node name="Unit" parent="." instance=ExtResource("2")]
+layout_mode = 2
