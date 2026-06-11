@@ -141,32 +141,6 @@ func _build_tab(tab_name: String) -> VBoxContainer:
 	return content
 
 
-func _build_card(container: VBoxContainer, min_height: int) -> Dictionary:
-	var card := PanelContainer.new()
-	card.custom_minimum_size = Vector2(0, min_height)
-	container.add_child(card)
-	var hbox := HBoxContainer.new()
-	hbox.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	hbox.add_theme_constant_override("separation", 8)
-	card.add_child(hbox)
-	var info := VBoxContainer.new()
-	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	info.add_theme_constant_override("separation", 2)
-	hbox.add_child(info)
-	return {"hbox": hbox, "info": info}
-
-
-func _add_buy_btn(hbox: HBoxContainer, text: String, disabled: bool, on_press: Callable) -> void:
-	var btn := Button.new()
-	btn.text = text
-	btn.disabled = disabled
-	btn.custom_minimum_size = Vector2(100, 40)
-	btn.add_theme_font_size_override("font_size", 16)
-	if on_press.is_valid():
-		btn.pressed.connect(on_press)
-	hbox.add_child(btn)
-
-
 func _refresh_all() -> void:
 	_refresh_blueprints()
 	_refresh_upgrades()
@@ -177,6 +151,7 @@ func _refresh_blueprints() -> void:
 	for child in _bp_scroll.get_children():
 		child.queue_free()
 	var bp_keys: Array = RecipeResolver.blueprints.keys()
+	var card_scene: PackedScene = load("res://shop/purchase_card.tscn")
 	for bp_id in bp_keys:
 		var data: Dictionary = RecipeResolver.blueprints[bp_id]
 		var owned: bool = bp_id in GameManager.unlocked_blueprints
@@ -187,73 +162,54 @@ func _refresh_blueprints() -> void:
 				deps_met = false
 				break
 		var cost: int = data.get("cost", 0)
-		var parts := _build_card(_bp_scroll, 64)
-		var name_label := Label.new()
-		name_label.text = data.get("name", bp_id)
-		name_label.add_theme_font_size_override("font_size", 18)
-		if owned:
-			name_label.modulate = Color(0.5, 1, 0.5)
-		elif not deps_met:
-			name_label.modulate = Color(0.5, 0.5, 0.5)
-		parts.info.add_child(name_label)
+		var desc := ""
+		var desc_color := Color(0.7, 0.7, 0.7)
 		if not deps_met:
-			var dep_label := Label.new()
-			dep_label.text = "Requires: %s" % ", ".join(deps)
-			dep_label.add_theme_font_size_override("font_size", 14)
-			dep_label.modulate = Color(0.7, 0.5, 0.5)
-			parts.info.add_child(dep_label)
+			desc = "Requires: %s" % ", ".join(deps)
+			desc_color = Color(0.7, 0.5, 0.5)
+		var btn_text := "%dg" % cost
+		var disabled := not deps_met or GameManager.gold < cost
+		var name_mod := Color.WHITE
 		if owned:
-			_add_buy_btn(parts.hbox, "Owned", true, Callable())
-		else:
-			_add_buy_btn(parts.hbox, "%dg" % cost, not deps_met or GameManager.gold < cost, try_purchase.bind("blueprint", bp_id))
+			name_mod = Color(0.5, 1, 0.5)
+		elif not deps_met:
+			name_mod = Color(0.5, 0.5, 0.5)
+		var card: PanelContainer = card_scene.instantiate()
+		_bp_scroll.add_child(card)
+		card.setup(data.get("name", bp_id), desc, desc_color, "Owned" if owned else btn_text, owned or disabled, Callable() if owned else try_purchase.bind("blueprint", bp_id))
+		card.name_label.modulate = name_mod
 
 
 func _refresh_upgrades() -> void:
 	for child in _upgrade_scroll.get_children():
 		child.queue_free()
 	var upgrade_keys: Array = RecipeResolver.upgrades.keys()
+	var card_scene: PackedScene = load("res://shop/purchase_card.tscn")
 	for uid in upgrade_keys:
 		var data: Dictionary = RecipeResolver.upgrades[uid]
 		var owned: bool = uid in GameManager.purchased_upgrades
 		var cost: int = data.get("cost", 0)
 		var desc := _describe_upgrade(data.get("effect_type", ""), data.get("effect_value"))
-		var parts := _build_card(_upgrade_scroll, 64)
-		var name_label := Label.new()
-		name_label.text = data.get("name", uid)
-		name_label.add_theme_font_size_override("font_size", 18)
-		if owned:
-			name_label.modulate = Color(0.5, 1, 0.5)
-		parts.info.add_child(name_label)
-		var desc_label := Label.new()
-		desc_label.text = desc
-		desc_label.add_theme_font_size_override("font_size", 14)
-		desc_label.modulate = Color(0.7, 0.7, 0.7)
-		parts.info.add_child(desc_label)
-		if owned:
-			_add_buy_btn(parts.hbox, "Owned", true, Callable())
-		else:
-			_add_buy_btn(parts.hbox, "%dg" % cost, GameManager.gold < cost, try_purchase.bind("upgrade", uid))
+		var name_mod := Color(0.5, 1, 0.5) if owned else Color.WHITE
+		var card: PanelContainer = card_scene.instantiate()
+		_upgrade_scroll.add_child(card)
+		card.setup(data.get("name", uid), desc, Color(0.7, 0.7, 0.7), "Owned" if owned else "%dg" % cost, owned or GameManager.gold < cost, Callable() if owned else try_purchase.bind("upgrade", uid))
+		card.name_label.modulate = name_mod
 
 
 func _refresh_reagents() -> void:
 	for child in _reagent_scroll.get_children():
 		child.queue_free()
 	var reagent_keys: Array = RecipeResolver.reagents.keys()
+	var card_scene: PackedScene = load("res://shop/purchase_card.tscn")
 	for rid in reagent_keys:
 		var data: Dictionary = RecipeResolver.reagents[rid]
 		var cost: int = data.get("cost", 0)
 		var owned_count: int = GameManager.reagent_inventory.get(rid, 0)
-		var parts := _build_card(_reagent_scroll, 72)
-		var name_label := Label.new()
-		name_label.text = "%s (x%d)" % [data.get("name", rid), owned_count]
-		name_label.add_theme_font_size_override("font_size", 18)
-		parts.info.add_child(name_label)
-		var desc_label := Label.new()
-		desc_label.text = data.get("description", "")
-		desc_label.add_theme_font_size_override("font_size", 14)
-		desc_label.modulate = Color(0.7, 0.7, 0.7)
-		parts.info.add_child(desc_label)
-		_add_buy_btn(parts.hbox, "%dg" % cost, GameManager.gold < cost, try_purchase.bind("reagent", rid))
+		var desc: String = data.get("description", "")
+		var card: PanelContainer = card_scene.instantiate()
+		_reagent_scroll.add_child(card)
+		card.setup("%s (x%d)" % [data.get("name", rid), owned_count], desc, Color(0.7, 0.7, 0.7), "%dg" % cost, GameManager.gold < cost, try_purchase.bind("reagent", rid), 72)
 
 
 func _describe_upgrade(effect_type: String, value) -> String:
