@@ -191,6 +191,13 @@ func load_board_state(state: Array) -> void:
 			_update_cell_visual(pos)
 
 
+func flash_cells(positions: Array[Vector2i]) -> void:
+	for pos in positions:
+		var cell := get_cell_at(pos)
+		if cell and cell.has_method("flash"):
+			cell.flash()
+
+
 func get_cell_at(pos: Vector2i) -> Control:
 	for child in get_children():
 		if child.has_meta("is_board_cell") and child.grid_pos == pos:

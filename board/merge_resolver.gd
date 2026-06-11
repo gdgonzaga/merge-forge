@@ -114,9 +114,11 @@ func _spawn_results(result_data: Dictionary, count: int) -> void:
 	if board.grid[center.y][center.x] != null:
 		_dbg("_spawn_results: center %s occupied, finding nearest empty" % str(center))
 		center = board.find_nearest_empty(center)
+	var flash_positions: Array[Vector2i] = []
 	if center.x >= 0:
 		_dbg("_spawn_results: placing at %s" % str(center))
 		board.place_item(result_data, center)
+		flash_positions.append(center)
 	else:
 		_dbg("_spawn_results: NO empty cell found for result!")
 	for i in range(1, count):
@@ -124,6 +126,8 @@ func _spawn_results(result_data: Dictionary, count: int) -> void:
 		_dbg("_spawn_results: extra #%d nearest_empty=%s" % [i, str(pos)])
 		if pos.x >= 0:
 			board.place_item(result_data, pos)
+			flash_positions.append(pos)
+	board.flash_cells(flash_positions)
 
 
 func _refund_source_items(source_data: Dictionary, count: int) -> void:

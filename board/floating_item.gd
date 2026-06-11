@@ -66,6 +66,8 @@ func _process(delta: float) -> void:
 		_timer_bar.color = Color(0.9, 0.2, 0.2)
 	elif ratio < 0.6:
 		_timer_bar.color = Color(0.9, 0.7, 0.2)
+	if time_remaining < 3.0:
+		modulate.a = time_remaining / 3.0
 
 
 func _get_drag_data(at_position: Vector2) -> Variant:

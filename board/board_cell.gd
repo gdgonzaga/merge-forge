@@ -26,6 +26,14 @@ func clear_item() -> void:
 		_icon.visible = false
 
 
+func flash() -> void:
+	if _bg:
+		var orig := _bg.color
+		_bg.color = Color(0.9, 0.85, 0.3)
+		var tween := create_tween()
+		tween.tween_property(_bg, "color", orig, 0.35)
+
+
 func _apply_icon() -> void:
 	var icon_path: String = item.get("icon", "")
 	if icon_path != "" and ResourceLoader.exists(icon_path):
