@@ -2,28 +2,8 @@ extends PopupPanel
 
 signal choice_made(item_id: String, is_variant: bool, reagent_id: String)
 
-var _vbox: VBoxContainer
-var _title_label: Label
-
-
-func _ready() -> void:
-	_title_label = Label.new()
-	_title_label.text = "Choose Merge Result"
-	_title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_title_label.add_theme_font_size_override("font_size", 20)
-	_title_label.custom_minimum_size = Vector2(240, 36)
-
-	_vbox = VBoxContainer.new()
-	_vbox.add_theme_constant_override("separation", 8)
-	_vbox.add_child(_title_label)
-
-	var margin_container := MarginContainer.new()
-	margin_container.add_theme_constant_override("margin_left", 16)
-	margin_container.add_theme_constant_override("margin_right", 16)
-	margin_container.add_theme_constant_override("margin_top", 12)
-	margin_container.add_theme_constant_override("margin_bottom", 12)
-	margin_container.add_child(_vbox)
-	add_child(margin_container)
+@onready var _vbox: VBoxContainer = $Margin/VBox
+@onready var _title_label: Label = $Margin/VBox/TitleLabel
 
 
 func show_options(options: Array[Dictionary]) -> void:
