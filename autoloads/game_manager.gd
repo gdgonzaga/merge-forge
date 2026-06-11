@@ -8,7 +8,9 @@ signal upgrade_added(upgrade_id: String)
 signal reagent_count_changed(id: String, count: int)
 signal grid_size_changed(cols: int, rows: int)
 
-var gold: int = 1000
+const DEFAULT_GOLD := 1000
+
+var gold: int = DEFAULT_GOLD
 var reputation_points: int = 0
 var unlocked_blueprints: Array[String] = []
 var reagent_inventory: Dictionary = {}
@@ -102,7 +104,7 @@ func serialize() -> Dictionary:
 
 
 func deserialize(data: Dictionary) -> void:
-	gold = data.get("gold", 50)
+	gold = data.get("gold", DEFAULT_GOLD)
 	reputation_points = data.get("reputation_points", 0)
 	unlocked_blueprints.assign(data.get("unlocked_blueprints", []))
 	reagent_inventory = data.get("reagent_inventory", {})
@@ -110,3 +112,6 @@ func deserialize(data: Dictionary) -> void:
 	shop_board_state = data.get("shop_board_state", [])
 	grid_cols = data.get("grid_cols", 5)
 	grid_rows = data.get("grid_rows", 5)
+	gold_changed.emit(gold)
+	reputation_changed.emit(reputation_points)
+	grid_size_changed.emit(grid_cols, grid_rows)
