@@ -29,9 +29,10 @@ func _ready() -> void:
 	_tab_container.add_theme_constant_override("h_separation", 8)
 	root.add_child(_tab_container)
 
-	_build_blueprints_tab()
-	_build_upgrades_tab()
-	_build_reagents_tab()
+	_bp_scroll = _build_tab("Blueprints")
+	_upgrade_scroll = _build_tab("Upgrades")
+	_reagent_scroll = _build_tab("Reagents")
+	_refresh_all()
 
 	var btn_box := HBoxContainer.new()
 	btn_box.add_theme_constant_override("separation", 16)
@@ -127,46 +128,43 @@ func _buy_reagent(reagent_id: String) -> bool:
 	return true
 
 
-func _build_blueprints_tab() -> void:
+func _build_tab(tab_name: String) -> VBoxContainer:
 	var scroll := ScrollContainer.new()
-	scroll.name = "Blueprints"
+	scroll.name = tab_name
 	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_tab_container.add_child(scroll)
-
-	_bp_scroll = VBoxContainer.new()
-	_bp_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_bp_scroll.add_theme_constant_override("separation", 6)
-	scroll.add_child(_bp_scroll)
-	_refresh_blueprints()
-
-
-func _build_upgrades_tab() -> void:
-	var scroll := ScrollContainer.new()
-	scroll.name = "Upgrades"
-	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_tab_container.add_child(scroll)
-
-	_upgrade_scroll = VBoxContainer.new()
-	_upgrade_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_upgrade_scroll.add_theme_constant_override("separation", 6)
-	scroll.add_child(_upgrade_scroll)
-	_refresh_upgrades()
+	var content := VBoxContainer.new()
+	content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	content.add_theme_constant_override("separation", 6)
+	scroll.add_child(content)
+	return content
 
 
-func _build_reagents_tab() -> void:
-	var scroll := ScrollContainer.new()
-	scroll.name = "Reagents"
-	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_tab_container.add_child(scroll)
+func _build_card(container: VBoxContainer, min_height: int) -> Dictionary:
+	var card := PanelContainer.new()
+	card.custom_minimum_size = Vector2(0, min_height)
+	container.add_child(card)
+	var hbox := HBoxContainer.new()
+	hbox.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	hbox.add_theme_constant_override("separation", 8)
+	card.add_child(hbox)
+	var info := VBoxContainer.new()
+	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	info.add_theme_constant_override("separation", 2)
+	hbox.add_child(info)
+	return {"hbox": hbox, "info": info}
 
-	_reagent_scroll = VBoxContainer.new()
-	_reagent_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_reagent_scroll.add_theme_constant_override("separation", 6)
-	scroll.add_child(_reagent_scroll)
-	_refresh_reagents()
+
+func _add_buy_btn(hbox: HBoxContainer, text: String, disabled: bool, on_press: Callable) -> void:
+	var btn := Button.new()
+	btn.text = text
+	btn.disabled = disabled
+	btn.custom_minimum_size = Vector2(100, 40)
+	btn.add_theme_font_size_override("font_size", 16)
+	if on_press.is_valid():
+		btn.pressed.connect(on_press)
+	hbox.add_child(btn)
 
 
 func _refresh_all() -> void:
@@ -189,20 +187,7 @@ func _refresh_blueprints() -> void:
 				deps_met = false
 				break
 		var cost: int = data.get("cost", 0)
-		var card := PanelContainer.new()
-		card.custom_minimum_size = Vector2(0, 64)
-		_bp_scroll.add_child(card)
-
-		var hbox := HBoxContainer.new()
-		hbox.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		hbox.add_theme_constant_override("separation", 8)
-		card.add_child(hbox)
-
-		var info := VBoxContainer.new()
-		info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		info.add_theme_constant_override("separation", 2)
-		hbox.add_child(info)
-
+		var parts := _build_card(_bp_scroll, 64)
 		var name_label := Label.new()
 		name_label.text = data.get("name", bp_id)
 		name_label.add_theme_font_size_override("font_size", 18)
@@ -210,27 +195,17 @@ func _refresh_blueprints() -> void:
 			name_label.modulate = Color(0.5, 1, 0.5)
 		elif not deps_met:
 			name_label.modulate = Color(0.5, 0.5, 0.5)
-		info.add_child(name_label)
-
+		parts.info.add_child(name_label)
 		if not deps_met:
 			var dep_label := Label.new()
 			dep_label.text = "Requires: %s" % ", ".join(deps)
 			dep_label.add_theme_font_size_override("font_size", 14)
 			dep_label.modulate = Color(0.7, 0.5, 0.5)
-			info.add_child(dep_label)
-
-		var btn := Button.new()
+			parts.info.add_child(dep_label)
 		if owned:
-			btn.text = "Owned"
-			btn.disabled = true
+			_add_buy_btn(parts.hbox, "Owned", true, Callable())
 		else:
-			btn.text = "%dg" % cost
-			btn.disabled = not deps_met or GameManager.gold < cost
-			if not owned:
-				btn.pressed.connect(try_purchase.bind("blueprint", bp_id))
-		btn.custom_minimum_size = Vector2(100, 40)
-		btn.add_theme_font_size_override("font_size", 16)
-		hbox.add_child(btn)
+			_add_buy_btn(parts.hbox, "%dg" % cost, not deps_met or GameManager.gold < cost, try_purchase.bind("blueprint", bp_id))
 
 
 func _refresh_upgrades() -> void:
@@ -241,47 +216,23 @@ func _refresh_upgrades() -> void:
 		var data: Dictionary = RecipeResolver.upgrades[uid]
 		var owned: bool = uid in GameManager.purchased_upgrades
 		var cost: int = data.get("cost", 0)
-		var effect_type: String = data.get("effect_type", "")
-		var desc := _describe_upgrade(effect_type, data.get("effect_value"))
-
-		var card := PanelContainer.new()
-		card.custom_minimum_size = Vector2(0, 64)
-		_upgrade_scroll.add_child(card)
-
-		var hbox := HBoxContainer.new()
-		hbox.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		hbox.add_theme_constant_override("separation", 8)
-		card.add_child(hbox)
-
-		var info := VBoxContainer.new()
-		info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		info.add_theme_constant_override("separation", 2)
-		hbox.add_child(info)
-
+		var desc := _describe_upgrade(data.get("effect_type", ""), data.get("effect_value"))
+		var parts := _build_card(_upgrade_scroll, 64)
 		var name_label := Label.new()
 		name_label.text = data.get("name", uid)
 		name_label.add_theme_font_size_override("font_size", 18)
 		if owned:
 			name_label.modulate = Color(0.5, 1, 0.5)
-		info.add_child(name_label)
-
+		parts.info.add_child(name_label)
 		var desc_label := Label.new()
 		desc_label.text = desc
 		desc_label.add_theme_font_size_override("font_size", 14)
 		desc_label.modulate = Color(0.7, 0.7, 0.7)
-		info.add_child(desc_label)
-
-		var btn := Button.new()
+		parts.info.add_child(desc_label)
 		if owned:
-			btn.text = "Owned"
-			btn.disabled = true
+			_add_buy_btn(parts.hbox, "Owned", true, Callable())
 		else:
-			btn.text = "%dg" % cost
-			btn.disabled = GameManager.gold < cost
-			btn.pressed.connect(try_purchase.bind("upgrade", uid))
-		btn.custom_minimum_size = Vector2(100, 40)
-		btn.add_theme_font_size_override("font_size", 16)
-		hbox.add_child(btn)
+			_add_buy_btn(parts.hbox, "%dg" % cost, GameManager.gold < cost, try_purchase.bind("upgrade", uid))
 
 
 func _refresh_reagents() -> void:
@@ -292,39 +243,17 @@ func _refresh_reagents() -> void:
 		var data: Dictionary = RecipeResolver.reagents[rid]
 		var cost: int = data.get("cost", 0)
 		var owned_count: int = GameManager.reagent_inventory.get(rid, 0)
-
-		var card := PanelContainer.new()
-		card.custom_minimum_size = Vector2(0, 72)
-		_reagent_scroll.add_child(card)
-
-		var hbox := HBoxContainer.new()
-		hbox.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		hbox.add_theme_constant_override("separation", 8)
-		card.add_child(hbox)
-
-		var info := VBoxContainer.new()
-		info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		info.add_theme_constant_override("separation", 2)
-		hbox.add_child(info)
-
+		var parts := _build_card(_reagent_scroll, 72)
 		var name_label := Label.new()
 		name_label.text = "%s (x%d)" % [data.get("name", rid), owned_count]
 		name_label.add_theme_font_size_override("font_size", 18)
-		info.add_child(name_label)
-
+		parts.info.add_child(name_label)
 		var desc_label := Label.new()
 		desc_label.text = data.get("description", "")
 		desc_label.add_theme_font_size_override("font_size", 14)
 		desc_label.modulate = Color(0.7, 0.7, 0.7)
-		info.add_child(desc_label)
-
-		var btn := Button.new()
-		btn.text = "%dg" % cost
-		btn.disabled = GameManager.gold < cost
-		btn.pressed.connect(try_purchase.bind("reagent", rid))
-		btn.custom_minimum_size = Vector2(100, 40)
-		btn.add_theme_font_size_override("font_size", 16)
-		hbox.add_child(btn)
+		parts.info.add_child(desc_label)
+		_add_buy_btn(parts.hbox, "%dg" % cost, GameManager.gold < cost, try_purchase.bind("reagent", rid))
 
 
 func _describe_upgrade(effect_type: String, value) -> String:
