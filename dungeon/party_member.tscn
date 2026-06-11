@@ -1,0 +1,7 @@
+[gd_scene format=3 uid="uid://dungeonpartymember001"]
+
+[ext_resource type="Script" path="res://dungeon/party_member.gd" id="1"]
+
+[node name="PartyMember" type="PanelContainer"]
+custom_minimum_size = Vector2(100, 110)
+script = ExtResource("1")
