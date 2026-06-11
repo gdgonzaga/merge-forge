@@ -6,7 +6,7 @@
 			"blueprint_required": ""
 		}
 	],
-	"sword": [
+	"iron_plate": [
 		{
 			"variant_item_id": "flame_sword",
 			"reagent_id": "fire_essence",
