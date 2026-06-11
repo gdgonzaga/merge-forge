@@ -82,6 +82,8 @@ func _remove_staging_item(item_data: Dictionary) -> void:
 
 
 func _on_item_placed(item: Dictionary, _pos: Vector2i) -> void:
+	if GameManager.debug_mode:
+		print("[MergeBoard] item_placed: item=%s pos=%s is_processing=%s" % [item.get("item_id", "?"), str(_pos), str(_resolver.is_processing if _resolver else "no_resolver")])
 	if not (_resolver and _resolver.is_processing):
 		_remove_staging_item(item)
 	_run_merge_detection()

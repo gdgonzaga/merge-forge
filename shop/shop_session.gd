@@ -302,6 +302,7 @@ func _on_choice_from_popup(item_id: String, is_variant: bool, reagent_id: String
 
 
 func _debug_unlock_all() -> void:
+	GameManager.debug_mode = true
 	GameManager.gold = 2000
 	GameManager.gold_changed.emit(2000)
 	var bp_ids: Array = RecipeResolver.blueprints.keys()

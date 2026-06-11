@@ -10,6 +10,7 @@ signal grid_size_changed(cols: int, rows: int)
 
 const DEFAULT_GOLD := 1000
 
+var debug_mode: bool = false
 var gold: int = DEFAULT_GOLD
 var reputation_points: int = 0
 var unlocked_blueprints: Array[String] = []
