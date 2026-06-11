@@ -28,6 +28,6 @@ func _spawn_to_staging(data: Dictionary, staging: Node) -> void:
 	if staging == null or not is_instance_valid(staging):
 		return
 	var fi: Control = load("res://board/floating_item.tscn").instantiate()
-	fi.setup(data, 18.0)
+	fi.setup(data, GameManager.get_despawn_time())
 	fi.despawn_timeout.connect(fi.queue_free)
 	staging.add_child(fi)
