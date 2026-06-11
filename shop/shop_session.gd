@@ -93,6 +93,11 @@ func _build_layout() -> void:
 		"despawn_time": GameManager.get_despawn_time(),
 	})
 
+	if not GameManager.shop_board_state.is_empty():
+		var board_grid = _get_board_grid()
+		if board_grid:
+			board_grid.load_board_state(GameManager.shop_board_state)
+
 	_crate_panel = VBoxContainer.new()
 	_crate_panel.custom_minimum_size = Vector2(220, 0)
 	_crate_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
