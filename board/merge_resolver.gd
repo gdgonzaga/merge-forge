@@ -37,7 +37,7 @@ func process_next() -> void:
 	board.remove_items(positions)
 	var all_options := _build_options(item_id)
 	if all_options.size() == 1:
-		_place_result(all_options[0])
+		_place_results(all_options[0])
 	elif all_options.size() >= 2:
 		_popup_callback.call(all_options, handle_choice)
 	else:
@@ -46,7 +46,7 @@ func process_next() -> void:
 
 
 func handle_choice(item_id: String, is_variant: bool, reagent_id: String) -> void:
-	_place_result({"item_id": item_id, "is_variant": is_variant, "reagent_id": reagent_id})
+	_place_results({"item_id": item_id, "is_variant": is_variant, "reagent_id": reagent_id})
 
 
 func _build_options(item_id: String) -> Array[Dictionary]:
@@ -78,20 +78,46 @@ func _build_options(item_id: String) -> Array[Dictionary]:
 	return all_options
 
 
-func _place_result(option: Dictionary) -> void:
+func _place_results(option: Dictionary) -> void:
 	var result_id: String = option.get("item_id", "")
 	if option.get("is_variant", false):
 		var rid: String = option.get("reagent_id", "")
 		if rid != "":
 			GameManager.consume_reagent(rid)
 	var result_data: Dictionary = RecipeResolver.get_item_data(result_id)
+	var result_count := _last_group_count / 3
+	var refund_count := _last_group_count % 3
+	var source_data: Dictionary = RecipeResolver.get_item_data(_last_group_item_id)
 	var gold_value: int = result_data.get("gold_value", 0)
 	var bonus: int = calculate_bonus_gold(_last_group_count, gold_value)
 	GameManager.add_gold(bonus)
-	var center := calculate_center_of_mass(_last_group_positions)
-	board.place_item(result_data, center)
+	_spawn_results(result_data, result_count)
+	_refund_source_items(source_data, refund_count)
 	EventBus.merge_completed.emit(result_id, bonus)
 	process_next()
+
+
+func _spawn_results(result_data: Dictionary, count: int) -> void:
+	if count <= 0:
+		return
+	var center := calculate_center_of_mass(_last_group_positions)
+	board.place_item(result_data, center)
+	for i in range(1, count):
+		var pos: Vector2i = board.find_nearest_empty(center)
+		if pos.x >= 0:
+			board.place_item(result_data, pos)
+
+
+func _refund_source_items(source_data: Dictionary, count: int) -> void:
+	if count <= 0 or source_data.is_empty():
+		return
+	var spawned := 0
+	for pos in _last_group_positions:
+		if spawned >= count:
+			break
+		if board.grid[pos.y][pos.x] == null:
+			board.place_item(source_data, pos)
+			spawned += 1
 
 
 func calculate_center_of_mass(positions: Array[Vector2i]) -> Vector2i:

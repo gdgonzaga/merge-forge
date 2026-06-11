@@ -154,6 +154,23 @@ func get_cell_at(pos: Vector2i) -> Control:
 	return null
 
 
+func find_nearest_empty(from: Vector2i) -> Vector2i:
+	if grid[from.y][from.x] == null:
+		return from
+	var max_dist := maxi(grid_cols, grid_rows)
+	for dist in range(1, max_dist + 1):
+		for dy in range(-dist, dist + 1):
+			for dx in range(-dist, dist + 1):
+				if absi(dx) != dist and absi(dy) != dist:
+					continue
+				var pos := Vector2i(from.x + dx, from.y + dy)
+				if pos.x < 0 or pos.x >= grid_cols or pos.y < 0 or pos.y >= grid_rows:
+					continue
+				if grid[pos.y][pos.x] == null:
+					return pos
+	return Vector2i(-1, -1)
+
+
 func _update_cell_visual(pos: Vector2i) -> void:
 	var cell := get_cell_at(pos)
 	if cell == null:
