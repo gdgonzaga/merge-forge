@@ -80,6 +80,8 @@ func swap_items(pos_a: Vector2i, pos_b: Vector2i) -> void:
 	grid[pos_b.y][pos_b.x] = item_a
 	_update_cell_visual(pos_a)
 	_update_cell_visual(pos_b)
+	item_placed.emit(item_b, pos_a)
+	item_placed.emit(item_a, pos_b)
 
 
 func discard_item(pos: Vector2i) -> void:
