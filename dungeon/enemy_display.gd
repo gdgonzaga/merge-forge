@@ -6,7 +6,7 @@ var _hp_bar: ProgressBar
 
 func setup(data: Dictionary) -> void:
 	var sprite_path: String = data.get("sprite", "")
-	if sprite_path != "" and FileAccess.file_exists(sprite_path):
+	if sprite_path != "" and ResourceLoader.exists(sprite_path):
 		_sprite.texture = load(sprite_path)
 	update_hp(data.get("current_hp", 30), data.get("max_hp", 30))
 

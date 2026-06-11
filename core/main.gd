@@ -45,12 +45,12 @@ func _on_session_ended(summary: Dictionary) -> void:
 
 
 func _on_dungeon_cleared(rewards: Dictionary) -> void:
-	pending_dungeon_summary = {"outcome": "cleared", "data": rewards}
+	pending_dungeon_summary = rewards
 	_go_to(null, "dungeon_cleared")
 
 
 func _on_dungeon_failed(summary: Dictionary) -> void:
-	pending_dungeon_summary = {"outcome": "failed", "data": summary}
+	pending_dungeon_summary = summary
 	_go_to(null, "dungeon_failed")
 
 

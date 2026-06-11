@@ -11,7 +11,7 @@ func setup(data: Dictionary) -> void:
 	member_index = data.get("member_index", -1)
 	_max_hp = data.get("max_hp", 50)
 	var sprite_path: String = data.get("sprite", "")
-	if sprite_path != "" and FileAccess.file_exists(sprite_path):
+	if sprite_path != "" and ResourceLoader.exists(sprite_path):
 		_sprite.texture = load(sprite_path)
 	update_hp(_max_hp, _max_hp)
 

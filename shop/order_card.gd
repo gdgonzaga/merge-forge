@@ -54,7 +54,7 @@ func _apply_data() -> void:
 	var item_id: String = order_data.get("item_id", "")
 	var item_info: Dictionary = RecipeResolver.get_item_data(item_id)
 	var icon_path: String = item_info.get("icon", "")
-	if icon_path != "" and FileAccess.file_exists(icon_path):
+	if icon_path != "" and ResourceLoader.exists(icon_path):
 		_icon.texture = load(icon_path)
 	_qty_label.text = "x%d" % order_data.get("quantity", 1)
 	_reward_label.text = "%dg" % order_data.get("gold_reward", 0)

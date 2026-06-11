@@ -11,10 +11,6 @@ var despawn_time: float = 12.0
 var _cell_scene: PackedScene
 
 
-func _ready() -> void:
-	despawn_time = GameManager.get_despawn_time()
-
-
 func setup(config: Dictionary) -> void:
 	grid_cols = config.get("cols", 5)
 	grid_rows = config.get("rows", 5)

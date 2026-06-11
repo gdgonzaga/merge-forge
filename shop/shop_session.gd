@@ -197,7 +197,7 @@ func try_buy_crate(crate_id: String) -> bool:
 
 func _display_customer(customer: Dictionary) -> void:
 	var portrait_path: String = customer.get("portrait_id", "")
-	if portrait_path != "" and FileAccess.file_exists(portrait_path):
+	if portrait_path != "" and ResourceLoader.exists(portrait_path):
 		_portrait_rect.texture = load(portrait_path)
 	else:
 		_portrait_rect.texture = null

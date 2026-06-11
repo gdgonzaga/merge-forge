@@ -83,6 +83,5 @@ func _ready() -> void:
 	var main_node := get_tree().root.find_child("Main", true, false)
 	var data: Dictionary = {}
 	if main_node and main_node.pending_dungeon_summary != null:
-		var wrapped: Dictionary = main_node.pending_dungeon_summary
-		data = wrapped.get("data", wrapped)
+		data = main_node.pending_dungeon_summary
 	display_results(data)
