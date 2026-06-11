@@ -81,6 +81,7 @@ func _transition_to(scene_path: String) -> void:
 
 
 func _play_scene_music(scene_path: String) -> void:
+	print("[Main] _play_scene_music: path='%s'" % scene_path)
 	if "dungeon" in scene_path:
 		AudioManager.play_music("dungeon_theme")
 	elif "main_menu" in scene_path:
