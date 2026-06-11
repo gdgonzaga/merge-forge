@@ -4,6 +4,8 @@ var _title_label: Label
 var _gold_label: Label
 var _rep_label: Label
 var _bp_label: Label
+var _target_gold: int = 0
+var _countup_tween: Tween
 
 
 func display_results(data: Dictionary) -> void:
@@ -11,7 +13,14 @@ func display_results(data: Dictionary) -> void:
 	if cleared:
 		_title_label.text = "Dungeon Cleared!"
 		_title_label.modulate = Color(0.5, 1, 0.5)
-		_gold_label.text = "Gold: +%d" % data.get("gold_reward", 0)
+		_target_gold = data.get("gold_reward", 0)
+		if _target_gold > 0:
+			_gold_label.text = "Gold: +0"
+			_countup_tween = create_tween()
+			_countup_tween.tween_method(_set_gold_count, 0, _target_gold, 1.5)
+			_countup_tween.tween_callback(func(): _gold_label.text = "Gold: +%d" % _target_gold)
+		else:
+			_gold_label.text = "Gold: +0"
 		_rep_label.text = "Reputation: +25"
 		var bp = data.get("blueprint_reward")
 		if bp and bp != null:
@@ -85,3 +94,7 @@ func _ready() -> void:
 	if main_node and main_node.pending_dungeon_summary != null:
 		data = main_node.pending_dungeon_summary
 	display_results(data)
+
+
+func _set_gold_count(value: int) -> void:
+	_gold_label.text = "Gold: +%d" % value
