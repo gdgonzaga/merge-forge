@@ -1,4 +1,4 @@
-[gd_scene format=3 uid="uid://dungeonenemydisplay001"]
+[gd_scene format=3 uid="uid://b4gnyy3myl0k7"]
 
 [ext_resource type="Script" path="res://dungeon/enemy_display.gd" id="1"]
 

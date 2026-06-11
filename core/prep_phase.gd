@@ -50,6 +50,13 @@ func _ready() -> void:
 	dungeon_btn.pressed.connect(_on_enter_dungeon)
 	btn_box.add_child(dungeon_btn)
 
+	var debug_btn := Button.new()
+	debug_btn.text = "DBG: Unlock All + 2000g + 1000rep"
+	debug_btn.add_theme_font_size_override("font_size", 16)
+	debug_btn.custom_minimum_size = Vector2(280, 50)
+	debug_btn.pressed.connect(_debug_unlock_all)
+	btn_box.add_child(debug_btn)
+
 	GameManager.gold_changed.connect(func(_v): if is_instance_valid(self): _refresh_all())
 	GameManager.blueprint_added.connect(func(_v): if is_instance_valid(self): _refresh_blueprints())
 	GameManager.upgrade_added.connect(func(_v): if is_instance_valid(self): _refresh_upgrades())
@@ -351,3 +358,15 @@ func _on_start_session() -> void:
 
 func _on_enter_dungeon() -> void:
 	EventBus.prep_enter_dungeon.emit()
+
+
+func _debug_unlock_all() -> void:
+	GameManager.debug_mode = true
+	GameManager.gold = 2000
+	GameManager.gold_changed.emit(2000)
+	GameManager.add_reputation(1000)
+	var bp_ids: Array = RecipeResolver.blueprints.keys()
+	for bp_id in bp_ids:
+		if not bp_id in GameManager.unlocked_blueprints:
+			GameManager.add_blueprint(bp_id)
+	GameManager.add_reagent("fire_essence", 5)
