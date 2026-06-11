@@ -115,6 +115,14 @@ func _build_layout() -> void:
 		btn.pressed.connect(_on_buy_crate.bind(crate_id))
 		_crate_panel.add_child(btn)
 
+	_crate_panel.add_child(HSeparator.new())
+
+	var debug_btn := Button.new()
+	debug_btn.text = "DBG: Unlock All + 2000g"
+	debug_btn.add_theme_font_size_override("font_size", 16)
+	debug_btn.pressed.connect(_debug_unlock_all)
+	_crate_panel.add_child(debug_btn)
+
 
 func advance_customer() -> void:
 	_clear_orders()
@@ -291,3 +299,13 @@ func _on_merge_choice_requested(options: Array[Dictionary], callback: Callable) 
 func _on_choice_from_popup(item_id: String, is_variant: bool, reagent_id: String) -> void:
 	if _choice_callback.is_valid():
 		_choice_callback.call(item_id, is_variant, reagent_id)
+
+
+func _debug_unlock_all() -> void:
+	GameManager.gold = 2000
+	GameManager.gold_changed.emit(2000)
+	var bp_ids: Array = RecipeResolver.blueprints.keys()
+	for bp_id in bp_ids:
+		if not bp_id in GameManager.unlocked_blueprints:
+			GameManager.add_blueprint(bp_id)
+	GameManager.add_reagent("fire_essence", 5)
