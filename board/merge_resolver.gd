@@ -10,6 +10,7 @@ var _last_group_positions: Array[Vector2i] = []
 var _last_group_item_id: String = ""
 var _last_group_count: int = 0
 var _pending_options: Array[Dictionary] = []
+var _result_center: Vector2i = Vector2i(-1, -1)
 
 
 func setup(board_ref: Control, popup_cb: Callable, detector: RefCounted, merge_board: Control) -> void:
@@ -49,9 +50,9 @@ func process_next() -> void:
 	_last_group_item_id = item_id
 	_last_group_count = positions.size()
 	_pending_options = all_options
-	var center := calculate_center_of_mass(_last_group_positions)
-	_dbg("process_next: starting merge animation, center=%s" % str(center))
-	_merge_board.animate_merge(_last_group_positions, center, _on_animation_done)
+	_result_center = _resolve_result_position()
+	_dbg("process_next: starting merge animation, result_center=%s" % str(_result_center))
+	_merge_board.animate_merge(_last_group_positions, _result_center, _on_animation_done)
 
 
 func _on_animation_done() -> void:
@@ -78,6 +79,29 @@ func _try_chain() -> void:
 		return
 	_dbg("_try_chain: found %d new groups" % groups.size())
 	enqueue(groups)
+
+
+func _resolve_result_position() -> Vector2i:
+	var center := calculate_center_of_mass(_last_group_positions)
+	var is_merge_pos := false
+	for pos in _last_group_positions:
+		if pos == center:
+			is_merge_pos = true
+			break
+	if is_merge_pos:
+		return center
+	var saved: Dictionary = {}
+	for pos in _last_group_positions:
+		saved[pos] = board.grid[pos.y][pos.x]
+		board.grid[pos.y][pos.x] = null
+	var result_pos: Vector2i
+	if center.x >= 0 and center.y >= 0 and center.x < board.grid_cols and center.y < board.grid_rows and board.grid[center.y][center.x] == null:
+		result_pos = center
+	else:
+		result_pos = board.find_nearest_empty(center)
+	for pos in saved:
+		board.grid[pos.y][pos.x] = saved[pos]
+	return result_pos
 
 
 func _build_options(item_id: String) -> Array[Dictionary]:
@@ -134,10 +158,7 @@ func _spawn_results(result_data: Dictionary, count: int) -> void:
 	_dbg("_spawn_results: count=%d data_empty=%s" % [count, str(result_data.is_empty())])
 	if count <= 0:
 		return
-	var center := calculate_center_of_mass(_last_group_positions)
-	if board.grid[center.y][center.x] != null:
-		_dbg("_spawn_results: center %s occupied, finding nearest empty" % str(center))
-		center = board.find_nearest_empty(center)
+	var center := _result_center
 	var flash_positions: Array[Vector2i] = []
 	if center.x >= 0:
 		_dbg("_spawn_results: placing at %s" % str(center))
