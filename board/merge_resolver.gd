@@ -148,11 +148,24 @@ func _place_results(option: Dictionary) -> void:
 	var bonus: int = calculate_bonus_gold(_last_group_count, gold_value)
 	_dbg("_place_results: result_count=%d refund_count=%d bonus=%d result_data_empty=%s" % [result_count, refund_count, bonus, str(result_data.is_empty())])
 	if bonus > 0:
-		_merge_board.spawn_bonus_coin(bonus, _result_center)
+		_spawn_bonus_coins(bonus)
 	_spawn_results(result_data, result_count)
 	_refund_source_items(source_data, refund_count)
 	EventBus.merge_completed.emit(result_id, bonus)
 	process_next()
+
+
+func _spawn_bonus_coins(total_bonus: int) -> void:
+	var num_coins := mini(_last_group_count - 3, 3)
+	if num_coins <= 0:
+		num_coins = 1
+	var per_coin := total_bonus / num_coins
+	var remainder := total_bonus - per_coin * num_coins
+	for i in range(num_coins):
+		var amount := per_coin
+		if i < remainder:
+			amount += 1
+		_merge_board.spawn_bonus_coin(amount, _result_center)
 
 
 func _spawn_results(result_data: Dictionary, count: int) -> void:
