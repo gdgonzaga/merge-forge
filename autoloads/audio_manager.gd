@@ -55,30 +55,23 @@ func _on_gold_changed(new_amount: int) -> void:
 
 
 func play_music(track: String) -> void:
-	print("[Audio] play_music called: track='%s'" % track)
 	var path1 := MUSIC_BASE + track + ".wav"
 	var path2 := SFX_BASE + track + ".wav"
-	print("[Audio] trying path1='%s' file_exists=%s" % [path1, str(FileAccess.file_exists(path1))])
 	var stream := _load_audio(path1)
 	if not stream:
-		print("[Audio] path1 failed, trying path2='%s' file_exists=%s" % [path2, str(FileAccess.file_exists(path2))])
 		stream = _load_audio(path2)
 	if not stream:
 		push_error("[Audio] FAILED to load music track: %s" % track)
 		return
-	print("[Audio] loaded stream: %s type=%s" % [str(stream), stream.get_class()])
 	if music_player.playing and music_player.stream == stream:
-		print("[Audio] already playing this track, skip")
 		return
 	if music_player.playing:
-		print("[Audio] crossfading from current track")
 		if music_fade:
 			music_fade.kill()
 		music_fade = create_tween()
 		music_fade.tween_property(music_player, "volume_db", -80.0, 1.0)
 		music_fade.tween_callback(func(): _start_music(stream))
 	else:
-		print("[Audio] starting music (not currently playing)")
 		_start_music(stream)
 
 
@@ -108,24 +101,15 @@ func play_sfx(sfx_name: String) -> void:
 
 
 func _start_music(stream: AudioStream) -> void:
-	print("[Audio] _start_music: stream=%s class=%s" % [str(stream), stream.get_class()])
 	music_player.stream = stream
 	music_player.volume_db = 0.0
 	music_player.play()
-	print("[Audio] music_player.playing=%s volume_db=%s" % [str(music_player.playing), str(music_player.volume_db)])
 
 
 func _load_audio(path: String) -> AudioStream:
-	if not FileAccess.file_exists(path):
-		print("[Audio] _load_audio: file NOT found: %s" % path)
-		return null
-	print("[Audio] _load_audio: file found, loading: %s" % path)
 	var res = load(path)
 	if res == null:
-		print("[Audio] _load_audio: load() returned null for: %s" % path)
 		return null
-	print("[Audio] _load_audio: loaded type=%s" % res.get_class())
 	if res is AudioStream:
 		return res
-	print("[Audio] _load_audio: NOT an AudioStream: %s" % res.get_class())
 	return null
