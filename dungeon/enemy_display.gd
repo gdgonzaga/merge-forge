@@ -1,4 +1,4 @@
-extends Control
+extends PanelContainer
 
 @onready var _unit = $Unit
 

@@ -1,4 +1,4 @@
-extends Control
+extends PanelContainer
 
 var member_index: int = -1
 var _max_hp: int = 50

@@ -1,4 +1,4 @@
-extends Control
+extends PanelContainer
 
 signal order_tapped(order_index: int)
 
