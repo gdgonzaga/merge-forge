@@ -1,7 +1,7 @@
 extends Control
 
-const MERGE_BURST_DISTANCE: float = 100.0
-const MERGE_BURST_TIME: float = 0.15
+const MERGE_BURST_DISTANCE: float = 30.0
+const MERGE_BURST_TIME: float = 0.20
 const MERGE_CONVERGE_TIME: float = 0.25
 
 var _board: Control
@@ -97,18 +97,24 @@ func animate_merge(positions: Array[Vector2i], center: Vector2i, callback: Calla
 		callback.call()
 		return
 	var tween := _anim_overlay.create_tween()
-	for entry in icons:
-		var fi: TextureRect = entry.node
+	for i in range(icons.size()):
+		var fi: TextureRect = icons[i].node
 		var fi_center := fi.position + fi.size / 2.0
 		var dir := (fi_center - center_screen).normalized()
 		if dir == Vector2.ZERO:
 			dir = Vector2.UP
 		var burst_target := fi.position + dir * MERGE_BURST_DISTANCE
-		tween.parallel().tween_property(fi, "position", burst_target, MERGE_BURST_TIME)
-	for entry in icons:
-		var fi: TextureRect = entry.node
+		if i == 0:
+			tween.tween_property(fi, "position", burst_target, MERGE_BURST_TIME)
+		else:
+			tween.parallel().tween_property(fi, "position", burst_target, MERGE_BURST_TIME)
+	for i in range(icons.size()):
+		var fi: TextureRect = icons[i].node
 		var converge_target := center_screen - fi.size / 2.0
-		tween.parallel().tween_property(fi, "position", converge_target, MERGE_CONVERGE_TIME)
+		if i == 0:
+			tween.tween_property(fi, "position", converge_target, MERGE_CONVERGE_TIME)
+		else:
+			tween.parallel().tween_property(fi, "position", converge_target, MERGE_CONVERGE_TIME)
 	tween.tween_callback(func():
 		for entry in icons:
 			if is_instance_valid(entry.node):
