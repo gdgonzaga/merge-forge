@@ -165,6 +165,16 @@ func _spawn_icon(tex: Texture2D, center: Vector2) -> TextureRect:
 	return fi
 
 
+func spawn_bonus_coin(amount: int, grid_pos: Vector2i) -> void:
+	if _anim_overlay == null or _board == null or amount <= 0:
+		return
+	var overlay_global := _anim_overlay.global_position
+	var screen_pos := _get_cell_screen_center(grid_pos) - overlay_global
+	var coin: Control = load("res://board/bonus_coin.tscn").instantiate()
+	coin.setup(amount, screen_pos)
+	_anim_overlay.add_child(coin)
+
+
 func _get_cell_texture(pos: Vector2i) -> Texture2D:
 	var cell: Control = _board.get_cell_at(pos)
 	if cell:

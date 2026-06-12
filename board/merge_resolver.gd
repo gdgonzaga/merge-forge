@@ -147,7 +147,8 @@ func _place_results(option: Dictionary) -> void:
 	var gold_value: int = result_data.get("gold_value", 0)
 	var bonus: int = calculate_bonus_gold(_last_group_count, gold_value)
 	_dbg("_place_results: result_count=%d refund_count=%d bonus=%d result_data_empty=%s" % [result_count, refund_count, bonus, str(result_data.is_empty())])
-	GameManager.add_gold(bonus)
+	if bonus > 0:
+		_merge_board.spawn_bonus_coin(bonus, _result_center)
 	_spawn_results(result_data, result_count)
 	_refund_source_items(source_data, refund_count)
 	EventBus.merge_completed.emit(result_id, bonus)
