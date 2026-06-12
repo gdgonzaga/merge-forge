@@ -151,6 +151,8 @@ func _place_results(option: Dictionary) -> void:
 		_spawn_bonus_coins(bonus)
 	_spawn_results(result_data, result_count)
 	_refund_source_items(source_data, refund_count)
+	if gold_value > 0 and _result_center.x >= 0:
+		_merge_board.show_gold_text(gold_value, _result_center)
 	EventBus.merge_completed.emit(result_id, bonus)
 	process_next()
 
