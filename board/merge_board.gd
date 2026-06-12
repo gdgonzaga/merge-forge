@@ -75,58 +75,38 @@ func animate_merge(positions: Array[Vector2i], center: Vector2i, callback: Calla
 		callback.call()
 		return
 	var overlay_global := _anim_overlay.global_position
-	var center_screen := _get_cell_screen_center(center) - overlay_global
+	var center_local := _get_cell_screen_center(center) - overlay_global
 	var icons: Array = []
 	for pos in positions:
-		var cell: Control = _board.get_cell_at(pos)
-		if cell == null:
-			continue
-		var tex: Texture2D = cell.get_icon_texture()
+		var tex: Texture2D = _get_cell_texture(pos)
 		if tex == null:
 			continue
-		var fi := TextureRect.new()
-		fi.texture = tex
-		fi.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		var icon_size := Vector2(64, 64)
-		fi.custom_minimum_size = icon_size
-		fi.size = icon_size
-		fi.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		var cell_center := _get_cell_screen_center(pos) - overlay_global
-		fi.position = cell_center - icon_size / 2.0
-		_anim_overlay.add_child(fi)
-		icons.append({"node": fi, "start": fi.position})
-		cell.clear_item()
+		var from_local := _get_cell_screen_center(pos) - overlay_global
+		var fi := _spawn_icon(tex, from_local)
+		icons.append({"node": fi, "start": fi.position, "end": center_local - fi.size / 2.0})
+		_board.get_cell_at(pos).clear_item()
 	if icons.is_empty():
 		callback.call()
 		return
 	var tween := _anim_overlay.create_tween()
-	for i in range(icons.size()):
-		var fi: TextureRect = icons[i].node
+	tween.set_parallel(true)
+	for entry in icons:
+		var fi: TextureRect = entry.node
 		var fi_center := fi.position + fi.size / 2.0
-		var dir := (fi_center - center_screen).normalized()
+		var dir := (fi_center - center_local).normalized()
 		if dir == Vector2.ZERO:
 			dir = Vector2.UP
-		var burst_target := fi.position + dir * MERGE_BURST_DISTANCE
-		if i == 0:
-			tween.tween_property(fi, "position", burst_target, MERGE_BURST_TIME)
-		else:
-			tween.parallel().tween_property(fi, "position", burst_target, MERGE_BURST_TIME)
-	for i in range(icons.size()):
-		var fi: TextureRect = icons[i].node
-		var converge_target := center_screen - fi.size / 2.0
-		if i == 0:
-			tween.tween_property(fi, "position", converge_target, MERGE_CONVERGE_TIME)
-		else:
-			tween.parallel().tween_property(fi, "position", converge_target, MERGE_CONVERGE_TIME)
-	tween.tween_callback(func():
-		for entry in icons:
-			if is_instance_valid(entry.node):
-				entry.node.queue_free()
-		callback.call()
-	)
+		tween.tween_property(fi, "position", fi.position + dir * MERGE_BURST_DISTANCE, MERGE_BURST_TIME)
+	tween.set_parallel(false)
+	tween.tween_property(icons[0].node, "position", icons[0].end, MERGE_CONVERGE_TIME)
+	tween.set_parallel(true)
+	for i in range(1, icons.size()):
+		tween.tween_property(icons[i].node, "position", icons[i].end, MERGE_CONVERGE_TIME)
+	tween.set_parallel(false)
+	tween.tween_callback(_make_cleanup(icons, callback))
 
 
-func animate_move(moves: Array[Dictionary], callback: Callable) -> void:
+func animate_move(moves: Array[Dictionary], _callback: Callable) -> void:
 	if _anim_overlay == null or _board == null or moves.is_empty():
 		if not moves.is_empty():
 			_board.finalize_move(moves)
@@ -134,51 +114,37 @@ func animate_move(moves: Array[Dictionary], callback: Callable) -> void:
 	var overlay_global := _anim_overlay.global_position
 	var icons: Array = []
 	for m in moves:
-		var item_data: Dictionary = m["item_data"]
 		var from_pos: Vector2i = m.get("from_pos", Vector2i(-1, -1))
 		var to_pos: Vector2i = m["to_pos"]
-		var from_screen: Vector2
+		var to_local := _get_cell_screen_center(to_pos) - overlay_global
+		var fi: TextureRect
 		if from_pos.x >= 0:
-			var from_cell: Control = _board.get_cell_at(from_pos)
-			if from_cell:
-				var tex: Texture2D = from_cell.get_icon_texture()
-				if tex == null:
-					continue
-				from_screen = _get_cell_screen_center(from_pos)
-				from_cell.clear_item()
-				var fi := _make_float_icon(tex, from_screen - overlay_global)
-				_anim_overlay.add_child(fi)
-				icons.append({"node": fi, "target_screen": _get_cell_screen_center(to_pos) - overlay_global})
-			else:
+			var tex: Texture2D = _get_cell_texture(from_pos)
+			if tex == null:
 				continue
+			fi = _spawn_icon(tex, _get_cell_screen_center(from_pos) - overlay_global)
+			_board.get_cell_at(from_pos).clear_item()
 		else:
-			from_screen = m.get("from_screen", Vector2.ZERO)
-			var icon_path: String = item_data.get("icon", "")
+			var from_screen: Vector2 = m.get("from_screen", Vector2.ZERO)
+			var icon_path: String = m["item_data"].get("icon", "")
 			if icon_path == "":
 				continue
 			var tex: Texture2D = load(icon_path)
 			if tex == null:
 				continue
-			var fi := _make_float_icon(tex, from_screen - overlay_global)
-			_anim_overlay.add_child(fi)
-			icons.append({"node": fi, "target_screen": _get_cell_screen_center(to_pos) - overlay_global})
+			fi = _spawn_icon(tex, from_screen - overlay_global)
+		icons.append({"node": fi, "start": fi.position, "end": to_local - fi.size / 2.0})
 	if icons.is_empty():
 		_board.finalize_move(moves)
 		return
 	var tween := _anim_overlay.create_tween()
-	for i in range(icons.size()):
-		var fi: TextureRect = icons[i].node
-		var start_pos := fi.position
-		var end_pos: Vector2 = icons[i].target_screen - fi.size / 2.0
-		var idx := i
-		if i == 0:
-			tween.tween_method(func(val: float):
-				_apply_arc_pos(icons[idx].node, start_pos, end_pos, val)
-			, 0.0, 1.0, MOVE_ANIM_TIME)
-		else:
-			tween.parallel().tween_method(func(val: float):
-				_apply_arc_pos(icons[idx].node, start_pos, end_pos, val)
-			, 0.0, 1.0, MOVE_ANIM_TIME)
+	tween.set_parallel(true)
+	for entry in icons:
+		var s: Vector2 = entry.start
+		var e: Vector2 = entry.end
+		var n: TextureRect = entry.node
+		tween.tween_method(func(t: float): _apply_arc_pos(n, s, e, t), 0.0, 1.0, MOVE_ANIM_TIME)
+	tween.set_parallel(false)
 	tween.tween_callback(func():
 		for entry in icons:
 			if is_instance_valid(entry.node):
@@ -187,16 +153,31 @@ func animate_move(moves: Array[Dictionary], callback: Callable) -> void:
 	)
 
 
-func _make_float_icon(tex: Texture2D, center: Vector2) -> TextureRect:
+func _spawn_icon(tex: Texture2D, center: Vector2) -> TextureRect:
 	var fi := TextureRect.new()
 	fi.texture = tex
 	fi.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	var icon_size := Vector2(64, 64)
-	fi.custom_minimum_size = icon_size
-	fi.size = icon_size
+	fi.custom_minimum_size = Vector2(64, 64)
+	fi.size = Vector2(64, 64)
 	fi.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	fi.position = center - icon_size / 2.0
+	fi.position = center - fi.size / 2.0
+	_anim_overlay.add_child(fi)
 	return fi
+
+
+func _get_cell_texture(pos: Vector2i) -> Texture2D:
+	var cell: Control = _board.get_cell_at(pos)
+	if cell:
+		return cell.get_icon_texture()
+	return null
+
+
+func _make_cleanup(icons: Array, callback: Callable) -> Callable:
+	return func():
+		for entry in icons:
+			if is_instance_valid(entry.node):
+				entry.node.queue_free()
+		callback.call()
 
 
 func _apply_arc_pos(node: TextureRect, start: Vector2, end: Vector2, t: float) -> void:
