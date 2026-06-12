@@ -4,14 +4,19 @@ var merge_queue: Array[Dictionary] = []
 var is_processing: bool = false
 var board: Control
 var _popup_callback: Callable
+var _detector: RefCounted
+var _merge_board: Control
 var _last_group_positions: Array[Vector2i] = []
 var _last_group_item_id: String = ""
 var _last_group_count: int = 0
+var _pending_options: Array[Dictionary] = []
 
 
-func setup(board_ref: Control, popup_cb: Callable) -> void:
+func setup(board_ref: Control, popup_cb: Callable, detector: RefCounted, merge_board: Control) -> void:
 	board = board_ref
 	_popup_callback = popup_cb
+	_detector = detector
+	_merge_board = merge_board
 
 
 func enqueue(groups: Array[Dictionary]) -> void:
@@ -24,6 +29,7 @@ func enqueue(groups: Array[Dictionary]) -> void:
 func process_next() -> void:
 	if merge_queue.is_empty():
 		is_processing = false
+		_try_chain()
 		return
 	is_processing = true
 	var group: Dictionary = merge_queue.pop_front()
@@ -42,18 +48,36 @@ func process_next() -> void:
 		_last_group_positions.append(pos)
 	_last_group_item_id = item_id
 	_last_group_count = positions.size()
-	board.remove_items(positions)
-	_dbg("process_next: removed %d items from board" % positions.size())
-	if all_options.size() == 1:
-		_dbg("process_next: auto-pick single option -> %s" % all_options[0].get("item_id", "?"))
-		_place_results(all_options[0])
+	_pending_options = all_options
+	var center := calculate_center_of_mass(_last_group_positions)
+	_dbg("process_next: starting merge animation, center=%s" % str(center))
+	_merge_board.animate_merge(_last_group_positions, center, _on_animation_done)
+
+
+func _on_animation_done() -> void:
+	board.remove_items(_last_group_positions)
+	_dbg("_on_animation_done: removed %d items from board" % _last_group_positions.size())
+	if _pending_options.size() == 1:
+		_dbg("_on_animation_done: auto-pick single option -> %s" % _pending_options[0].get("item_id", "?"))
+		_place_results(_pending_options[0])
 	else:
-		_dbg("process_next: showing popup with %d options" % all_options.size())
-		_popup_callback.call(all_options, handle_choice)
+		_dbg("_on_animation_done: showing popup with %d options" % _pending_options.size())
+		_popup_callback.call(_pending_options, handle_choice)
 
 
 func handle_choice(item_id: String, is_variant: bool, reagent_id: String) -> void:
 	_place_results({"item_id": item_id, "is_variant": is_variant, "reagent_id": reagent_id})
+
+
+func _try_chain() -> void:
+	if _detector == null or board == null:
+		return
+	var groups: Array[Dictionary] = _detector.scan(board.grid)
+	if groups.is_empty():
+		_dbg("_try_chain: no new groups found")
+		return
+	_dbg("_try_chain: found %d new groups" % groups.size())
+	enqueue(groups)
 
 
 func _build_options(item_id: String) -> Array[Dictionary]:

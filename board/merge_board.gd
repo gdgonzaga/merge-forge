@@ -1,16 +1,22 @@
 extends Control
 
+const MERGE_BURST_DISTANCE: float = 100.0
+const MERGE_BURST_TIME: float = 0.15
+const MERGE_CONVERGE_TIME: float = 0.25
+
 var _board: Control
 var _detector: RefCounted
 var _resolver: RefCounted
 var _staging_container: HBoxContainer
 var _popup: PopupPanel
 var _choice_callback: Callable
+var _anim_overlay: Control
 
 
 func _ready() -> void:
 	_board = find_child("BoardGrid", true, false) as Control
 	_staging_container = find_child("StagingArea", true, false) as HBoxContainer
+	_anim_overlay = find_child("AnimOverlay", true, false) as Control
 	_detector = load("res://board/merge_detector.gd").new()
 	_resolver = load("res://board/merge_resolver.gd").new()
 	if _board:
@@ -32,7 +38,7 @@ func setup(config: Dictionary) -> void:
 			"cols": config.get("cols", GameManager.grid_cols),
 			"rows": config.get("rows", GameManager.grid_rows),
 		})
-		_resolver.setup(_board, _on_merge_choice_requested)
+		_resolver.setup(_board, _on_merge_choice_requested, _detector, self)
 
 
 func buy_crate(crate_id: String) -> bool:
@@ -59,6 +65,63 @@ func place_drop(item_data: Dictionary) -> void:
 			_spawn_staging_item(item_data)
 	else:
 		_spawn_staging_item(item_data)
+
+
+func animate_merge(positions: Array[Vector2i], center: Vector2i, callback: Callable) -> void:
+	if _anim_overlay == null or _board == null:
+		callback.call()
+		return
+	var overlay_global := _anim_overlay.global_position
+	var center_screen := _get_cell_screen_center(center) - overlay_global
+	var icons: Array = []
+	for pos in positions:
+		var cell: Control = _board.get_cell_at(pos)
+		if cell == null:
+			continue
+		var tex: Texture2D = cell.get_icon_texture()
+		if tex == null:
+			continue
+		var fi := TextureRect.new()
+		fi.texture = tex
+		fi.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		var icon_size := Vector2(64, 64)
+		fi.custom_minimum_size = icon_size
+		fi.size = icon_size
+		fi.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var cell_center := _get_cell_screen_center(pos) - overlay_global
+		fi.position = cell_center - icon_size / 2.0
+		_anim_overlay.add_child(fi)
+		icons.append({"node": fi, "start": fi.position})
+		cell.clear_item()
+	if icons.is_empty():
+		callback.call()
+		return
+	var tween := _anim_overlay.create_tween()
+	for entry in icons:
+		var fi: TextureRect = entry.node
+		var fi_center := fi.position + fi.size / 2.0
+		var dir := (fi_center - center_screen).normalized()
+		if dir == Vector2.ZERO:
+			dir = Vector2.UP
+		var burst_target := fi.position + dir * MERGE_BURST_DISTANCE
+		tween.parallel().tween_property(fi, "position", burst_target, MERGE_BURST_TIME)
+	for entry in icons:
+		var fi: TextureRect = entry.node
+		var converge_target := center_screen - fi.size / 2.0
+		tween.parallel().tween_property(fi, "position", converge_target, MERGE_CONVERGE_TIME)
+	tween.tween_callback(func():
+		for entry in icons:
+			if is_instance_valid(entry.node):
+				entry.node.queue_free()
+		callback.call()
+	)
+
+
+func _get_cell_screen_center(pos: Vector2i) -> Vector2:
+	var cell: Control = _board.get_cell_at(pos)
+	if cell:
+		return cell.global_position + cell.size / 2.0
+	return Vector2.ZERO
 
 
 func _spawn_staging_item(item_data: Dictionary) -> void:

@@ -26,6 +26,12 @@ func clear_item() -> void:
 		_icon.visible = false
 
 
+func get_icon_texture() -> Texture2D:
+	if _icon != null and _icon.visible:
+		return _icon.texture
+	return null
+
+
 func flash() -> void:
 	if _bg:
 		var orig := _bg.color
