@@ -63,4 +63,6 @@ func _get_drag_data(at_position: Vector2) -> Variant:
 		preview.texture = null
 	set_drag_preview(preview)
 	preview.position = Vector2(-14, -100)
-	return item_data
+	var drag_info := item_data.duplicate()
+	drag_info["_source_screen"] = global_position + size / 2.0
+	return drag_info

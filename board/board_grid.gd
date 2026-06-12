@@ -9,6 +9,11 @@ var grid_rows: int = 5
 var despawn_time: float = 12.0
 
 var _cell_scene: PackedScene
+var _move_callback: Callable
+
+
+func set_move_callback(cb: Callable) -> void:
+	_move_callback = cb
 
 
 func setup(config: Dictionary) -> void:
@@ -240,11 +245,69 @@ func _on_cell_drop(from_pos: Vector2i, to_pos: Vector2i) -> void:
 	var is_from_board: bool = from_pos.x >= 0 and from_pos.y >= 0
 	if is_from_board and from_pos == to_pos:
 		return
+	var moves: Array[Dictionary] = []
 	if grid[to_pos.y][to_pos.x] == null:
 		if is_from_board:
+			var moved_item = grid[from_pos.y][from_pos.x]
 			grid[from_pos.y][from_pos.x] = null
-			_update_cell_visual(from_pos)
-		place_item(drag_data, to_pos)
+			grid[to_pos.y][to_pos.x] = moved_item
+			moves.append({
+				"item_data": moved_item,
+				"from_pos": from_pos,
+				"to_pos": to_pos,
+			})
+		else:
+			var from_screen: Vector2 = _get_drag_source_screen(drag_data)
+			grid[to_pos.y][to_pos.x] = drag_data
+			moves.append({
+				"item_data": drag_data,
+				"from_pos": Vector2i(-1, -1),
+				"to_pos": to_pos,
+				"from_screen": from_screen,
+			})
 	else:
 		if is_from_board:
-			swap_items(from_pos, to_pos)
+			var item_a = grid[from_pos.y][from_pos.x]
+			var item_b = grid[to_pos.y][to_pos.x]
+			grid[from_pos.y][from_pos.x] = item_b
+			grid[to_pos.y][to_pos.x] = item_a
+			moves.append({
+				"item_data": item_a,
+				"from_pos": from_pos,
+				"to_pos": to_pos,
+			})
+			moves.append({
+				"item_data": item_b,
+				"from_pos": to_pos,
+				"to_pos": from_pos,
+			})
+	if moves.is_empty():
+		return
+	if _move_callback.is_valid():
+		_move_callback.call(moves)
+	else:
+		for m in moves:
+			var fp: Vector2i = m.get("from_pos", Vector2i(-1, -1))
+			if fp.x >= 0:
+				_update_cell_visual(fp)
+			_update_cell_visual(m["to_pos"])
+		for m in moves:
+			AudioManager.play_sfx("item_place")
+			item_placed.emit(m["item_data"], m["to_pos"])
+
+
+func finalize_move(moves: Array[Dictionary]) -> void:
+	for m in moves:
+		var fp: Vector2i = m.get("from_pos", Vector2i(-1, -1))
+		if fp.x >= 0:
+			_update_cell_visual(fp)
+		_update_cell_visual(m["to_pos"])
+	for m in moves:
+		AudioManager.play_sfx("item_place")
+		item_placed.emit(m["item_data"], m["to_pos"])
+
+
+func _get_drag_source_screen(drag_data: Dictionary) -> Vector2:
+	if drag_data.has("_source_screen"):
+		return drag_data["_source_screen"]
+	return Vector2.ZERO

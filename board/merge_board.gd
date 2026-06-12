@@ -3,6 +3,8 @@ extends Control
 const MERGE_BURST_DISTANCE: float = 30.0
 const MERGE_BURST_TIME: float = 0.20
 const MERGE_CONVERGE_TIME: float = 0.25
+const MOVE_ANIM_TIME: float = 0.15
+const MOVE_ARC_HEIGHT: float = -40.0
 
 var _board: Control
 var _detector: RefCounted
@@ -39,6 +41,7 @@ func setup(config: Dictionary) -> void:
 			"rows": config.get("rows", GameManager.grid_rows),
 		})
 		_resolver.setup(_board, _on_merge_choice_requested, _detector, self)
+		_board.set_move_callback(_on_board_move)
 
 
 func buy_crate(crate_id: String) -> bool:
@@ -123,6 +126,87 @@ func animate_merge(positions: Array[Vector2i], center: Vector2i, callback: Calla
 	)
 
 
+func animate_move(moves: Array[Dictionary], callback: Callable) -> void:
+	if _anim_overlay == null or _board == null or moves.is_empty():
+		if not moves.is_empty():
+			_board.finalize_move(moves)
+		return
+	var overlay_global := _anim_overlay.global_position
+	var icons: Array = []
+	for m in moves:
+		var item_data: Dictionary = m["item_data"]
+		var from_pos: Vector2i = m.get("from_pos", Vector2i(-1, -1))
+		var to_pos: Vector2i = m["to_pos"]
+		var from_screen: Vector2
+		if from_pos.x >= 0:
+			var from_cell: Control = _board.get_cell_at(from_pos)
+			if from_cell:
+				var tex: Texture2D = from_cell.get_icon_texture()
+				if tex == null:
+					continue
+				from_screen = _get_cell_screen_center(from_pos)
+				from_cell.clear_item()
+				var fi := _make_float_icon(tex, from_screen - overlay_global)
+				_anim_overlay.add_child(fi)
+				icons.append({"node": fi, "target_screen": _get_cell_screen_center(to_pos) - overlay_global})
+			else:
+				continue
+		else:
+			from_screen = m.get("from_screen", Vector2.ZERO)
+			var icon_path: String = item_data.get("icon", "")
+			if icon_path == "":
+				continue
+			var tex: Texture2D = load(icon_path)
+			if tex == null:
+				continue
+			var fi := _make_float_icon(tex, from_screen - overlay_global)
+			_anim_overlay.add_child(fi)
+			icons.append({"node": fi, "target_screen": _get_cell_screen_center(to_pos) - overlay_global})
+	if icons.is_empty():
+		_board.finalize_move(moves)
+		return
+	var tween := _anim_overlay.create_tween()
+	for i in range(icons.size()):
+		var fi: TextureRect = icons[i].node
+		var start_pos := fi.position
+		var end_pos: Vector2 = icons[i].target_screen - fi.size / 2.0
+		var idx := i
+		if i == 0:
+			tween.tween_method(func(val: float):
+				_apply_arc_pos(icons[idx].node, start_pos, end_pos, val)
+			, 0.0, 1.0, MOVE_ANIM_TIME)
+		else:
+			tween.parallel().tween_method(func(val: float):
+				_apply_arc_pos(icons[idx].node, start_pos, end_pos, val)
+			, 0.0, 1.0, MOVE_ANIM_TIME)
+	tween.tween_callback(func():
+		for entry in icons:
+			if is_instance_valid(entry.node):
+				entry.node.queue_free()
+		_board.finalize_move(moves)
+	)
+
+
+func _make_float_icon(tex: Texture2D, center: Vector2) -> TextureRect:
+	var fi := TextureRect.new()
+	fi.texture = tex
+	fi.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	var icon_size := Vector2(64, 64)
+	fi.custom_minimum_size = icon_size
+	fi.size = icon_size
+	fi.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	fi.position = center - icon_size / 2.0
+	return fi
+
+
+func _apply_arc_pos(node: TextureRect, start: Vector2, end: Vector2, t: float) -> void:
+	if not is_instance_valid(node):
+		return
+	var pos := start.lerp(end, t)
+	pos.y += MOVE_ARC_HEIGHT * 4.0 * t * (1.0 - t)
+	node.position = pos
+
+
 func _get_cell_screen_center(pos: Vector2i) -> Vector2:
 	var cell: Control = _board.get_cell_at(pos)
 	if cell:
@@ -154,6 +238,10 @@ func _on_item_placed(item: Dictionary, _pos: Vector2i) -> void:
 	if not (_resolver and _resolver.is_processing):
 		_remove_staging_item(item)
 	_run_merge_detection()
+
+
+func _on_board_move(moves: Array[Dictionary]) -> void:
+	animate_move(moves, func(): pass)
 
 
 func _run_merge_detection() -> void:

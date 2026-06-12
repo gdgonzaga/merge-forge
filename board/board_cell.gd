@@ -66,6 +66,7 @@ func _get_drag_data(at_position: Vector2) -> Variant:
 	cell_drag_started.emit(grid_pos, item)
 	var drag_info := item.duplicate()
 	drag_info["_source_pos"] = grid_pos
+	drag_info["_source_screen"] = global_position + size / 2.0
 	return drag_info
 
 
