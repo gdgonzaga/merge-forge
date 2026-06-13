@@ -1,13 +1,26 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://coremain001"]
 
-[ext_resource type="Script" path="res://core/main.gd" id="1"]
-[ext_resource type="PackedScene" path="res://core/hud.tscn" id="2"]
+[ext_resource type="Script" uid="uid://bm6xsds8bt43e" path="res://core/main.gd" id="1"]
+[ext_resource type="PackedScene" uid="uid://corehud001" path="res://core/hud.tscn" id="2"]
 
-[node name="Main" type="Node"]
+[node name="Main" type="Node" unique_id=168124041]
 script = ExtResource("1")
 
-[node name="SceneContainer" type="Node" parent="."]
+[node name="SceneContainer" type="Control" parent="." unique_id=1204592660]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = 123.0
+offset_bottom = -2.0
+grow_horizontal = 2
+grow_vertical = 2
 
-[node name="CanvasLayer" type="CanvasLayer" parent="."]
+[node name="CanvasLayer" type="CanvasLayer" parent="." unique_id=577223610]
 
-[node name="HUD" parent="CanvasLayer" instance=ExtResource("2")]
+[node name="HUD" parent="CanvasLayer" unique_id=755517055 instance=ExtResource("2")]
+offset_left = 7.0
+offset_top = 8.0
+offset_right = 7.0
+offset_bottom = 48.0
+grow_vertical = 1

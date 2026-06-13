@@ -5,7 +5,7 @@ var current_index: int = 0
 var summary_data: Dictionary = {}
 
 @onready var board: Control = $HBox/Board
-@onready var _portrait_rect: TextureRect = $HBox/CustomerPanel/PortraitRect
+@onready var _portrait_rect: TextureRect = $HBox/CustomerPanel/PortraitWrapper/PortraitRect
 @onready var _customer_label: Label = $HBox/CustomerPanel/CustomerLabel
 @onready var _remaining_label: Label = $HBox/CustomerPanel/RemainingLabel
 @onready var _orders_container: VBoxContainer = $HBox/CustomerPanel/OrdersContainer
@@ -46,13 +46,12 @@ func _ready() -> void:
 
 func _build_crate_buttons() -> void:
 	var crate_ids: Array[String] = RecipeResolver.get_all_crate_ids()
+	var crate_scene: PackedScene = load("res://shop/crate_button.tscn")
 	for crate_id in crate_ids:
 		var crate_data: Dictionary = RecipeResolver.get_crate_data(crate_id)
-		var btn := Button.new()
+		var btn: Button = crate_scene.instantiate()
 		var cost: int = int(crate_data.get("cost", 0) * GameManager.get_crate_discount())
 		btn.text = "%s (%dg)" % [crate_data.get("name", crate_id), cost]
-		btn.custom_minimum_size = Vector2(0, 48)
-		btn.add_theme_font_size_override("font_size", 18)
 		btn.pressed.connect(try_buy_crate.bind(crate_id))
 		_crate_panel.add_child(btn)
 

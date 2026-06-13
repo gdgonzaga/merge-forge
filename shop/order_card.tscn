@@ -1,33 +1,31 @@
-[gd_scene load_steps=2 format=3 uid="uid://b6ce10w27m7uq"]
+[gd_scene format=3 uid="uid://b6ce10w27m7uq"]
 
-[ext_resource type="Script" path="res://shop/order_card.gd" id="1"]
+[ext_resource type="Script" uid="uid://dmqurb2pqexoj" path="res://shop/order_card.gd" id="1"]
+[ext_resource type="Texture2D" uid="uid://bc87wv4831t5y" path="res://resources/sprites/ui/card_bg.png" id="2_a5cp4"]
 
-[node name="OrderCard" type="PanelContainer"]
+[node name="OrderCard" type="PanelContainer" unique_id=1243468917]
 custom_minimum_size = Vector2(0, 56)
 script = ExtResource("1")
 
-[node name="HBox" type="HBoxContainer" parent="."]
+[node name="BG" type="TextureRect" parent="." unique_id=1454175447]
 layout_mode = 2
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
+texture = ExtResource("2_a5cp4")
+
+[node name="HBox" type="HBoxContainer" parent="." unique_id=1901261135]
+layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="Icon" type="TextureRect" parent="HBox"]
+[node name="Icon" type="TextureRect" parent="HBox" unique_id=948392898]
 custom_minimum_size = Vector2(48, 48)
 layout_mode = 2
+size_flags_vertical = 4
 stretch_mode = 5
-size_flags_vertical = 4
 
-[node name="QtyLabel" type="Label" parent="HBox"]
+[node name="QtyLabel" type="Label" parent="HBox" unique_id=617014729]
 layout_mode = 2
 theme_override_font_sizes/font_size = 20
-size_flags_vertical = 4
 
-[node name="RewardLabel" type="Label" parent="HBox"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 20
-size_flags_vertical = 4
+[node name="RewardLabel" type="Label" parent="HBox" unique_id=1199821408]
 modulate = Color(1, 0.84, 0, 1)
+layout_mode = 2
+theme_override_font_sizes/font_size = 20

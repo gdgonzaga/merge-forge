@@ -105,7 +105,7 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 22
 theme_override_styles/normal = ExtResource("4_rff1c")
 theme_override_styles/pressed = ExtResource("5_qgtw2")
-theme_override_styles/hover = ExtResource("4_lnvqs")
+theme_override_styles/hover = ExtResource("4_rff1c")
 theme_override_styles/disabled = ExtResource("7_4ueio")
 text = "Quit to Menu"
 
@@ -130,7 +130,7 @@ theme_override_styles/disabled = ExtResource("7_qgtw2")
 disabled = true
 text = "Enter Dungeon"
 
-[node name="DebugBtn" type="Button" parent="VBox/BtnBox" unique_id=504126693]
+[node name="DebugBtn" type="Button" parent="VBox" unique_id=504126693]
 custom_minimum_size = Vector2(200, 50)
 layout_mode = 2
 theme_override_font_sizes/font_size = 16

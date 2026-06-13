@@ -19,7 +19,7 @@ func _ready() -> void:
 	$VBox/BtnBox/QuitBtn.pressed.connect(EventBus.prep_quit_to_menu.emit)
 	$VBox/BtnBox/SessionBtn.pressed.connect(EventBus.prep_start_session.emit)
 	dungeon_btn.pressed.connect(EventBus.prep_enter_dungeon.emit)
-	$VBox/BtnBox/DebugBtn.pressed.connect(_debug_unlock_all)
+	$VBox/DebugBtn.pressed.connect(_debug_unlock_all)
 	GameManager.gold_changed.connect(func(_v): if is_instance_valid(self): _refresh_all())
 	GameManager.blueprint_added.connect(func(_v): if is_instance_valid(self): _refresh_blueprints())
 	GameManager.upgrade_added.connect(func(_v): if is_instance_valid(self): _refresh_upgrades())

@@ -1,31 +1,46 @@
-[gd_scene load_steps=2 format=3 uid="uid://corehud001"]
+[gd_scene format=3 uid="uid://corehud001"]
 
-[ext_resource type="Script" path="res://core/hud.gd" id="1"]
+[ext_resource type="Script" uid="uid://brc1jtn48qdgl" path="res://core/hud.gd" id="1"]
+[ext_resource type="Texture2D" uid="uid://5mc4bc3smh88" path="res://resources/sprites/ui/hud_bg.png" id="2"]
 
-[node name="HUD" type="Control"]
+[node name="HUD" type="Control" unique_id=2046297985]
 layout_mode = 3
-anchors_preset = 15
+anchors_preset = 10
 anchor_right = 1.0
-anchor_bottom = 0.0
 offset_bottom = 40.0
+grow_horizontal = 2
+grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("1")
 
-[node name="HBox" type="HBoxContainer" parent="."]
+[node name="Bg" type="TextureRect" parent="." unique_id=456547117]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 107.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("2")
+
+[node name="HBox" type="HBoxContainer" parent="." unique_id=1500960626]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
-anchor_bottom = 0.0
-offset_bottom = 40.0
+anchor_bottom = 1.0
+offset_left = 41.0
+offset_right = -59.0
+offset_bottom = 51.0
 grow_horizontal = 2
+grow_vertical = 2
 theme_override_constants/separation = 24
 
-[node name="GoldLabel" type="Label" parent="HBox"]
+[node name="GoldLabel" type="Label" parent="HBox" unique_id=1780255889]
 layout_mode = 2
 theme_override_font_sizes/font_size = 24
-mouse_filter = 2
+text = "Gold: 200"
 
-[node name="RepLabel" type="Label" parent="HBox"]
+[node name="RepLabel" type="Label" parent="HBox" unique_id=759419846]
 layout_mode = 2
 theme_override_font_sizes/font_size = 24
-mouse_filter = 2
+text = "Rep: 500"

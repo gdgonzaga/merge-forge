@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" uid="uid://c0tjks1t5i6f1" path="res://board/merge_board.gd" id="1"]
 [ext_resource type="Script" uid="uid://2bhy5307p5im" path="res://board/board_grid.gd" id="2"]
+[ext_resource type="Texture2D" uid="uid://2gbrb6kkjdl7" path="res://resources/sprites/ui/staging_bg.png" id="3"]
 
 [node name="MergeBoard" type="Control" unique_id=1408714038]
 layout_mode = 3
@@ -43,9 +44,29 @@ theme_override_constants/v_separation = 12
 columns = 5
 script = ExtResource("2")
 
-[node name="StagingArea" type="HBoxContainer" parent="VBox" unique_id=1984120953]
+[node name="StagingWrapper" type="Control" parent="VBox" unique_id=1984120953]
 custom_minimum_size = Vector2(0, 180)
 layout_mode = 2
+size_flags_vertical = 2
+
+[node name="StagingBg" type="TextureRect" parent="VBox/StagingWrapper" unique_id=1709171760]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("3")
+stretch_mode = 1
+
+[node name="StagingArea" type="HBoxContainer" parent="VBox/StagingWrapper" unique_id=1023408357]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 alignment = 1
 
 [node name="BottomPadding" type="Control" parent="VBox" unique_id=1997912867]

@@ -1,8 +1,17 @@
-[gd_scene load_steps=2 format=3 uid="uid://cmg5popup001"]
+[gd_scene load_steps=3 format=3 uid="uid://cmg5popup001"]
 
 [ext_resource type="Script" path="res://board/merge_choice_popup.gd" id="1"]
+[ext_resource type="Texture2D" path="res://resources/sprites/ui/popup_frame.png" id="2"]
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_1"]
+texture = ExtResource("2")
+texture_margin_left = 8.0
+texture_margin_right = 8.0
+texture_margin_top = 8.0
+texture_margin_bottom = 8.0
 
 [node name="MergeChoicePopup" type="PopupPanel"]
+theme_override_styles/panel = SubResource("StyleBoxTexture_1")
 script = ExtResource("1")
 
 [node name="Margin" type="MarginContainer" parent="."]

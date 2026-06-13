@@ -7,7 +7,7 @@ var grid_pos: Vector2i = Vector2i(-1, -1)
 var item: Dictionary = {}
 
 @onready var _icon: TextureRect = $Icon
-@onready var _bg: ColorRect = $BG
+@onready var _bg: TextureRect = $BG
 
 
 func set_item(item_data: Dictionary) -> void:
@@ -34,10 +34,10 @@ func get_icon_texture() -> Texture2D:
 
 func flash() -> void:
 	if _bg:
-		var orig := _bg.color
-		_bg.color = Color(0.9, 0.85, 0.3)
+		var orig := _bg.modulate
+		_bg.modulate = Color(0.9, 0.85, 0.3)
 		var tween := create_tween()
-		tween.tween_property(_bg, "color", orig, 0.35)
+		tween.tween_property(_bg, "modulate", orig, 0.35)
 
 
 func _apply_icon() -> void:

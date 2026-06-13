@@ -4,9 +4,18 @@
 [ext_resource type="StyleBox" uid="uid://di32cxyt2hjgl" path="res://resources/themes/button_secondary.tres" id="2_14d8o"]
 [ext_resource type="StyleBox" uid="uid://b1x10x6pumhm0" path="res://resources/themes/button_secondary_pressed.tres" id="3_oj52l"]
 [ext_resource type="StyleBox" uid="uid://c3ogmo02ytwex" path="res://resources/themes/button_secondary_disabled.tres" id="4_ssa0q"]
+[ext_resource type="Texture2D" uid="uid://bc87wv4831t5y" path="res://resources/sprites/ui/card_bg.png" id="6"]
 
-[node name="PurchaseCard" type="PanelContainer" unique_id=1668769984]
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_1"]
+texture = ExtResource("6")
+texture_margin_left = 6.0
+texture_margin_top = 6.0
+texture_margin_right = 6.0
+texture_margin_bottom = 6.0
+
+[node name="PurchaseCard" type="PanelContainer" unique_id=1668760994]
 custom_minimum_size = Vector2(0, 64)
+theme_override_styles/panel = SubResource("StyleBoxTexture_1")
 script = ExtResource("1")
 
 [node name="HBox" type="HBoxContainer" parent="." unique_id=602285058]

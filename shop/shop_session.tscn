@@ -7,6 +7,7 @@
 [ext_resource type="StyleBox" uid="uid://di32cxyt2hjgl" path="res://resources/themes/button_secondary.tres" id="4_ejofy"]
 [ext_resource type="StyleBox" uid="uid://b1x10x6pumhm0" path="res://resources/themes/button_secondary_pressed.tres" id="6_dx3v4"]
 [ext_resource type="StyleBox" uid="uid://c3ogmo02ytwex" path="res://resources/themes/button_secondary_disabled.tres" id="7_i88hj"]
+[ext_resource type="Texture2D" uid="uid://c0n2jp78c8wre" path="res://resources/sprites/ui/portrait_frame.png" id="8"]
 
 [node name="ShopSession" type="Control" unique_id=1357257345]
 layout_mode = 3
@@ -40,10 +41,29 @@ custom_minimum_size = Vector2(220, 0)
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="PortraitRect" type="TextureRect" parent="HBox/CustomerPanel" unique_id=1333542745]
+[node name="PortraitWrapper" type="Control" parent="HBox/CustomerPanel" unique_id=1333542745]
 custom_minimum_size = Vector2(200, 200)
 layout_mode = 2
 size_flags_horizontal = 4
+
+[node name="PortraitRect" type="TextureRect" parent="HBox/CustomerPanel/PortraitWrapper" unique_id=165322922]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+stretch_mode = 5
+
+[node name="Frame" type="TextureRect" parent="HBox/CustomerPanel/PortraitWrapper" unique_id=505814572]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("8")
 stretch_mode = 5
 
 [node name="CustomerLabel" type="Label" parent="HBox/CustomerPanel" unique_id=1691537115]
