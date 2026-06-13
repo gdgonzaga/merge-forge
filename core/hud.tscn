@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" uid="uid://brc1jtn48qdgl" path="res://core/hud.gd" id="1"]
 [ext_resource type="Texture2D" uid="uid://5mc4bc3smh88" path="res://resources/sprites/ui/hud_bg.png" id="2"]
+[ext_resource type="FontFile" path="res://resources/fonts/RobotoCondensed-VariableFont_wght.ttf" id="3_font"]
 
 [node name="HUD" type="Control" unique_id=2046297985]
 layout_mode = 3
@@ -37,10 +38,12 @@ theme_override_constants/separation = 24
 
 [node name="GoldLabel" type="Label" parent="HBox" unique_id=1780255889]
 layout_mode = 2
+theme_override_fonts/font = ExtResource("3_font")
 theme_override_font_sizes/font_size = 24
 text = "Gold: 200"
 
 [node name="RepLabel" type="Label" parent="HBox" unique_id=759419846]
 layout_mode = 2
+theme_override_fonts/font = ExtResource("3_font")
 theme_override_font_sizes/font_size = 24
 text = "Rep: 500"

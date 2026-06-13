@@ -1,7 +1,8 @@
-[gd_scene load_steps=3 format=3 uid="uid://v0mmjm7vvs1e"]
+[gd_scene load_steps=4 format=3 uid="uid://v0mmjm7vvs1e"]
 
 [ext_resource type="Script" path="res://dungeon/party_member.gd" id="1"]
 [ext_resource type="PackedScene" path="res://dungeon/combat_unit.tscn" id="2"]
+[ext_resource type="FontFile" path="res://resources/fonts/RobotoCondensed-VariableFont_wght.ttf" id="3_font"]
 
 [node name="PartyMember" type="PanelContainer"]
 custom_minimum_size = Vector2(100, 110)
@@ -15,5 +16,6 @@ layout_mode = 2
 
 [node name="BuffLabel" type="Label" parent="VBox"]
 layout_mode = 2
+theme_override_fonts/font = ExtResource("3_font")
 theme_override_font_sizes/font_size = 12
 horizontal_alignment = 1

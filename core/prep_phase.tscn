@@ -9,6 +9,8 @@
 [ext_resource type="StyleBox" uid="uid://b1x10x6pumhm0" path="res://resources/themes/button_secondary_pressed.tres" id="5_qgtw2"]
 [ext_resource type="StyleBox" uid="uid://c3ogmo02ytwex" path="res://resources/themes/button_secondary_disabled.tres" id="7_4ueio"]
 [ext_resource type="StyleBox" uid="uid://d13ojkcc4ssv4" path="res://resources/themes/button_disabled.tres" id="7_qgtw2"]
+[ext_resource type="FontFile" path="res://resources/fonts/MedievalSharp-Regular.ttf" id="8_font"]
+[ext_resource type="FontFile" path="res://resources/fonts/RobotoCondensed-VariableFont_wght.ttf" id="9_font"]
 
 [node name="PrepPhase" type="Control" unique_id=504126686]
 layout_mode = 3
@@ -40,6 +42,7 @@ theme_override_constants/separation = 12
 
 [node name="Title" type="Label" parent="VBox" unique_id=1976017540]
 layout_mode = 2
+theme_override_fonts/font = ExtResource("8_font")
 theme_override_font_sizes/font_size = 36
 text = "Prep Phase"
 horizontal_alignment = 1
@@ -102,6 +105,7 @@ alignment = 1
 [node name="QuitBtn" type="Button" parent="VBox/BtnBox" unique_id=504126690]
 custom_minimum_size = Vector2(200, 70)
 layout_mode = 2
+theme_override_fonts/font = ExtResource("9_font")
 theme_override_font_sizes/font_size = 22
 theme_override_styles/normal = ExtResource("4_rff1c")
 theme_override_styles/pressed = ExtResource("5_qgtw2")
@@ -112,6 +116,7 @@ text = "Quit to Menu"
 [node name="SessionBtn" type="Button" parent="VBox/BtnBox" unique_id=504126691]
 custom_minimum_size = Vector2(200, 70)
 layout_mode = 2
+theme_override_fonts/font = ExtResource("9_font")
 theme_override_font_sizes/font_size = 22
 theme_override_styles/normal = ExtResource("4_lnvqs")
 theme_override_styles/pressed = ExtResource("5_j1ycp")
@@ -122,6 +127,7 @@ text = "Start Session"
 [node name="DungeonBtn" type="Button" parent="VBox/BtnBox" unique_id=504126692]
 custom_minimum_size = Vector2(250, 70)
 layout_mode = 2
+theme_override_fonts/font = ExtResource("9_font")
 theme_override_font_sizes/font_size = 22
 theme_override_styles/normal = ExtResource("4_lnvqs")
 theme_override_styles/pressed = ExtResource("5_j1ycp")
@@ -133,6 +139,7 @@ text = "Enter Dungeon"
 [node name="DebugBtn" type="Button" parent="VBox" unique_id=504126693]
 custom_minimum_size = Vector2(200, 50)
 layout_mode = 2
+theme_override_fonts/font = ExtResource("9_font")
 theme_override_font_sizes/font_size = 16
 theme_override_styles/normal = ExtResource("4_rff1c")
 theme_override_styles/pressed = ExtResource("5_qgtw2")

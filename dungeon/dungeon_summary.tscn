@@ -5,6 +5,8 @@
 [ext_resource type="StyleBox" uid="uid://b6pmxlfy8xrn2" path="res://resources/themes/button_main.tres" id="3_pudtw"]
 [ext_resource type="StyleBox" uid="uid://b66un13e0502r" path="res://resources/themes/button_pressed.tres" id="3_uocvm"]
 [ext_resource type="StyleBox" uid="uid://d13ojkcc4ssv4" path="res://resources/themes/button_disabled.tres" id="5_6kn8q"]
+[ext_resource type="FontFile" path="res://resources/fonts/MedievalSharp-Regular.ttf" id="6_font"]
+[ext_resource type="FontFile" path="res://resources/fonts/RobotoCondensed-VariableFont_wght.ttf" id="7_font"]
 
 [node name="DungeonSummary" type="Control" unique_id=1460587252]
 layout_mode = 3
@@ -40,22 +42,26 @@ size_flags_vertical = 3
 
 [node name="TitleLabel" type="Label" parent="VBox" unique_id=134582271]
 layout_mode = 2
+theme_override_fonts/font = ExtResource("6_font")
 theme_override_font_sizes/font_size = 40
 horizontal_alignment = 1
 
 [node name="GoldLabel" type="Label" parent="VBox" unique_id=456966429]
 modulate = Color(1, 0.84, 0, 1)
 layout_mode = 2
+theme_override_fonts/font = ExtResource("7_font")
 theme_override_font_sizes/font_size = 28
 horizontal_alignment = 1
 
 [node name="RepLabel" type="Label" parent="VBox" unique_id=1230145895]
 layout_mode = 2
+theme_override_fonts/font = ExtResource("7_font")
 theme_override_font_sizes/font_size = 28
 horizontal_alignment = 1
 
 [node name="BpLabel" type="Label" parent="VBox" unique_id=1499032464]
 layout_mode = 2
+theme_override_fonts/font = ExtResource("7_font")
 theme_override_font_sizes/font_size = 24
 horizontal_alignment = 1
 
@@ -67,6 +73,7 @@ layout_mode = 2
 custom_minimum_size = Vector2(400, 80)
 layout_mode = 2
 size_flags_horizontal = 4
+theme_override_fonts/font = ExtResource("7_font")
 theme_override_font_sizes/font_size = 28
 theme_override_styles/normal = ExtResource("3_uocvm")
 theme_override_styles/pressed = ExtResource("3_uocvm")

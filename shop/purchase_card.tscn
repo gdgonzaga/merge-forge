@@ -5,6 +5,7 @@
 [ext_resource type="StyleBox" uid="uid://b1x10x6pumhm0" path="res://resources/themes/button_secondary_pressed.tres" id="3_oj52l"]
 [ext_resource type="StyleBox" uid="uid://c3ogmo02ytwex" path="res://resources/themes/button_secondary_disabled.tres" id="4_ssa0q"]
 [ext_resource type="Texture2D" uid="uid://bc87wv4831t5y" path="res://resources/sprites/ui/card_bg.png" id="6"]
+[ext_resource type="FontFile" path="res://resources/fonts/RobotoCondensed-VariableFont_wght.ttf" id="7_font"]
 
 [sub_resource type="StyleBoxTexture" id="StyleBoxTexture_1"]
 texture = ExtResource("6")
@@ -29,17 +30,20 @@ theme_override_constants/separation = 2
 
 [node name="NameLabel" type="Label" parent="HBox/Info" unique_id=2002442811]
 layout_mode = 2
+theme_override_fonts/font = ExtResource("7_font")
 theme_override_font_sizes/font_size = 18
 
 [node name="DescLabel" type="Label" parent="HBox/Info" unique_id=747322547]
 visible = false
 modulate = Color(0.7, 0.7, 0.7, 1)
 layout_mode = 2
+theme_override_fonts/font = ExtResource("7_font")
 theme_override_font_sizes/font_size = 14
 
 [node name="BuyBtn" type="Button" parent="HBox" unique_id=2001611419]
 custom_minimum_size = Vector2(100, 40)
 layout_mode = 2
+theme_override_fonts/font = ExtResource("7_font")
 theme_override_font_sizes/font_size = 16
 theme_override_styles/normal = ExtResource("2_14d8o")
 theme_override_styles/pressed = ExtResource("3_oj52l")

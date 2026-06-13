@@ -26,6 +26,7 @@ custom_minimum_size = Vector2(0, 120)
 layout_mode = 2
 
 [node name="BoardArea" type="Control" parent="VBox" unique_id=630063082]
+custom_minimum_size = Vector2(0, 900)
 layout_mode = 2
 size_flags_vertical = 3
 
@@ -45,7 +46,7 @@ columns = 5
 script = ExtResource("2")
 
 [node name="StagingWrapper" type="Control" parent="VBox" unique_id=1984120953]
-custom_minimum_size = Vector2(0, 180)
+custom_minimum_size = Vector2(0, 200)
 layout_mode = 2
 size_flags_vertical = 2
 
@@ -58,9 +59,8 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 texture = ExtResource("3")
-stretch_mode = 1
 
-[node name="StagingArea" type="HBoxContainer" parent="VBox/StagingWrapper" unique_id=1023408357]
+[node name="StagingArea" type="FlowContainer" parent="VBox/StagingWrapper" unique_id=1145141524]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0

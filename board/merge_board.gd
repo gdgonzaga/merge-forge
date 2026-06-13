@@ -9,7 +9,7 @@ const MOVE_ARC_HEIGHT: float = -40.0
 var _board: Control
 var _detector: RefCounted
 var _resolver: RefCounted
-var _staging_container: HBoxContainer
+var _staging_container: FlowContainer
 var _popup: PopupPanel
 var _choice_callback: Callable
 var _anim_overlay: Control
@@ -17,7 +17,7 @@ var _anim_overlay: Control
 
 func _ready() -> void:
 	_board = find_child("BoardGrid", true, false) as Control
-	_staging_container = find_child("StagingArea", true, false) as HBoxContainer
+	_staging_container = find_child("StagingArea", true, false) as FlowContainer
 	_anim_overlay = find_child("AnimOverlay", true, false) as Control
 	_detector = load("res://board/merge_detector.gd").new()
 	_resolver = load("res://board/merge_resolver.gd").new()
@@ -185,6 +185,7 @@ func show_gold_text(amount: int, grid_pos: Vector2i) -> void:
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	label.add_theme_color_override("font_color", Color(1, 0.99, 0, 1))
+	label.add_theme_font_override("font", load("res://resources/fonts/RobotoCondensed-VariableFont_wght.ttf"))
 	label.add_theme_font_size_override("font_size", 32)
 	label.position = cell_center - Vector2(40, 16)
 	label.size = Vector2(80, 32)
@@ -274,7 +275,7 @@ func get_board_grid() -> Control:
 	return _board
 
 
-func get_staging_area() -> HBoxContainer:
+func get_staging_area() -> FlowContainer:
 	return _staging_container
 
 

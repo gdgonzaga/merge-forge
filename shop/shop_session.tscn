@@ -8,6 +8,8 @@
 [ext_resource type="StyleBox" uid="uid://b1x10x6pumhm0" path="res://resources/themes/button_secondary_pressed.tres" id="6_dx3v4"]
 [ext_resource type="StyleBox" uid="uid://c3ogmo02ytwex" path="res://resources/themes/button_secondary_disabled.tres" id="7_i88hj"]
 [ext_resource type="Texture2D" uid="uid://c0n2jp78c8wre" path="res://resources/sprites/ui/portrait_frame.png" id="8"]
+[ext_resource type="FontFile" path="res://resources/fonts/MedievalSharp-Regular.ttf" id="9_font"]
+[ext_resource type="FontFile" path="res://resources/fonts/RobotoCondensed-VariableFont_wght.ttf" id="10_font"]
 
 [node name="ShopSession" type="Control" unique_id=1357257345]
 layout_mode = 3
@@ -28,7 +30,7 @@ mouse_filter = 2
 texture = ExtResource("4")
 stretch_mode = 1
 
-[node name="HBox" type="HBoxContainer" parent="." unique_id=2142551238]
+[node name="VBox" type="VBoxContainer" parent="." unique_id=1300015378]
 layout_mode = 0
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -36,17 +38,27 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/separation = 8
 
-[node name="CustomerPanel" type="VBoxContainer" parent="HBox" unique_id=1428464145]
-custom_minimum_size = Vector2(220, 0)
+[node name="RemainingLabel" type="Label" parent="VBox" unique_id=861883749]
+modulate = Color(0.7, 0.7, 0.7, 1)
+layout_mode = 2
+theme_override_fonts/font = ExtResource("10_font")
+theme_override_font_sizes/font_size = 16
+horizontal_alignment = 1
+
+[node name="Customers" type="HBoxContainer" parent="VBox" unique_id=1990268841]
+layout_mode = 2
+
+[node name="CurrentCustomer" type="VBoxContainer" parent="VBox/Customers" unique_id=1428464145]
+custom_minimum_size = Vector2(200, 0)
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="PortraitWrapper" type="Control" parent="HBox/CustomerPanel" unique_id=1333542745]
+[node name="PortraitWrapper" type="Control" parent="VBox/Customers/CurrentCustomer" unique_id=1333542745]
 custom_minimum_size = Vector2(200, 200)
 layout_mode = 2
 size_flags_horizontal = 4
 
-[node name="PortraitRect" type="TextureRect" parent="HBox/CustomerPanel/PortraitWrapper" unique_id=165322922]
+[node name="PortraitRect" type="TextureRect" parent="VBox/Customers/CurrentCustomer/PortraitWrapper" unique_id=165322922]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -55,7 +67,7 @@ grow_horizontal = 2
 grow_vertical = 2
 stretch_mode = 5
 
-[node name="Frame" type="TextureRect" parent="HBox/CustomerPanel/PortraitWrapper" unique_id=505814572]
+[node name="Frame" type="TextureRect" parent="VBox/Customers/CurrentCustomer/PortraitWrapper" unique_id=505814572]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -66,28 +78,35 @@ mouse_filter = 2
 texture = ExtResource("8")
 stretch_mode = 5
 
-[node name="CustomerLabel" type="Label" parent="HBox/CustomerPanel" unique_id=1691537115]
+[node name="CustomerLabel" type="Label" parent="VBox/Customers/CurrentCustomer" unique_id=1691537115]
 layout_mode = 2
+theme_override_fonts/font = ExtResource("9_font")
 theme_override_font_sizes/font_size = 20
 horizontal_alignment = 1
 
-[node name="RemainingLabel" type="Label" parent="HBox/CustomerPanel" unique_id=861883749]
-modulate = Color(0.7, 0.7, 0.7, 1)
+[node name="PendingCustomers" type="HBoxContainer" parent="VBox/Customers" unique_id=104329742]
 layout_mode = 2
-theme_override_font_sizes/font_size = 16
-horizontal_alignment = 1
 
-[node name="OrdersContainer" type="VBoxContainer" parent="HBox/CustomerPanel" unique_id=294954518]
+[node name="ActionPanel" type="HBoxContainer" parent="VBox" unique_id=207361756]
+layout_mode = 2
+
+[node name="OrderActionsContainer" type="VBoxContainer" parent="VBox/ActionPanel" unique_id=294954518]
+custom_minimum_size = Vector2(200, 300)
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 8
 
-[node name="PlaceholderOrder" parent="HBox/CustomerPanel/OrdersContainer" unique_id=1522279436 instance=ExtResource("3")]
+[node name="OrdersContainer" type="VBoxContainer" parent="VBox/ActionPanel/OrderActionsContainer" unique_id=1695507748]
 layout_mode = 2
 
-[node name="RejectBtn" type="Button" parent="HBox/CustomerPanel" unique_id=442038755]
+[node name="PlaceholderOrder" parent="VBox/ActionPanel/OrderActionsContainer/OrdersContainer" unique_id=1522279436 instance=ExtResource("3")]
+layout_mode = 2
+
+[node name="RejectBtn" type="Button" parent="VBox/ActionPanel/OrderActionsContainer" unique_id=442038755]
 custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
+size_flags_vertical = 10
+theme_override_fonts/font = ExtResource("10_font")
 theme_override_font_sizes/font_size = 18
 theme_override_styles/normal = ExtResource("4_ejofy")
 theme_override_styles/pressed = ExtResource("6_dx3v4")
@@ -95,25 +114,31 @@ theme_override_styles/hover = ExtResource("4_ejofy")
 theme_override_styles/disabled = ExtResource("7_i88hj")
 text = "Reject (-2 rep)"
 
-[node name="Board" parent="HBox" unique_id=1655393418 instance=ExtResource("2")]
+[node name="Spacer" type="MarginContainer" parent="VBox/ActionPanel" unique_id=315524547]
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+
+[node name="CratePanel" type="VBoxContainer" parent="VBox/ActionPanel" unique_id=738479336]
+custom_minimum_size = Vector2(220, 0)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
-[node name="CratePanel" type="VBoxContainer" parent="HBox" unique_id=738479336]
-custom_minimum_size = Vector2(220, 0)
+[node name="CrateTitle" type="Label" parent="VBox/ActionPanel/CratePanel" unique_id=1966974740]
 layout_mode = 2
-size_flags_vertical = 3
-
-[node name="CrateTitle" type="Label" parent="HBox/CratePanel" unique_id=1966974740]
-layout_mode = 2
+theme_override_fonts/font = ExtResource("9_font")
 theme_override_font_sizes/font_size = 20
 text = "Crates"
 horizontal_alignment = 1
 
-[node name="PlaceholderCrateBtn" type="Button" parent="HBox/CratePanel" unique_id=918583246]
+[node name="CrateButtonsPanel" type="FlowContainer" parent="VBox/ActionPanel/CratePanel" unique_id=175910324]
+layout_mode = 2
+
+[node name="PlaceholderCrateBtn" type="Button" parent="VBox/ActionPanel/CratePanel/CrateButtonsPanel" unique_id=918583246]
 custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
+size_flags_horizontal = 3
+theme_override_fonts/font = ExtResource("10_font")
 theme_override_font_sizes/font_size = 18
 theme_override_styles/normal = ExtResource("4_ejofy")
 theme_override_styles/pressed = ExtResource("6_dx3v4")
@@ -121,12 +146,19 @@ theme_override_styles/hover = ExtResource("4_ejofy")
 theme_override_styles/disabled = ExtResource("7_i88hj")
 text = "Herb Crate (10g)"
 
-[node name="PlaceholderCrateBtn2" type="Button" parent="HBox/CratePanel" unique_id=1658734681]
+[node name="PlaceholderCrateBtn2" type="Button" parent="VBox/ActionPanel/CratePanel/CrateButtonsPanel" unique_id=1658734681]
 custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
+size_flags_horizontal = 3
+theme_override_fonts/font = ExtResource("10_font")
 theme_override_font_sizes/font_size = 18
 theme_override_styles/normal = ExtResource("4_ejofy")
 theme_override_styles/pressed = ExtResource("6_dx3v4")
 theme_override_styles/hover = ExtResource("4_ejofy")
 theme_override_styles/disabled = ExtResource("7_i88hj")
 text = "Metal Crate (20g)"
+
+[node name="Board" parent="VBox" unique_id=1655393418 instance=ExtResource("2")]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3

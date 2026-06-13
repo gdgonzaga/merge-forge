@@ -1,9 +1,10 @@
-[gd_scene load_steps=5 format=3 uid="uid://dungeonrun001"]
+[gd_scene load_steps=6 format=3 uid="uid://dungeonrun001"]
 
 [ext_resource type="Script" path="res://dungeon/dungeon_controller.gd" id="1"]
 [ext_resource type="PackedScene" path="res://board/merge_board.tscn" id="2"]
 [ext_resource type="PackedScene" path="res://dungeon/party_member.tscn" id="3"]
 [ext_resource type="Texture2D" path="res://resources/sprites/backgrounds/bg_dungeon_run.png" id="4"]
+[ext_resource type="FontFile" path="res://resources/fonts/RobotoCondensed-VariableFont_wght.ttf" id="5_font"]
 
 [node name="DungeonRun" type="Control"]
 layout_mode = 3
@@ -43,6 +44,7 @@ size_flags_horizontal = 3
 
 [node name="EncounterLabel" type="Label" parent="VBox/TopBar"]
 layout_mode = 2
+theme_override_fonts/font = ExtResource("5_font")
 theme_override_font_sizes/font_size = 18
 text = "Walking..."
 

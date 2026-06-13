@@ -4,13 +4,14 @@ var customers: Array[Dictionary] = []
 var current_index: int = 0
 var summary_data: Dictionary = {}
 
-@onready var board: Control = $HBox/Board
-@onready var _portrait_rect: TextureRect = $HBox/CustomerPanel/PortraitWrapper/PortraitRect
-@onready var _customer_label: Label = $HBox/CustomerPanel/CustomerLabel
-@onready var _remaining_label: Label = $HBox/CustomerPanel/RemainingLabel
-@onready var _orders_container: VBoxContainer = $HBox/CustomerPanel/OrdersContainer
-@onready var _crate_panel: VBoxContainer = $HBox/CratePanel
-@onready var _reject_btn: Button = $HBox/CustomerPanel/RejectBtn
+@onready var board: Control = $VBox/Board
+@onready var _portrait_rect: TextureRect = $VBox/Customers/CurrentCustomer/PortraitWrapper/PortraitRect
+@onready var _customer_label: Label = $VBox/Customers/CurrentCustomer/CustomerLabel
+@onready var _remaining_label: Label = $VBox/RemainingLabel
+@onready var _orders_container: VBoxContainer = $VBox/ActionPanel/OrderActionsContainer/OrdersContainer
+@onready var _crate_panel: VBoxContainer = $VBox/ActionPanel/CratePanel
+@onready var _crate_buttons: FlowContainer = $VBox/ActionPanel/CratePanel/CrateButtonsPanel
+@onready var _reject_btn: Button = $VBox/ActionPanel/OrderActionsContainer/RejectBtn
 
 
 func _ready() -> void:
@@ -28,10 +29,11 @@ func _ready() -> void:
 	AudioManager.play_sfx("session_start")
 
 	for child in _orders_container.get_children():
+		if child == _reject_btn:
+			continue
 		child.queue_free()
-	for child in _crate_panel.get_children():
-		if child is Button:
-			child.queue_free()
+	for child in _crate_buttons.get_children():
+		child.queue_free()
 
 	board.setup({})
 	if not GameManager.shop_board_state.is_empty():
@@ -53,7 +55,7 @@ func _build_crate_buttons() -> void:
 		var cost: int = int(crate_data.get("cost", 0) * GameManager.get_crate_discount())
 		btn.text = "%s (%dg)" % [crate_data.get("name", crate_id), cost]
 		btn.pressed.connect(try_buy_crate.bind(crate_id))
-		_crate_panel.add_child(btn)
+		_crate_buttons.add_child(btn)
 
 
 func advance_customer() -> void:
@@ -172,6 +174,8 @@ func _display_customer(customer: Dictionary) -> void:
 
 func _clear_orders() -> void:
 	for child in _orders_container.get_children():
+		if child == _reject_btn:
+			continue
 		child.queue_free()
 
 

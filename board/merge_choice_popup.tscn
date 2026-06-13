@@ -1,7 +1,8 @@
-[gd_scene load_steps=3 format=3 uid="uid://cmg5popup001"]
+[gd_scene load_steps=4 format=3 uid="uid://cmg5popup001"]
 
 [ext_resource type="Script" path="res://board/merge_choice_popup.gd" id="1"]
 [ext_resource type="Texture2D" path="res://resources/sprites/ui/popup_frame.png" id="2"]
+[ext_resource type="FontFile" path="res://resources/fonts/MedievalSharp-Regular.ttf" id="3_font"]
 
 [sub_resource type="StyleBoxTexture" id="StyleBoxTexture_1"]
 texture = ExtResource("2")
@@ -27,4 +28,5 @@ theme_override_constants/separation = 8
 custom_minimum_size = Vector2(240, 36)
 text = "Choose Merge Result"
 horizontal_alignment = 1
+theme_override_fonts/font = ExtResource("3_font")
 theme_override_font_sizes/font_size = 20

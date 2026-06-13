@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" uid="uid://dmqurb2pqexoj" path="res://shop/order_card.gd" id="1"]
 [ext_resource type="Texture2D" uid="uid://bc87wv4831t5y" path="res://resources/sprites/ui/card_bg.png" id="2_a5cp4"]
+[ext_resource type="FontFile" path="res://resources/fonts/RobotoCondensed-VariableFont_wght.ttf" id="3_font"]
 
 [node name="OrderCard" type="PanelContainer" unique_id=1243468917]
 custom_minimum_size = Vector2(0, 56)
@@ -23,9 +24,11 @@ stretch_mode = 5
 
 [node name="QtyLabel" type="Label" parent="HBox" unique_id=617014729]
 layout_mode = 2
+theme_override_fonts/font = ExtResource("3_font")
 theme_override_font_sizes/font_size = 20
 
 [node name="RewardLabel" type="Label" parent="HBox" unique_id=1199821408]
 modulate = Color(1, 0.84, 0, 1)
 layout_mode = 2
+theme_override_fonts/font = ExtResource("3_font")
 theme_override_font_sizes/font_size = 20
