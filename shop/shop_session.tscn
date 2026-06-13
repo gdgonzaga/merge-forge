@@ -8,8 +8,8 @@
 [ext_resource type="StyleBox" uid="uid://b1x10x6pumhm0" path="res://resources/themes/button_secondary_pressed.tres" id="6_dx3v4"]
 [ext_resource type="StyleBox" uid="uid://c3ogmo02ytwex" path="res://resources/themes/button_secondary_disabled.tres" id="7_i88hj"]
 [ext_resource type="Texture2D" uid="uid://c0n2jp78c8wre" path="res://resources/sprites/ui/portrait_frame.png" id="8"]
-[ext_resource type="FontFile" path="res://resources/fonts/MedievalSharp-Regular.ttf" id="9_font"]
-[ext_resource type="FontFile" path="res://resources/fonts/RobotoCondensed-VariableFont_wght.ttf" id="10_font"]
+[ext_resource type="FontFile" uid="uid://b6q6irvwv0uyg" path="res://resources/fonts/MedievalSharp-Regular.ttf" id="9_font"]
+[ext_resource type="FontFile" uid="uid://di5l3rf27vxbh" path="res://resources/fonts/RobotoCondensed-VariableFont_wght.ttf" id="10_font"]
 
 [node name="ShopSession" type="Control" unique_id=1357257345]
 layout_mode = 3
@@ -54,7 +54,7 @@ layout_mode = 2
 size_flags_vertical = 3
 
 [node name="PortraitWrapper" type="Control" parent="VBox/Customers/CurrentCustomer" unique_id=1333542745]
-custom_minimum_size = Vector2(200, 200)
+custom_minimum_size = Vector2(260, 260)
 layout_mode = 2
 size_flags_horizontal = 4
 
@@ -63,11 +63,16 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+offset_left = 30.0
+offset_top = 30.0
+offset_right = -30.0
+offset_bottom = -30.0
 grow_horizontal = 2
 grow_vertical = 2
 stretch_mode = 5
 
 [node name="Frame" type="TextureRect" parent="VBox/Customers/CurrentCustomer/PortraitWrapper" unique_id=505814572]
+custom_minimum_size = Vector2(260, 260)
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -91,7 +96,7 @@ layout_mode = 2
 layout_mode = 2
 
 [node name="OrderActionsContainer" type="VBoxContainer" parent="VBox/ActionPanel" unique_id=294954518]
-custom_minimum_size = Vector2(200, 300)
+custom_minimum_size = Vector2(260, 300)
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 8
