@@ -1,11 +1,14 @@
-[gd_scene load_steps=5 format=3 uid="uid://bbgj0rp7cbyro"]
+[gd_scene format=3 uid="uid://bbgj0rp7cbyro"]
 
-[ext_resource type="Script" path="res://shop/shop_session.gd" id="1"]
-[ext_resource type="PackedScene" path="res://board/merge_board.tscn" id="2"]
-[ext_resource type="PackedScene" path="res://shop/order_card.tscn" id="3"]
-[ext_resource type="Texture2D" path="res://resources/sprites/backgrounds/bg_shop_session.png" id="4"]
+[ext_resource type="Script" uid="uid://bcbwp2q3lao6" path="res://shop/shop_session.gd" id="1"]
+[ext_resource type="PackedScene" uid="uid://sjtl4wi2reqq" path="res://board/merge_board.tscn" id="2"]
+[ext_resource type="PackedScene" uid="uid://b6ce10w27m7uq" path="res://shop/order_card.tscn" id="3"]
+[ext_resource type="Texture2D" uid="uid://cj608ls2r7xt8" path="res://resources/sprites/backgrounds/bg_shop_session.png" id="4"]
+[ext_resource type="StyleBox" uid="uid://di32cxyt2hjgl" path="res://resources/themes/button_secondary.tres" id="4_ejofy"]
+[ext_resource type="StyleBox" uid="uid://b1x10x6pumhm0" path="res://resources/themes/button_secondary_pressed.tres" id="6_dx3v4"]
+[ext_resource type="StyleBox" uid="uid://c3ogmo02ytwex" path="res://resources/themes/button_secondary_disabled.tres" id="7_i88hj"]
 
-[node name="ShopSession" type="Control"]
+[node name="ShopSession" type="Control" unique_id=1357257345]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -14,84 +17,96 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1")
 
-[node name="BG" type="TextureRect" parent="."]
-anchors_preset = 15
+[node name="BG" type="TextureRect" parent="." unique_id=1055239668]
+layout_mode = 0
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 2
 texture = ExtResource("4")
 stretch_mode = 1
-mouse_filter = 2
 
-[node name="HBox" type="HBoxContainer" parent="."]
-anchors_preset = 15
+[node name="HBox" type="HBoxContainer" parent="." unique_id=2142551238]
+layout_mode = 0
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/separation = 8
 
-[node name="CustomerPanel" type="VBoxContainer" parent="HBox"]
+[node name="CustomerPanel" type="VBoxContainer" parent="HBox" unique_id=1428464145]
 custom_minimum_size = Vector2(220, 0)
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="PortraitRect" type="TextureRect" parent="HBox/CustomerPanel"]
+[node name="PortraitRect" type="TextureRect" parent="HBox/CustomerPanel" unique_id=1333542745]
 custom_minimum_size = Vector2(200, 200)
 layout_mode = 2
-stretch_mode = 5
 size_flags_horizontal = 4
+stretch_mode = 5
 
-[node name="CustomerLabel" type="Label" parent="HBox/CustomerPanel"]
+[node name="CustomerLabel" type="Label" parent="HBox/CustomerPanel" unique_id=1691537115]
 layout_mode = 2
-horizontal_alignment = 1
 theme_override_font_sizes/font_size = 20
-
-[node name="RemainingLabel" type="Label" parent="HBox/CustomerPanel"]
-layout_mode = 2
 horizontal_alignment = 1
-modulate = Color(0.7, 0.7, 0.7, 1)
-theme_override_font_sizes/font_size = 16
 
-[node name="OrdersContainer" type="VBoxContainer" parent="HBox/CustomerPanel"]
+[node name="RemainingLabel" type="Label" parent="HBox/CustomerPanel" unique_id=861883749]
+modulate = Color(0.7, 0.7, 0.7, 1)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+horizontal_alignment = 1
+
+[node name="OrdersContainer" type="VBoxContainer" parent="HBox/CustomerPanel" unique_id=294954518]
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 8
 
-[node name="PlaceholderOrder" parent="HBox/CustomerPanel/OrdersContainer" instance=ExtResource("3")]
+[node name="PlaceholderOrder" parent="HBox/CustomerPanel/OrdersContainer" unique_id=1522279436 instance=ExtResource("3")]
 layout_mode = 2
 
-[node name="RejectBtn" type="Button" parent="HBox/CustomerPanel"]
+[node name="RejectBtn" type="Button" parent="HBox/CustomerPanel" unique_id=442038755]
 custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
+theme_override_styles/normal = ExtResource("4_ejofy")
+theme_override_styles/pressed = ExtResource("6_dx3v4")
+theme_override_styles/hover = ExtResource("4_ejofy")
+theme_override_styles/disabled = ExtResource("7_i88hj")
 text = "Reject (-2 rep)"
 
-[node name="Board" parent="HBox" instance=ExtResource("2")]
+[node name="Board" parent="HBox" unique_id=1655393418 instance=ExtResource("2")]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
-[node name="CratePanel" type="VBoxContainer" parent="HBox"]
+[node name="CratePanel" type="VBoxContainer" parent="HBox" unique_id=738479336]
 custom_minimum_size = Vector2(220, 0)
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="CrateTitle" type="Label" parent="HBox/CratePanel"]
+[node name="CrateTitle" type="Label" parent="HBox/CratePanel" unique_id=1966974740]
 layout_mode = 2
-horizontal_alignment = 1
 theme_override_font_sizes/font_size = 20
 text = "Crates"
+horizontal_alignment = 1
 
-[node name="PlaceholderCrateBtn" type="Button" parent="HBox/CratePanel"]
+[node name="PlaceholderCrateBtn" type="Button" parent="HBox/CratePanel" unique_id=918583246]
 custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
+theme_override_styles/normal = ExtResource("4_ejofy")
+theme_override_styles/pressed = ExtResource("6_dx3v4")
+theme_override_styles/hover = ExtResource("4_ejofy")
+theme_override_styles/disabled = ExtResource("7_i88hj")
 text = "Herb Crate (10g)"
 
-[node name="PlaceholderCrateBtn2" type="Button" parent="HBox/CratePanel"]
+[node name="PlaceholderCrateBtn2" type="Button" parent="HBox/CratePanel" unique_id=1658734681]
 custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
+theme_override_styles/normal = ExtResource("4_ejofy")
+theme_override_styles/pressed = ExtResource("6_dx3v4")
+theme_override_styles/hover = ExtResource("4_ejofy")
+theme_override_styles/disabled = ExtResource("7_i88hj")
 text = "Metal Crate (20g)"

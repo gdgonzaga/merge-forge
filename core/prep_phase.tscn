@@ -2,7 +2,13 @@
 
 [ext_resource type="Script" uid="uid://c2iwcumfnivmg" path="res://core/prep_phase.gd" id="1"]
 [ext_resource type="PackedScene" uid="uid://diyic0gvjt66w" path="res://shop/purchase_card.tscn" id="2"]
-[ext_resource type="Texture2D" path="res://resources/sprites/backgrounds/bg_prep_phase.png" id="3"]
+[ext_resource type="Texture2D" uid="uid://42b2bh8r2yur" path="res://resources/sprites/backgrounds/bg_prep_phase.png" id="3"]
+[ext_resource type="StyleBox" uid="uid://b6pmxlfy8xrn2" path="res://resources/themes/button_main.tres" id="4_lnvqs"]
+[ext_resource type="StyleBox" uid="uid://di32cxyt2hjgl" path="res://resources/themes/button_secondary.tres" id="4_rff1c"]
+[ext_resource type="StyleBox" uid="uid://b66un13e0502r" path="res://resources/themes/button_pressed.tres" id="5_j1ycp"]
+[ext_resource type="StyleBox" uid="uid://b1x10x6pumhm0" path="res://resources/themes/button_secondary_pressed.tres" id="5_qgtw2"]
+[ext_resource type="StyleBox" uid="uid://c3ogmo02ytwex" path="res://resources/themes/button_secondary_disabled.tres" id="7_4ueio"]
+[ext_resource type="StyleBox" uid="uid://d13ojkcc4ssv4" path="res://resources/themes/button_disabled.tres" id="7_qgtw2"]
 
 [node name="PrepPhase" type="Control" unique_id=504126686]
 layout_mode = 3
@@ -19,9 +25,9 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 2
 texture = ExtResource("3")
 stretch_mode = 1
-mouse_filter = 2
 
 [node name="VBox" type="VBoxContainer" parent="." unique_id=1363721810]
 layout_mode = 1
@@ -94,26 +100,42 @@ theme_override_constants/separation = 16
 alignment = 1
 
 [node name="QuitBtn" type="Button" parent="VBox/BtnBox" unique_id=504126690]
-custom_minimum_size = Vector2(250, 70)
+custom_minimum_size = Vector2(200, 70)
 layout_mode = 2
 theme_override_font_sizes/font_size = 22
+theme_override_styles/normal = ExtResource("4_rff1c")
+theme_override_styles/pressed = ExtResource("5_qgtw2")
+theme_override_styles/hover = ExtResource("4_lnvqs")
+theme_override_styles/disabled = ExtResource("7_4ueio")
 text = "Quit to Menu"
 
 [node name="SessionBtn" type="Button" parent="VBox/BtnBox" unique_id=504126691]
-custom_minimum_size = Vector2(250, 70)
+custom_minimum_size = Vector2(200, 70)
 layout_mode = 2
 theme_override_font_sizes/font_size = 22
+theme_override_styles/normal = ExtResource("4_lnvqs")
+theme_override_styles/pressed = ExtResource("5_j1ycp")
+theme_override_styles/hover = ExtResource("4_lnvqs")
+theme_override_styles/disabled = ExtResource("7_qgtw2")
 text = "Start Session"
 
 [node name="DungeonBtn" type="Button" parent="VBox/BtnBox" unique_id=504126692]
 custom_minimum_size = Vector2(250, 70)
 layout_mode = 2
 theme_override_font_sizes/font_size = 22
+theme_override_styles/normal = ExtResource("4_lnvqs")
+theme_override_styles/pressed = ExtResource("5_j1ycp")
+theme_override_styles/hover = ExtResource("4_lnvqs")
+theme_override_styles/disabled = ExtResource("7_qgtw2")
 disabled = true
 text = "Enter Dungeon"
 
 [node name="DebugBtn" type="Button" parent="VBox/BtnBox" unique_id=504126693]
-custom_minimum_size = Vector2(250, 50)
+custom_minimum_size = Vector2(200, 50)
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
+theme_override_styles/normal = ExtResource("4_rff1c")
+theme_override_styles/pressed = ExtResource("5_qgtw2")
+theme_override_styles/hover = ExtResource("4_rff1c")
+theme_override_styles/disabled = ExtResource("7_4ueio")
 text = "DBG: Unlock All + 2000g + 1000rep"
