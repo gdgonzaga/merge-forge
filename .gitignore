@@ -25,3 +25,7 @@ android/
 builds/
 
 .opencode/
+
+# Test artifacts
+.test-harness/
+reports/
