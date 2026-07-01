@@ -23,3 +23,5 @@ tmp/
 # Generated build artifacts
 android/
 builds/
+
+.opencode/
