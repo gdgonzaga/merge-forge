@@ -281,8 +281,9 @@ func get_staging_area() -> FlowContainer:
 
 func _on_merge_choice_requested(options: Array[Dictionary], callback: Callable) -> void:
 	_choice_callback = callback
+	# show_options() already calls popup_centered() internally, so we don't
+	# call it again here (previously this popped the popup twice).
 	_popup.call("show_options", options)
-	_popup.popup_centered()
 
 
 func _on_choice_from_popup(item_id: String, is_variant: bool, reagent_id: String) -> void:
