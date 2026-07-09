@@ -61,10 +61,19 @@ func _on_new_game() -> void:
 
 
 func _on_continue_game() -> void:
-	var data: Dictionary = SaveManager.load_game()
-	if not data.is_empty():
-		GameManager.deserialize(data)
-	_go_to(null, "continue_game")
+	var result: Dictionary = SaveManager.load_game_ex()
+	var status: int = result.get("status", SaveManager.LoadStatus.MISSING)
+	if status == SaveManager.LoadStatus.OK:
+		GameManager.deserialize(result["data"])
+		_go_to(null, "continue_game")
+	else:
+		# MISSING: no save (Continue shouldn't have been tappable).
+		# CORRUPT: SaveManager already quarantined + push_error'd. Don't load,
+		#           don't transition — stay on the menu. Tell the menu to surface
+		#           the problem so the player knows to start a new game.
+		if status == SaveManager.LoadStatus.CORRUPT:
+			EventBus.save_corrupt_detected.emit()
+		push_warning("[Main] continue aborted: save status %d" % status)
 
 
 func _transition_to(scene_path: String) -> void:

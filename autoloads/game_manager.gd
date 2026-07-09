@@ -9,6 +9,7 @@ signal reagent_count_changed(id: String, count: int)
 signal grid_size_changed(cols: int, rows: int)
 
 const DEFAULT_GOLD := 50
+const SAVE_VERSION := 1
 
 var debug_mode: bool = false
 var gold: int = DEFAULT_GOLD
@@ -94,6 +95,7 @@ func get_crate_discount() -> float:
 
 func serialize() -> Dictionary:
 	return {
+		"version": SAVE_VERSION,
 		"gold": gold,
 		"reputation_points": reputation_points,
 		"unlocked_blueprints": unlocked_blueprints,
@@ -104,6 +106,33 @@ func serialize() -> Dictionary:
 		"grid_cols": grid_cols,
 		"grid_rows": grid_rows,
 	}
+
+
+# Atomic save-schema check, called by SaveManager before deserializing.
+# Any single bad field makes the whole save untrustworthy -> CORRUPT.
+# Note: JSON round-trips whole numbers as floats, so numeric fields accept
+# int or float (but not bool, which is technically an int subtype in GDScript).
+func is_valid_save(data: Dictionary) -> bool:
+	if not _is_number(data.get("version")) or int(data.get("version")) != SAVE_VERSION:
+		return false
+	if not _is_number(data.get("gold")): return false
+	if not _is_number(data.get("reputation_points")): return false
+	if not (data.get("unlocked_blueprints") is Array): return false
+	if not (data.get("reagent_inventory") is Dictionary): return false
+	if not (data.get("purchased_upgrades") is Array): return false
+	if not (data.get("shop_board_state") is Array): return false
+	if not (data.get("dungeon_board_state") is Array): return false
+	if not _is_number(data.get("grid_cols")): return false
+	if not _is_number(data.get("grid_rows")): return false
+	return true
+
+
+# True for int or float, but not bool (GDScript bools are int subtypes, so the
+# explicit exclusion matters — a saved `"gold": true` must not pass validation).
+static func _is_number(value: Variant) -> bool:
+	if value is bool:
+		return false
+	return value is int or value is float
 
 
 func deserialize(data: Dictionary) -> void:
