@@ -49,7 +49,11 @@ func get_variant_options(base_item_id: String) -> Array[Dictionary]:
 
 
 func get_item_data(item_id: String) -> Dictionary:
-	var data: Dictionary = items.get(item_id, {})
+	# Return a COPY, not the cached entry: the item_id stamp below must not
+	# mutate the shared items catalog. The stamped id is load-bearing — board
+	# cells, merge detection, and shop fulfillment all read it off items that
+	# were placed via this lookup.
+	var data: Dictionary = items.get(item_id, {}).duplicate()
 	if not data.is_empty():
 		data["item_id"] = item_id
 	return data
