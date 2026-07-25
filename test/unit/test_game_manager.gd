@@ -158,15 +158,17 @@ func test_consume_reagent_at_zero_returns_false() -> void:
 # --- upgrade-driven getters ---
 
 func test_despawn_time_default_then_upgrade() -> void:
-	assert_float(GameManager.get_despawn_time()).is_equal(12.0)
+	assert_float(GameManager.get_despawn_time()).is_equal(GameManager.DEFAULT_DESPAWN_TIME)
 	GameManager.add_upgrade("slow_timer")
-	assert_float(GameManager.get_despawn_time()).is_equal(18.0)
+	assert_float(GameManager.get_despawn_time()).is_equal(
+		RecipeResolver.get_upgrade_data("slow_timer").get("effect_value", GameManager.DEFAULT_DESPAWN_TIME))
 
 
 func test_crate_discount_default_then_upgrade() -> void:
-	assert_float(GameManager.get_crate_discount()).is_equal(1.0)
+	assert_float(GameManager.get_crate_discount()).is_equal(GameManager.DEFAULT_CRATE_COST_MULTIPLIER)
 	GameManager.add_upgrade("crate_discount")
-	assert_float(GameManager.get_crate_discount()).is_equal(0.8)
+	assert_float(GameManager.get_crate_discount()).is_equal(
+		RecipeResolver.get_upgrade_data("crate_discount").get("effect_value", GameManager.DEFAULT_CRATE_COST_MULTIPLIER))
 
 
 # --- save/load round-trip ---

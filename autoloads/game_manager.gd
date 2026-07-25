@@ -10,6 +10,8 @@ signal grid_size_changed(cols: int, rows: int)
 
 const DEFAULT_GOLD := 50
 const SAVE_VERSION := 1
+const DEFAULT_DESPAWN_TIME := 12.0
+const DEFAULT_CRATE_COST_MULTIPLIER := 1.0
 
 var debug_mode: bool = false
 var gold: int = DEFAULT_GOLD
@@ -86,11 +88,15 @@ func is_dungeon_unlocked() -> bool:
 
 
 func get_despawn_time() -> float:
-	return 18.0 if "slow_timer" in purchased_upgrades else 12.0
+	if "slow_timer" not in purchased_upgrades:
+		return DEFAULT_DESPAWN_TIME
+	return RecipeResolver.get_upgrade_data("slow_timer").get("effect_value", DEFAULT_DESPAWN_TIME)
 
 
 func get_crate_discount() -> float:
-	return 0.8 if "crate_discount" in purchased_upgrades else 1.0
+	if "crate_discount" not in purchased_upgrades:
+		return DEFAULT_CRATE_COST_MULTIPLIER
+	return RecipeResolver.get_upgrade_data("crate_discount").get("effect_value", DEFAULT_CRATE_COST_MULTIPLIER)
 
 
 func serialize() -> Dictionary:
