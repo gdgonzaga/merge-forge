@@ -1,5 +1,7 @@
 extends Control
 
+const CONFIRM_DIALOG := preload("res://ui/confirm_dialog.tscn")
+
 @onready var _bp_scroll: VBoxContainer = $VBox/TabContainer/Blueprints/BpContent
 @onready var _upgrade_scroll: VBoxContainer = $VBox/TabContainer/Upgrades/UpgradeContent
 @onready var _reagent_scroll: VBoxContainer = $VBox/TabContainer/Reagents/ReagentContent
@@ -16,7 +18,7 @@ func _ready() -> void:
 	var dungeon_btn: Button = $VBox/BtnBox/DungeonBtn
 	dungeon_btn.disabled = not GameManager.is_dungeon_unlocked()
 	dungeon_btn.tooltip_text = "Requires 150 reputation"
-	$VBox/BtnBox/QuitBtn.pressed.connect(EventBus.prep_quit_to_menu.emit)
+	$VBox/BtnBox/QuitBtn.pressed.connect(_on_quit_pressed)
 	$VBox/BtnBox/SessionBtn.pressed.connect(EventBus.prep_start_session.emit)
 	dungeon_btn.pressed.connect(EventBus.prep_enter_dungeon.emit)
 	$VBox/DebugBtn.pressed.connect(_debug_unlock_all)
@@ -29,6 +31,18 @@ func _ready() -> void:
 			dungeon_btn.disabled = v < 150
 	)
 	_refresh_all()
+
+
+# Quit to menu drops any in-flight prep/board state. Confirm before leaving.
+func _on_quit_pressed() -> void:
+	var dialog := CONFIRM_DIALOG.instantiate()
+	add_child(dialog)
+	dialog.setup(
+		"Quit to the main menu?",
+		EventBus.prep_quit_to_menu.emit,
+		Callable(),
+		"Quit",
+	)
 
 
 func try_purchase(type: String, id: String) -> bool:
