@@ -242,8 +242,17 @@ func _spawn_staging_item(item_data: Dictionary) -> void:
 func _remove_staging_item(item_data: Dictionary) -> void:
 	if _staging_container == null:
 		return
+	# The drag path stamps the item dict with _source_* keys (see floating_item's
+	# and board_cell's _get_drag_data), so by the time this is called from
+	# _on_item_placed the incoming item_data no longer equals the staging
+	# child's clean item_data. Compare against a copy with those transient
+	# drag-metadata keys stripped, otherwise the source stays on screen and can
+	# be dropped again (duplication bug).
+	var clean := item_data.duplicate()
+	clean.erase("_source_screen")
+	clean.erase("_source_pos")
 	for child in _staging_container.get_children():
-		if child.item_data == item_data:
+		if child.item_data == clean:
 			child.queue_free()
 			return
 
