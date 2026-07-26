@@ -14,6 +14,8 @@ var scene_map: Dictionary = {
 	"prep_quit_to_menu": "res://core/main_menu.tscn",
 	"new_game_started": "res://core/prep_phase.tscn",
 	"continue_game": "res://core/prep_phase.tscn",
+	"intro": "res://core/intro.tscn",
+	"intro_finished": "res://core/prep_phase.tscn",
 }
 
 var pending_summary: Dictionary = {}
@@ -24,6 +26,7 @@ func _ready() -> void:
 	_transition_to("res://core/main_menu.tscn")
 	EventBus.new_game_started.connect(_on_new_game)
 	EventBus.continue_game.connect(_on_continue_game)
+	EventBus.intro_finished.connect(_go_to.bind("intro_finished"))
 	EventBus.session_ended.connect(_on_session_ended)
 	EventBus.session_summary_dismissed.connect(_go_to.bind("session_summary_dismissed"))
 	EventBus.prep_start_session.connect(_go_to.bind("prep_start_session"))
@@ -57,7 +60,12 @@ func _on_dungeon_failed(summary: Dictionary) -> void:
 func _on_new_game() -> void:
 	SaveManager.delete_save()
 	GameManager.deserialize({})
-	_go_to(null, "new_game_started")
+	# Fresh save: deserialize({}) resets seen_intro to false, so the intro
+	# plays. Once it has played (seen_intro true), skip straight to prep.
+	if GameManager.seen_intro:
+		_go_to(null, "new_game_started")
+	else:
+		_go_to(null, "intro")
 
 
 func _on_continue_game() -> void:

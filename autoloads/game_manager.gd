@@ -23,6 +23,9 @@ var shop_board_state: Array = []
 var dungeon_board_state: Array = []
 var grid_cols: int = 5
 var grid_rows: int = 5
+# UI-state flag, not core progression. Optional in the save: is_valid_save()
+# does NOT check it, so older saves lacking the field load with false.
+var seen_intro: bool = false
 
 
 func add_gold(amount: int) -> void:
@@ -111,6 +114,7 @@ func serialize() -> Dictionary:
 		"dungeon_board_state": dungeon_board_state,
 		"grid_cols": grid_cols,
 		"grid_rows": grid_rows,
+		"seen_intro": seen_intro,
 	}
 
 
@@ -151,6 +155,7 @@ func deserialize(data: Dictionary) -> void:
 	dungeon_board_state = data.get("dungeon_board_state", [])
 	grid_cols = data.get("grid_cols", 5)
 	grid_rows = data.get("grid_rows", 5)
+	seen_intro = data.get("seen_intro", false)
 	gold_changed.emit(gold)
 	reputation_changed.emit(reputation_points)
 	grid_size_changed.emit(grid_cols, grid_rows)
