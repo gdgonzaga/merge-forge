@@ -26,7 +26,8 @@ func _ready() -> void:
 
 
 # `on_cancel` defaults to empty: most callers have nothing to do on cancel.
-# Empty Callables are safe to call (no-op) in Godot 4.
+# Empty Callables are NOT safe to call in Godot 4 (they error "null::null"),
+# so every invocation site must guard with .is_valid() before calling.
 #
 # Must be called after the dialog has been added to the scene tree — @onready
 # node refs and popup_centered() both require the node to be in-tree. The
@@ -49,13 +50,15 @@ func setup(
 func _on_confirm_pressed() -> void:
 	_answered = true
 	hide()
-	_on_confirm_cb.call()
+	if _on_confirm_cb.is_valid():
+		_on_confirm_cb.call()
 
 
 func _on_cancel_pressed() -> void:
 	_answered = true
 	hide()
-	_on_cancel_cb.call()
+	if _on_cancel_cb.is_valid():
+		_on_cancel_cb.call()
 
 
 func _on_popup_hide() -> void:
@@ -66,5 +69,6 @@ func _on_popup_hide() -> void:
 	if _answered:
 		queue_free()
 		return
-	_on_cancel_cb.call()
+	if _on_cancel_cb.is_valid():
+		_on_cancel_cb.call()
 	queue_free()
