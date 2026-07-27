@@ -156,7 +156,11 @@ func _display_customer(customer: Dictionary) -> void:
 	else:
 		_portrait_rect.texture = null
 
-	_customer_label.text = customer.get("id", "Customer")
+	# `name` would shadow Node.name, so use cust_name. Fall back to id, then a
+	# literal, so a customer missing the new field still renders something.
+	var cust_name: String = customer.get("name", customer.get("id", "Customer"))
+	var role: String = customer.get("role", "")
+	_customer_label.text = cust_name if role.is_empty() else "%s the %s" % [cust_name, role]
 	_remaining_label.text = "Customer %d of %d" % [current_index + 1, customers.size()]
 
 	_clear_orders()
