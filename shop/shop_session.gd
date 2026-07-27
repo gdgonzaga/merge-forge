@@ -1,17 +1,20 @@
 extends Control
 
+const PORTRAIT_SIZE := 200
+
 var customers: Array[Dictionary] = []
 var current_index: int = 0
 var summary_data: Dictionary = {}
 
-@onready var board: Control = $VBox/Board
-@onready var _portrait_rect: TextureRect = $VBox/Customers/CurrentCustomer/PortraitWrapper/PortraitRect
-@onready var _customer_label: Label = $VBox/Customers/CurrentCustomer/CustomerLabel
-@onready var _remaining_label: Label = $VBox/RemainingLabel
-@onready var _orders_container: VBoxContainer = $VBox/ActionPanel/OrderActionsContainer/OrdersContainer
-@onready var _crate_panel: VBoxContainer = $VBox/ActionPanel/CratePanel
-@onready var _crate_buttons: FlowContainer = $VBox/ActionPanel/CratePanel/CrateButtonsPanel
-@onready var _reject_btn: Button = $VBox/ActionPanel/OrderActionsContainer/RejectBtn
+@onready var board: Control = $CustomerBox/Board
+@onready var _portrait_rect: TextureRect = $CustomerBox/CustomerAndLabels/Customers/CurrentCustomer/PortraitWrapper/PortraitRect
+@onready var _customer_label: Label = $CustomerBox/CustomerAndLabels/CustomerLabels/CustomerLabel
+@onready var _remaining_label: Label = $CustomerBox/CustomerAndLabels/CustomerLabels/RemainingLabel
+@onready var _orders_container: VBoxContainer = $CustomerBox/ActionPanel/OrderActionsContainer/OrdersContainer
+@onready var _crate_panel: VBoxContainer = $CustomerBox/ActionPanel/CratePanel
+@onready var _crate_buttons: FlowContainer = $CustomerBox/ActionPanel/CratePanel/CrateButtonsPanel
+@onready var _reject_btn: Button = $CustomerBox/ActionPanel/OrderActionsContainer/RejectBtn
+@onready var _pending_content: Control = $CustomerBox/CustomerAndLabels/Customers/PendingCustomers/Content
 
 
 func _ready() -> void:
@@ -43,6 +46,12 @@ func _ready() -> void:
 
 	_build_crate_buttons()
 	_reject_btn.pressed.connect(reject_customer)
+	# PendingCustomers lays out after _ready, so its Content.size.x is 0 here.
+	# The resized signal fires once layout assigns a real width, and again on
+	# any viewport resize — both reposition the portrait stack. advance_customer
+	# also calls _populate_queue directly so the stack updates the instant a
+	# customer is dealt with, not waiting for a resize.
+	_pending_content.resized.connect(_populate_queue)
 	advance_customer()
 
 
@@ -60,6 +69,10 @@ func _build_crate_buttons() -> void:
 
 func advance_customer() -> void:
 	_clear_orders()
+	# Refresh the pending-portrait stack on every advance (fulfill/reject/end).
+	# Safe to call before the end-of-session branch: an empty pending slice
+	# just clears the stack.
+	_populate_queue()
 
 	if current_index >= customers.size():
 		end_session()
@@ -67,6 +80,57 @@ func advance_customer() -> void:
 
 	var customer: Dictionary = customers[current_index]
 	_display_customer(customer)
+
+
+# Pending customer portrait stack: shows customers[current_index+1 ..] as
+# overlapping 200x200 portraits. Position 0 (next customer) sits at x=0 and
+# renders on top; the back of the queue recedes to the right, peeking out
+# behind. The whole stack contracts leftward as customers are dealt with
+# (the right edge marches left while the left edge stays anchored at 0).
+func _populate_queue() -> void:
+	if _pending_content == null:
+		return
+	# Idempotent: clear previous portraits before rebuilding. Safe to call
+	# repeatedly (resized signal, advance_customer) without duplicating.
+	for child in _pending_content.get_children():
+		child.queue_free()
+
+	# Pending = everyone after the current customer (excludes current + past).
+	var pending := customers.slice(current_index + 1)
+	if pending.is_empty():
+		return
+	# Width is 0 until the container's first layout pass; the resized signal
+	# re-invokes us once a real width exists.
+	var width: float = _pending_content.size.x
+	if width <= 0.0:
+		return
+
+	# Spacing is constant across the session (denominator is total session
+	# size, not pending size), so the right edge contracts as the queue empties.
+	var total_in_session: int = customers.size()
+	var spacing: float = (width - float(PORTRAIT_SIZE)) / float(total_in_session)
+
+	# Add back-of-queue first so the front (position 0) is added last and thus
+	# drawn on top — gives the "stacked behind" depth.
+	var n: int = pending.size()
+	for i in range(n - 1, -1, -1):
+		var customer: Dictionary = pending[i]
+		var portrait: TextureRect = _build_queue_portrait(customer)
+		# i is the index into `pending`; position 0 == next customer.
+		portrait.position = Vector2(spacing * float(i), 0.0)
+		_pending_content.add_child(portrait)
+
+
+func _build_queue_portrait(customer: Dictionary) -> TextureRect:
+	var portrait := TextureRect.new()
+	portrait.custom_minimum_size = Vector2(PORTRAIT_SIZE, PORTRAIT_SIZE)
+	portrait.size = Vector2(PORTRAIT_SIZE, PORTRAIT_SIZE)
+	var portrait_path: String = customer.get("portrait_id", "")
+	if portrait_path != "" and ResourceLoader.exists(portrait_path):
+		portrait.texture = load(portrait_path)
+	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	return portrait
 
 
 func try_fulfill_order(order_index: int) -> void:
