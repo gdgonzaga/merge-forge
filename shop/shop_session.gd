@@ -1,6 +1,12 @@
 extends Control
 
 const PORTRAIT_SIZE := 200
+# Per-position shadow alpha step. Denominator is the INITIAL pending count
+# (session_count - 1), fixed for the whole session: position 0 (next customer)
+# gets no shadow, the back gets ~(step * initial_pending) which tops out
+# near-but-not-100% (e.g. 8 * 11.1% = 89%). The whole stack fades lighter as
+# the queue shrinks, since position is the renumbered (current) index.
+const SHADOW_ALPHA_STEP := 100.0 / 9.0 / 100.0  # 0.0..1.0 scale, ~= 0.111
 
 var customers: Array[Dictionary] = []
 var current_index: int = 0
@@ -115,13 +121,13 @@ func _populate_queue() -> void:
 	var n: int = pending.size()
 	for i in range(n - 1, -1, -1):
 		var customer: Dictionary = pending[i]
-		var portrait: TextureRect = _build_queue_portrait(customer)
 		# i is the index into `pending`; position 0 == next customer.
+		var portrait: TextureRect = _build_queue_portrait(customer, i)
 		portrait.position = Vector2(spacing * float(i), 0.0)
 		_pending_content.add_child(portrait)
 
 
-func _build_queue_portrait(customer: Dictionary) -> TextureRect:
+func _build_queue_portrait(customer: Dictionary, position: int) -> TextureRect:
 	var portrait := TextureRect.new()
 	portrait.custom_minimum_size = Vector2(PORTRAIT_SIZE, PORTRAIT_SIZE)
 	portrait.size = Vector2(PORTRAIT_SIZE, PORTRAIT_SIZE)
@@ -130,6 +136,24 @@ func _build_queue_portrait(customer: Dictionary) -> TextureRect:
 		portrait.texture = load(portrait_path)
 	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	# Shadow: same texture as the portrait, tinted black, alpha-scaled by
+	# position. Because it uses the SAME texture, its alpha channel exactly
+	# matches the character's silhouette — the shadow is portrait-shaped
+	# automatically, no shader needed. Child of the portrait at position (0,0)
+	# with explicit size (anchors_preset in code corrupts the node and the
+	# shadow never renders; explicit size is the reliable path). mouse_filter
+	# IGNORE so it doesn't eat taps.
+	if portrait.texture != null and position > 0:
+		var shadow := TextureRect.new()
+		shadow.texture = portrait.texture
+		shadow.stretch_mode = portrait.stretch_mode
+		shadow.expand_mode = portrait.expand_mode
+		shadow.modulate = Color.BLACK
+		shadow.modulate.a = SHADOW_ALPHA_STEP * float(position)
+		shadow.size = Vector2(PORTRAIT_SIZE, PORTRAIT_SIZE)
+		shadow.position = Vector2.ZERO
+		shadow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		portrait.add_child(shadow)
 	return portrait
 
 
