@@ -29,3 +29,6 @@ builds/
 # Test artifacts
 .test-harness/
 reports/
+
+# Local agent tool state
+.zcode/
