@@ -5,8 +5,13 @@ signal save_loaded(data: Dictionary)
 
 enum LoadStatus { OK, MISSING, CORRUPT }
 
-const SAVE_PATH := "user://save_data.json"
+const DEFAULT_SAVE_PATH := "user://save_data.json"
 const CORRUPT_PREFIX := "save_data.corrupt"
+
+# Where the save lives. Only tests change it (TestBase points it at a scratch
+# dir) so a test run can never touch the player's real save. Quarantined
+# .corrupt.*.json backups are written next to it.
+var save_path: String = DEFAULT_SAVE_PATH
 
 
 func _ready() -> void:
@@ -16,7 +21,7 @@ func _ready() -> void:
 func save_game() -> void:
 	var data := GameManager.serialize()
 	var json_text := JSON.stringify(data, "\t")
-	var tmp_path := SAVE_PATH + ".tmp"
+	var tmp_path := save_path + ".tmp"
 	var file := FileAccess.open(tmp_path, FileAccess.WRITE)
 	if not file:
 		push_error("[SaveManager] could not open tmp for write: %s" % tmp_path)
@@ -25,8 +30,8 @@ func save_game() -> void:
 	file.close()
 	# Remove any prior save first (rename may refuse to overwrite on some platforms).
 	# It's fine if the file doesn't exist yet.
-	DirAccess.remove_absolute(SAVE_PATH)
-	var rn_err := DirAccess.rename_absolute(tmp_path, SAVE_PATH)
+	DirAccess.remove_absolute(save_path)
+	var rn_err := DirAccess.rename_absolute(tmp_path, save_path)
 	if rn_err != OK:
 		push_error("[SaveManager] save rename failed: %s (tmp left at %s)" % [str(rn_err), tmp_path])
 		DirAccess.remove_absolute(tmp_path)
@@ -38,25 +43,25 @@ func save_game() -> void:
 # On CORRUPT, quarantines the file (renames it to a timestamped .corrupt.*.json)
 # so a subsequent save can't overwrite the only copy of the player's progress.
 func load_game_ex() -> Dictionary:
-	if not FileAccess.file_exists(SAVE_PATH):
+	if not FileAccess.file_exists(save_path):
 		return {"status": LoadStatus.MISSING, "data": {}}
 
-	var text := _read_text(SAVE_PATH)
+	var text := _read_text(save_path)
 	if text == "":
 		_quarantine()
-		push_error("[SaveManager] corrupt save (unreadable/empty): %s" % SAVE_PATH)
+		push_error("[SaveManager] corrupt save (unreadable/empty): %s" % save_path)
 		return {"status": LoadStatus.CORRUPT, "data": {}}
 
 	var json := JSON.new()
 	if json.parse(text) != OK or not (json.data is Dictionary):
 		_quarantine()
-		push_error("[SaveManager] corrupt save (parse failed): %s" % SAVE_PATH)
+		push_error("[SaveManager] corrupt save (parse failed): %s" % save_path)
 		return {"status": LoadStatus.CORRUPT, "data": {}}
 
 	var data: Dictionary = json.data
 	if not GameManager.is_valid_save(data):
 		_quarantine()
-		push_error("[SaveManager] corrupt save (schema/version invalid): %s" % SAVE_PATH)
+		push_error("[SaveManager] corrupt save (schema/version invalid): %s" % save_path)
 		return {"status": LoadStatus.CORRUPT, "data": {}}
 
 	save_loaded.emit(data)
@@ -69,12 +74,12 @@ func load_game() -> Dictionary:
 
 
 func has_save() -> bool:
-	return FileAccess.file_exists(SAVE_PATH)
+	return FileAccess.file_exists(save_path)
 
 
 func delete_save() -> void:
-	if FileAccess.file_exists(SAVE_PATH):
-		DirAccess.remove_absolute(SAVE_PATH)
+	if FileAccess.file_exists(save_path):
+		DirAccess.remove_absolute(save_path)
 
 
 func _read_text(path: String) -> String:
@@ -90,16 +95,17 @@ func _read_text(path: String) -> String:
 # subsequent save can't overwrite it). The collision guard handles two corruptions
 # happening within the same wall-clock second.
 func _quarantine() -> void:
-	if not FileAccess.file_exists(SAVE_PATH):
+	if not FileAccess.file_exists(save_path):
 		return
 	var d := Time.get_datetime_dict_from_system()
 	var ts := "%04d%02d%02d-%02d%02d%02d" % [d["year"], d["month"], d["day"], d["hour"], d["minute"], d["second"]]
-	var target := "user://%s.%s.json" % [CORRUPT_PREFIX, ts]
+	var dir := save_path.get_base_dir()
+	var target := dir.path_join("%s.%s.json" % [CORRUPT_PREFIX, ts])
 	var suffix := 2
 	while FileAccess.file_exists(target):
-		target = "user://%s.%s_%d.json" % [CORRUPT_PREFIX, ts, suffix]
+		target = dir.path_join("%s.%s_%d.json" % [CORRUPT_PREFIX, ts, suffix])
 		suffix += 1
-	var err := DirAccess.rename_absolute(SAVE_PATH, target)
+	var err := DirAccess.rename_absolute(save_path, target)
 	if err != OK:
 		push_error("[SaveManager] failed to quarantine corrupt save: %s" % str(err))
 

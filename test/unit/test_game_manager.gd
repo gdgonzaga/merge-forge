@@ -16,6 +16,8 @@ func test_default_state() -> void:
 	assert_array(GameManager.purchased_upgrades).is_empty()
 	assert_int(GameManager.grid_cols).is_equal(5)
 	assert_int(GameManager.grid_rows).is_equal(5)
+	assert_bool(GameManager.seen_intro).is_false()
+	assert_bool(GameManager.debug_mode).is_false()
 
 
 # --- add_gold ---

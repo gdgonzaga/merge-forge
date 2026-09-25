@@ -32,7 +32,7 @@ func get_options(item_id: String) -> Array[Dictionary]:
 	for result in results:
 		var bp_required: String = result.get("blueprint_required", "")
 		if bp_required == "" or has_blueprint(bp_required):
-			available.append(result)
+			available.append(result.duplicate(true))
 	return available
 
 
@@ -44,7 +44,7 @@ func get_variant_options(base_item_id: String) -> Array[Dictionary]:
 		var reagent_id: String = combo.get("reagent_id", "")
 		if bp_required == "" or has_blueprint(bp_required):
 			if GameManager.reagent_inventory.get(reagent_id, 0) >= 1:
-				available.append(combo)
+				available.append(combo.duplicate(true))
 	return available
 
 
@@ -53,7 +53,7 @@ func get_item_data(item_id: String) -> Dictionary:
 	# mutate the shared items catalog. The stamped id is load-bearing — board
 	# cells, merge detection, and shop fulfillment all read it off items that
 	# were placed via this lookup.
-	var data: Dictionary = items.get(item_id, {}).duplicate()
+	var data: Dictionary = items.get(item_id, {}).duplicate(true)
 	if not data.is_empty():
 		data["item_id"] = item_id
 	return data
@@ -74,8 +74,10 @@ func has_blueprint(bp_id: String) -> bool:
 	return bp_id in GameManager.unlocked_blueprints
 
 
+# Catalog getters return deep copies so no caller can mutate the shared,
+# load-once catalogs (same invariant as get_item_data).
 func get_crate_data(crate_id: String) -> Dictionary:
-	return crates.get(crate_id, {})
+	return crates.get(crate_id, {}).duplicate(true)
 
 
 func get_all_crate_ids() -> Array[String]:
@@ -85,11 +87,11 @@ func get_all_crate_ids() -> Array[String]:
 
 
 func get_upgrade_data(upgrade_id: String) -> Dictionary:
-	return upgrades.get(upgrade_id, {})
+	return upgrades.get(upgrade_id, {}).duplicate(true)
 
 
 func get_reagent_data(reagent_id: String) -> Dictionary:
-	return reagents.get(reagent_id, {})
+	return reagents.get(reagent_id, {}).duplicate(true)
 
 
 static func roll_weighted_pool(pool: Array, count: Dictionary) -> Array[Dictionary]:

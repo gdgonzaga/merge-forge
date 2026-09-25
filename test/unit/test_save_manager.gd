@@ -2,38 +2,13 @@ extends TestBase
 
 # C3 — Save integrity tests. Covers MISSING / CORRUPT / OK status, quarantine,
 # version field, and atomic schema validation. Each test writes/cleans real files
-# under user:// (inherent to testing save/load); before/after_test keep it hermetic.
-
-const SAVE_PATH := "user://save_data.json"
-
-
-func before_test() -> void:
-	super.before_test()
-	_clean_save_dir()
-
-
-func after_test() -> void:
-	_clean_save_dir()
-	super.after_test()
-
-
-func _clean_save_dir() -> void:
-	# Remove the save plus any quarantined .corrupt.*.json backups.
-	if FileAccess.file_exists(SAVE_PATH):
-		DirAccess.remove_absolute(SAVE_PATH)
-	var dir := DirAccess.open("user://")
-	if dir:
-		dir.list_dir_begin()
-		var name := dir.get_next()
-		while name != "":
-			if name.begins_with("save_data.corrupt") and name.ends_with(".json"):
-				DirAccess.remove_absolute("user://%s" % name)
-			name = dir.get_next()
+# under TestBase.TEST_SAVE_DIR (SaveManager is redirected there before each test
+# and the dir is removed after), so the real user://save_data.json is never touched.
 
 
 func _write_save_file(text: String) -> void:
-	var f := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
-	assert(f != null, "could not open %s for write" % SAVE_PATH)
+	var f := FileAccess.open(SaveManager.save_path, FileAccess.WRITE)
+	assert(f != null, "could not open %s for write" % SaveManager.save_path)
 	f.store_string(text)
 	f.close()
 
@@ -53,7 +28,7 @@ func test_load_corrupt_json_returns_CORRUPT_and_quarantines() -> void:
 	var r: Dictionary = SaveManager.load_game_ex()
 	assert_int(r["status"]).is_equal(SaveManager.LoadStatus.CORRUPT)
 	# Quarantine: original gone, a .corrupt.*.json backup exists.
-	assert_bool(FileAccess.file_exists(SAVE_PATH)).is_false()
+	assert_bool(FileAccess.file_exists(SaveManager.save_path)).is_false()
 	assert_bool(_has_quarantine_backup()).is_true()
 
 
@@ -126,13 +101,10 @@ func test_serialize_includes_version() -> void:
 # --- helpers ---
 
 func _has_quarantine_backup() -> bool:
-	var dir := DirAccess.open("user://")
+	var dir := DirAccess.open(TEST_SAVE_DIR)
 	if dir == null:
 		return false
-	dir.list_dir_begin()
-	var name := dir.get_next()
-	while name != "":
-		if name.begins_with("save_data.corrupt") and name.ends_with(".json"):
+	for file_name in dir.get_files():
+		if file_name.begins_with(SaveManager.CORRUPT_PREFIX) and file_name.ends_with(".json"):
 			return true
-		name = dir.get_next()
 	return false
