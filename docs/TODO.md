@@ -1,0 +1,5 @@
+- **Crates as inventory items — implement after Phase 3, see `PARKED-crates-as-inventory.md`.** Crates bought in prep phase, stored as inventory, opened during sessions. Available in both shop and dungeon modes. Includes ad reward stub.
+- Implement a max queue feature - customer queue builds up in time. Possible monetization.
+- Implement a dungeon license feature - players need to buy a license to raid dungeons. Possible monetization.
+- Think of a reason why the player needs to raid dungeons. Maybe for reagents, blueprints
+- Expand reward types for dungeon runs
