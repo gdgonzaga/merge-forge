@@ -9,7 +9,7 @@ signal reagent_count_changed(id: String, count: int)
 signal grid_size_changed(cols: int, rows: int)
 
 const DEFAULT_GOLD := 50
-const SAVE_VERSION := 2
+const SAVE_VERSION := 3
 const DEFAULT_DESPAWN_TIME := 12.0
 const DEFAULT_CRATE_COST_MULTIPLIER := 1.0
 
@@ -130,10 +130,24 @@ func is_valid_save(data: Dictionary) -> bool:
 	if not (data.get("unlocked_blueprints") is Array): return false
 	if not (data.get("reagent_inventory") is Dictionary): return false
 	if not (data.get("purchased_upgrades") is Array): return false
-	if not (data.get("shop_board_state") is Array): return false
-	if not (data.get("dungeon_board_state") is Array): return false
+	if not _is_valid_board_state(data.get("shop_board_state")): return false
+	if not _is_valid_board_state(data.get("dungeon_board_state")): return false
 	if not _is_number(data.get("grid_cols")): return false
 	if not _is_number(data.get("grid_rows")): return false
+	return true
+
+
+# Board entries are {col, row, item_id}; item data is rebuilt from the catalog.
+static func _is_valid_board_state(value: Variant) -> bool:
+	if not value is Array:
+		return false
+	for entry: Variant in value:
+		if not entry is Dictionary:
+			return false
+		if not _is_number(entry.get("col")) or not _is_number(entry.get("row")):
+			return false
+		if not entry.get("item_id") is String:
+			return false
 	return true
 
 

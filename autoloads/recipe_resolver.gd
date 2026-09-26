@@ -23,33 +23,22 @@ func _ready() -> void:
 	dungeons = _load_json("res://data/dungeons.json")
 
 
+# Items, party and enemies come only from the .tres definitions; the other
+# catalogs are configuration JSON.
 func _load_from_definitions() -> void:
 	items.clear()
-	if DefinitionLibrary != null and not DefinitionLibrary.items.is_empty():
-		for item_id in DefinitionLibrary.items:
-			var idef = DefinitionLibrary.items[item_id]
-			if idef is ItemDefinition:
-				items[item_id] = _item_to_dict(idef)
-	else:
-		items = _load_json("res://data/items.json")
+	for item_id in DefinitionLibrary.items:
+		items[item_id] = _item_to_dict(DefinitionLibrary.items[item_id])
 
 	party.clear()
-	if DefinitionLibrary != null and not DefinitionLibrary.party.is_empty():
-		var party_list: Array = []
-		for pdef in DefinitionLibrary.get_all_party_members():
-			party_list.append(_party_member_to_dict(pdef))
-		party["party_members"] = party_list
-	else:
-		party = _load_json("res://data/party.json")
+	var party_list: Array = []
+	for pdef in DefinitionLibrary.get_all_party_members():
+		party_list.append(_party_member_to_dict(pdef))
+	party["party_members"] = party_list
 
 	enemies.clear()
-	if DefinitionLibrary != null and not DefinitionLibrary.enemies.is_empty():
-		for enemy_id in DefinitionLibrary.enemies:
-			var edef = DefinitionLibrary.enemies[enemy_id]
-			if edef is EnemyDefinition:
-				enemies[enemy_id] = _enemy_to_dict(edef)
-	else:
-		enemies = _load_json("res://data/enemies.json")
+	for enemy_id in DefinitionLibrary.enemies:
+		enemies[enemy_id] = _enemy_to_dict(DefinitionLibrary.enemies[enemy_id])
 
 
 func _item_to_dict(def: ItemDefinition) -> Dictionary:

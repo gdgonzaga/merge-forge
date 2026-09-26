@@ -44,7 +44,7 @@ Scene transitions are driven by `main.gd` listening to EventBus signals. Main fr
 | ----------------- | ----------------------- | ---------------------------------------------------------------------------------------------------------------- |
 | GameManager       | `game_manager.gd`       | Persistent state: gold, reputation, blueprints, reagent inventory, upgrades, shop board state, grid size         |
 | EventBus          | `event_bus.gd`          | Cross-scene signal relay (see registry below)                                                                    |
-| DefinitionLibrary | `definition_library.gd` | Loads and indexes all `.tres` definition resources (items, party, enemies, attacks, effects)                    |
+| DefinitionLibrary | `definition_library.gd` | Loads and indexes all `.tres` definition resources (items, party, enemies, attacks, effects). Lists folders with `ResourceLoader.list_directory` (works in exports, where `.tres` files are remapped). Every definition needs an `id`; an empty items/party/enemies catalog is a hard error, since there is no fallback content. |
 | RecipeResolver    | `recipe_resolver.gd`    | Loads recipe/blueprint/reagent/crate/upgrade JSON data. Filters merge options by blueprint ownership and reagent availability. Provides crate and pricing data for shop/prep. |
 | SaveManager       | `save_manager.gd`       | Auto-save/load to single JSON file at checkpoints                                                                |
 | AudioManager      | `audio_manager.gd`      | Music playback with crossfade, SFX one-shots                                                                     |
@@ -153,28 +153,10 @@ These are emitted directly on GameManager. Connect via `GameManager.gold_changed
 
 ### ❗ Usable Item Effects — Confirmed for v1.0 (tune during playtesting)
 
-The GDD lists effect types (heal, buff_attack). Party stats are confirmed (see party.json schema in Dungeon Run subsystem). These are **consumable items** the player crafts and uses during dungeon runs — separate from party abilities (deferred). Define usable items in `items.json` with fields like:
+The GDD lists effect types (heal, buff_attack). Party stats are confirmed (see the PartyMemberDefinition schema in the Dungeon Run subsystem). These are **consumable items** the player crafts and uses during dungeon runs — separate from party abilities (deferred). Usable items are `ItemDefinition` resources with `dungeon_usable = true`, a `dungeon_use_target`, and an `EffectDefinition`:
 
-```json
-{
-  "healing_potion": {
-    "name": "Healing Potion",
-    "family": "herb",
-    "gold_value": 40,
-    "dungeon_usable": true,
-    "dungeon_use_target": "party-individual",
-    "effect": { "type": "heal", "power": 40 }
-  },
-  "battle_elixir": {
-    "name": "Battle Elixir",
-    "family": "herb",
-    "gold_value": 50,
-    "dungeon_usable": true,
-    "dungeon_use_target": "party-individual",
-    "effect": { "type": "buff_attack", "power": 5, "duration": 10 }
-  }
-}
-```
+- `healing_potion.tres`: target `party-individual`, effect `{type: "heal", value: 40}`
+- `battle_elixir.tres`: target `party-individual`, effect `{type: "buff_attack", value: 5, duration: 10}`
 
 ---
 
@@ -417,8 +399,8 @@ The GDD lists effect types (heal, buff_attack). Party stats are confirmed (see p
 | `count_items_on_board(item_id: String) -> int` | Counts how many of a given item are on the grid. Used by order fulfillment. |
 | `remove_items_by_id(item_id: String, count: int)` | Removes N items matching item_id. Used by order fulfillment. |
 | `clear_board()` | Removes all items. Used for dungeon cleanup. |
-| `get_board_state() -> Array` | Serializes grid for save/load. Returns array of {col, row, item} dicts. |
-| `load_board_state(state: Array)` | Restores grid from save data. Creates BoardCell visuals. |
+| `get_board_state() -> Array` | Serializes grid for save/load. Returns array of `{col, row, item_id}` dicts: ids only, since item data (and its sprite texture) can't round-trip through JSON. |
+| `load_board_state(state: Array)` | Restores grid from save data, rebuilding each item from `RecipeResolver.get_item_data(item_id)`. Ids missing from the catalog are skipped with an error. Updates BoardCell visuals. |
 
 #### MergeDetector
 
@@ -558,18 +540,20 @@ The GDD lists effect types (heal, buff_attack). Party stats are confirmed (see p
 |------|------|----------------|
 | `autoloads/recipe_resolver.gd` | Autoload | Loads and caches recipe, blueprint, reagent combo, crate, upgrade, and reagent data. Provides synchronous lookups filtered by player progress. |
 
-### Data Schema: items.json
+### Definition Schema: ItemDefinition (`resources/definitions/items/*.tres`)
+
+Items are `.tres` resources, not JSON. RecipeResolver turns each into a dictionary (`get_item_data` adds an `item_id` stamp) with these fields:
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `item_id` | `String` | Unique identifier (key). e.g. "iron_ore", "sword" |
+| `id` | `String` | Unique identifier, required. e.g. "iron_ore", "sword" |
 | `name` | `String` | Display name |
-| `family` | `String` | Item family for grouping. e.g. "metal", "herb", "gem", "wood" |
+| `family` | `String` | Item family for grouping. e.g. "metal", "herb" |
 | `gold_value` | `int` | Base gold value (used for bonus gold calc and selling) |
 | `dungeon_usable` | `bool` | Whether this item can be used during dungeon runs |
-| `dungeon_use_target` | `String` or null | If dungeon_usable: `"party-individual"`, `"party-all"`, `"enemy-individual"`, or `"enemy-all"`. Null if not dungeon_usable. |
-| `effect` | `Dictionary` or null | If dungeon_usable: `{type, power, duration?}`. Null if not dungeon_usable. |
-| `icon` | `String` | Resource path to icon texture |
+| `dungeon_use_target` | `String` | If dungeon_usable: `"party-individual"`, `"party-all"`, `"enemy-individual"`, or `"enemy-all"`. `""` if not. |
+| `effect` | `EffectDefinition` or null | `{type, value, duration}` (duration in ticks, 0 = instant); the item dictionary exposes it as `{type, power, duration}`. Null if not dungeon_usable. |
+| `sprite` | `Texture2D` | The item's image. Views read this texture directly; there is no path-string form. |
 
 ### Data Schema: recipes.json
 
@@ -638,7 +622,7 @@ RecipeResolver has no signals — it is queried synchronously by MergeResolver, 
 **Script:** `autoloads/recipe_resolver.gd`
 **Description:** Read-only data cache for recipes, blueprints, reagent combos, and items. All filtering is done at query time based on current GameManager state.
 
-**Lifecycle:** `_ready()` loads `items.json`, `recipes.json`, `blueprints.json`, `reagent_combos.json`, `crates.json`, `upgrades.json`, `reagents.json`, `enemies.json`, `dungeons.json`, and `party.json` from `res://data/` into Dictionary members.
+**Lifecycle:** `_ready()` builds `items`, `party` and `enemies` from DefinitionLibrary's `.tres` definitions (no JSON fallback), then loads `recipes.json`, `blueprints.json`, `reagent_combos.json`, `crates.json`, `upgrades.json`, `reagents.json` and `dungeons.json` from `res://data/` into Dictionary members.
 
 **Properties:**
 
@@ -661,7 +645,7 @@ RecipeResolver has no signals — it is queried synchronously by MergeResolver, 
 |----------|-------------|
 | `get_options(item_id: String) -> Array[Dictionary]` | Returns available merge results, filtered by blueprint ownership. |
 | `get_variant_options(base_item_id: String) -> Array[Dictionary]` | Returns reagent variant options for the given item, filtered by blueprint + reagent inventory. Returns empty array if no combos exist for this item. |
-| `get_item_data(item_id: String) -> Dictionary` | Returns full item definition from items.json. |
+| `get_item_data(item_id: String) -> Dictionary` | Returns a copy of the item built from its ItemDefinition, stamped with `item_id`. |
 | `get_blueprint_cost(bp_id: String) -> int` | Returns gold cost of a blueprint. |
 | `get_blueprint_dependencies(bp_id: String) -> Array[String]` | Returns prerequisite blueprint IDs. |
 | `has_blueprint(bp_id: String) -> bool` | Checks `GameManager.unlocked_blueprints`. |
@@ -872,19 +856,19 @@ Crate definitions are fully data-driven. Whatever crates exist in this file are 
 }
 ```
 
-### Data Schema: enemies.json
+### Definition Schema: EnemyDefinition (`resources/definitions/enemies/*.tres`)
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `enemy_id` | `String` | Unique identifier (key) |
+| `id` | `String` | Unique identifier, required |
 | `name` | `String` | Display name |
 | `max_hp` | `int` | Base HP |
 | `attack_type` | `String` | `"melee"` or `"missile"`; required. Sets who both attacks can reach. Melee reaches only the front member (the lowest party slot still standing, so the next slot takes over when the front falls); missile reaches the whole party. |
 | `attack` | `int` | Basic damage per tick. Melee: all of it to the front member. Missile: `floor(attack / standing_count)` to each standing member, min 1. |
-| `heavy_attack` | `Dictionary` | Telegraphed single-target hit: `{name: String, interval: int, windup: int, damage: int}`. Lands every `interval` ticks; for the last `windup` ticks the target (locked when the windup starts: the front member for melee, the weakest standing member for missile) is shown as a telegraph line from the enemy to that member, plus an HP ghost on the member's bar. Enemies in one encounter are staggered by `HEAVY_STAGGER_TICKS` per spawn slot. |
+| `heavy_attack` | `AttackDefinition` | Telegraphed single-target hit: `{name: String, interval: int, windup: int, damage: int}` (a sub-resource; RecipeResolver exposes it as a dictionary). Lands every `interval` ticks; for the last `windup` ticks the target (locked when the windup starts: the front member for melee, the weakest standing member for missile) is shown as a telegraph line from the enemy to that member, plus an HP ghost on the member's bar. Enemies in one encounter are staggered by `HEAVY_STAGGER_TICKS` per spawn slot. |
 | `drop_count` | `Dictionary` | `{min: int, max: int}` number of drops on death |
 | `drop_pool` | `Array[Dictionary]` | Weighted item pool: `{item_id: String, weight: int or float}`. Same structure and algorithm as crate pools. |
-| `sprite` | `String` | Resource path to sprite texture |
+| `sprite` | `Texture2D` | Enemy sprite |
 
 **Drop generation algorithm:** Same as crate generation — for each drop slot (rolled `drop_count` times, independently):
 1. Sum all weights in the pool
@@ -892,64 +876,22 @@ Crate definitions are fully data-driven. Whatever crates exist in this file are 
 3. Iterate items, accumulating weights — the item whose cumulative range contains the random number is selected
 4. Each roll is independent (same item can drop multiple times from one enemy)
 
-**Example entries (melee and missile):**
+**Example values (as RecipeResolver exposes them):** Goblin is melee, 170 HP, attack 4, Smash `{interval 5, windup 3, damage 30}`; Goblin Archer is missile, 60 HP, attack 3, Arrow `{interval 3, windup 2, damage 12}`. See the `.tres` files for drop pools.
 
-```json
-{
-  "goblin": {
-    "name": "Goblin",
-    "max_hp": 170,
-    "attack_type": "melee",
-    "attack": 4,
-    "heavy_attack": {"name": "Smash", "interval": 5, "windup": 3, "damage": 30},
-    "drop_count": {"min": 3, "max": 4},
-    "drop_pool": [
-      {"item_id": "iron_ore", "weight": 1},
-      {"item_id": "iron_ingot", "weight": 2},
-      {"item_id": "herb_bundle", "weight": 1},
-      {"item_id": "refined_potion", "weight": 2}
-    ],
-    "sprite": "res://resources/sprites/enemies/goblin.png"
-  },
-  "goblin_archer": {
-    "name": "Goblin Archer",
-    "max_hp": 60,
-    "attack_type": "missile",
-    "attack": 3,
-    "heavy_attack": {"name": "Arrow", "interval": 3, "windup": 2, "damage": 12},
-    "drop_count": {"min": 2, "max": 3},
-    "drop_pool": [
-      {"item_id": "iron_ore", "weight": 2},
-      {"item_id": "herb_bundle", "weight": 1},
-      {"item_id": "refined_potion", "weight": 2}
-    ],
-    "sprite": "res://resources/sprites/enemies/goblin.png"
-  }
-}
-```
+### Definition Schema: PartyMemberDefinition (`resources/definitions/party/*.tres`)
 
-### Data Schema: party.json
+RecipeResolver exposes the party as `party["party_members"]`, an array ordered front to back by `slot_order`: the index is the member's slot, and slot 0 is the front member melee enemies hit.
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `party_members` | `Array[Dictionary]` | Ordered front to back: the index is the member's slot, and slot 0 is the front member melee enemies hit. Each entry has the fields below. |
-| `party_members.*.id` | `String` | Unique identifier (e.g. `"fighter"`) |
-| `party_members.*.name` | `String` | Display name |
-| `party_members.*.sprite` | `String` | Resource path to chibi sprite texture |
-| `party_members.*.max_hp` | `int` | Base HP |
-| `party_members.*.attack` | `int` | Damage dealt per tick (distributed across alive enemies) |
+| `id` | `String` | Unique identifier, required (e.g. `"fighter"`) |
+| `name` | `String` | Display name |
+| `sprite` | `Texture2D` | Chibi sprite |
+| `max_hp` | `int` | Base HP |
+| `attack` | `int` | Damage dealt per tick (distributed across alive enemies) |
+| `slot_order` | `int` | Party order, front (0) to back |
 
-**MVP party data:**
-
-```json
-{
-  "party_members": [
-    {"id": "fighter", "name": "Fighter", "sprite": "res://resources/sprites/party/fighter.png", "max_hp": 120, "attack": 14},
-    {"id": "mage", "name": "Mage", "sprite": "res://resources/sprites/party/mage.png", "max_hp": 50, "attack": 18},
-    {"id": "healer", "name": "Healer", "sprite": "res://resources/sprites/party/healer.png", "max_hp": 60, "attack": 5}
-  ]
-}
-```
+MVP party: Fighter (slot 0, 120 HP, 14 ATK), Mage (slot 1, 50 HP, 18 ATK), Healer (slot 2, 60 HP, 5 ATK).
 
 No special abilities for MVP — auto-attack only.
 
@@ -972,7 +914,7 @@ No special abilities for MVP — auto-attack only.
 
 **Trigger:** Main instances `dungeon_run.tscn` from prep phase.
 
-1. `dungeon_controller.gd._ready()`: reads dungeon data from RecipeResolver. Progress = 0.0, initialize 3 party members with base stats (from `party.json`), call `PartyMember.setup(data)` on each to load sprites and store stats, create empty dungeon board, start walk timer (walk speed from dungeon definition)
+1. `dungeon_controller.gd._ready()`: reads dungeon data from RecipeResolver. Progress = 0.0, initialize 3 party members with base stats (from the party definitions, in slot order), call `PartyMember.setup(data)` on each to load sprites and store stats, create empty dungeon board, start walk timer (walk speed from dungeon definition)
 2. Walk timer ticks → progress bar updates. Player can rearrange dungeon board during walk. Progress only advances while walking.
 3. Progress reaches encounter threshold (e.g. 0.2) → walk timer **stops** → `dungeon_controller.start_encounter(encounter_data[0])`
 4. Dungeon controller spawns enemy display nodes (calling `EnemyDisplay.setup(enemy_data)` on each to load sprites), then calls `combat_engine.start_combat(enemies)` → initializes enemy array, starts 1-second tick timer
@@ -1333,7 +1275,8 @@ Reagents are bought in the prep phase and stored in `GameManager.reagent_invento
 | `unlocked_blueprints: Array[String]` | Array | Blueprint IDs owned |
 | `reagent_inventory: Dictionary` | Dictionary | String → int (reagent_id → count) |
 | `purchased_upgrades: Array[String]` | Array | Upgrade IDs purchased |
-| `shop_board_state: Array` | Array | Serialized shop board items |
+| `shop_board_state: Array` | Array | Shop board as `{col, row, item_id}` entries (see BoardGrid.get_board_state) |
+| `dungeon_board_state: Array` | Array | Dungeon board, same shape |
 | `grid_cols: int` | int | Board width (5 default, 6 with upgrade) |
 | `grid_rows: int` | int | Board height (always 5) |
 

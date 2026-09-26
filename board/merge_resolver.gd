@@ -112,7 +112,6 @@ func _build_options(item_id: String) -> Array[Dictionary]:
 		all_options.append({
 			"item_id": result_id,
 			"display_name": data.get("name", result_id),
-			"icon": data.get("icon", ""),
 			"is_variant": false,
 			"reagent_id": "",
 			"reagent_cost": 0,
@@ -125,7 +124,6 @@ func _build_options(item_id: String) -> Array[Dictionary]:
 		all_options.append({
 			"item_id": variant_id,
 			"display_name": vdata.get("name", variant_id),
-			"icon": vdata.get("icon", ""),
 			"is_variant": true,
 			"reagent_id": reagent_id,
 			"reagent_cost": rdata.get("cost", 0),

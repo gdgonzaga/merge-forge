@@ -347,7 +347,7 @@ func _make_enemy(enemy_id: String, slot: int) -> Dictionary:
 		"current_hp": base.get("max_hp", 30),
 		"attack_type": attack_type,
 		"attack": base.get("attack", 5),
-		"sprite": base.get("sprite", ""),
+		"sprite": base["sprite"],
 		"drop_count": base.get("drop_count", {"min": 1, "max": 1}),
 		"drop_pool": base.get("drop_pool", []),
 		"heavy_attack": heavy,

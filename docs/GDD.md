@@ -383,7 +383,7 @@ Transitions:
 
 ### Item Catalog (MVP)
 
-All items in `items.json`. 2 families with merge chains defined in `recipes.json`: 7 base items, plus 2 usable items, 1 variant item, and 1 reagent (11 MVP items total).
+All items are `.tres` definitions in `resources/definitions/items/`. 2 families with merge chains defined in `recipes.json`: 7 base items, plus 2 usable items, 1 variant item, and 1 reagent (11 MVP items total).
 
 **Metal family:**
 
@@ -797,8 +797,8 @@ Combat tick (every 1 second):
 
 **GDD dependencies:**
 
-- Reads enemy data from enemies.json
-- Reads usable item effects from items.json
+- Reads enemy data from the enemy definitions (`resources/definitions/enemies/`)
+- Reads usable item effects from the item definitions (`resources/definitions/items/`)
 - Affects party member HP and buffs
 - Affects DropManager (spawns drops on enemy death)
 - Affects Reputation System (penalty on wipe)
@@ -840,6 +840,7 @@ Combat tick (every 1 second):
 | 2026-06-11 | Merge-safe placement for generated items | Crate contents and enemy drops are placed directly on the board when a "safe" empty cell exists (won't trigger an unintended merge). Staging area used only as fallback. Does not apply to player drag placement. |
 | 2026-09-25 | Goblin Cave retune + telegraphed heavy attacks | Unassisted party wipes in encounter 3; one Healing Potion (now 40 HP) clears with a KO, two clear cleanly. Enemies drop refined_potion / herb_bundle so a potion is craftable in-run (~90% by encounter 3). Walk cut from ~50s to ~13s. Healing Potion blueprint is effectively required to clear. |
 | 2026-09-26 | Melee vs. missile attacks, party slots | Melee enemies hit the front member (party slot order Fighter, Mage, Healer; the next slot takes over when the front falls); only missile enemies reach the back line, with low damage. New Goblin Archer (missile) replaces the Slime in encounter 2. Retune: Fighter HP 90 → 120; Slime ATK 2 / Slam 12; Goblin ATK 4 / Smash 30. Balance targets unchanged: unassisted wipe in encounter 3, one potion clears with a KO, two clear cleanly. |
+| 2026-09-27 | Content lives only in `.tres` definitions | The `data/items.json`, `party.json` and `enemies.json` fallback copies are gone. The Android export listed files by hand and shipped no definitions, so phones silently ran on the JSON copies; it now exports all resources minus tmp/test/docs/tools. Board saves store item ids only (a sprite texture can't go through JSON, so reloaded boards had lost their icons); `SAVE_VERSION` 3. |
 | 2026-09-27 | Telegraph lines and HP ghost instead of labels | The "Smash: Fighter in 2" label and the hidden target marker resized the unit rows and pushed the board down. Replaced with a line from enemy to target whose fill is the countdown (red when lethal, width by damage) and a ghost chunk on the target's HP bar. Party cards widened (128 px sprites, 270 px HP bars, HP numbers, 32 px buff text); a fixed gap between the party and enemy rows gives the lines room; dead enemies keep their slot. |
 
 ---

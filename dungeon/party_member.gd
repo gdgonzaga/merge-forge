@@ -11,11 +11,7 @@ var _max_hp: int = 50
 func setup(data: Dictionary) -> void:
 	member_index = data.get("member_index", -1)
 	_max_hp = data.get("max_hp", 50)
-	var spr = data.get("sprite", null)
-	if spr is Texture2D:
-		_unit.sprite.texture = spr
-	elif spr is String and spr != "" and ResourceLoader.exists(spr):
-		_unit.sprite.texture = load(spr)
+	_unit.sprite.texture = data["sprite"]
 	update_hp(_max_hp, _max_hp)
 
 

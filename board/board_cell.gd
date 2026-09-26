@@ -41,15 +41,8 @@ func flash() -> void:
 
 
 func _apply_icon() -> void:
-	var spr = item.get("sprite", item.get("icon", null))
-	if spr is Texture2D:
-		_icon.texture = spr
-		_icon.visible = true
-	elif spr is String and spr != "" and ResourceLoader.exists(spr):
-		_icon.texture = load(spr)
-		_icon.visible = true
-	else:
-		_icon.visible = false
+	_icon.texture = item["sprite"]
+	_icon.visible = true
 
 
 func _get_drag_data(at_position: Vector2) -> Variant:
@@ -59,13 +52,7 @@ func _get_drag_data(at_position: Vector2) -> Variant:
 	preview.size = Vector2(96, 96)
 	preview.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	preview.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	var spr = item.get("sprite", item.get("icon", null))
-	if spr is Texture2D:
-		preview.texture = spr
-	elif spr is String and spr != "" and ResourceLoader.exists(spr):
-		preview.texture = load(spr)
-	else:
-		preview.texture = null
+	preview.texture = item["sprite"]
 	set_drag_preview(preview)
 	preview.position = Vector2(-14, -100)
 	cell_drag_started.emit(grid_pos, item)

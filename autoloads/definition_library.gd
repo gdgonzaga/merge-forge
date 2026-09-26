@@ -23,31 +23,32 @@ func load_all_definitions() -> void:
 	_load_directory("res://resources/definitions/enemies", enemies)
 	_load_directory("res://resources/definitions/attacks", attacks)
 	_load_directory("res://resources/definitions/effects", effects)
+	_check_required_loaded()
+
+
+# An empty catalog means the definitions weren't packaged (export filter) or
+# couldn't be listed. There's no fallback content, so say so loudly.
+func _check_required_loaded() -> void:
+	var required := {"items": items, "party": party, "enemies": enemies}
+	for category: String in required:
+		if (required[category] as Dictionary).is_empty():
+			push_error("DefinitionLibrary: no %s definitions loaded" % category)
+			assert(false, "DefinitionLibrary: no %s definitions loaded" % category)
 
 
 func _load_directory(path: String, target: Dictionary) -> void:
-	if not DirAccess.dir_exists_absolute(path):
-		return
-	var dir := DirAccess.open(path)
-	if not dir:
-		return
-	dir.list_dir_begin()
-	var file_name := dir.get_next()
-	while file_name != "":
-		if not dir.current_is_dir() and file_name.ends_with(".tres"):
-			var full_path := path.path_join(file_name)
-			var res := load(full_path)
-			if res:
-				var res_id: String = ""
-				if "id" in res and res.id != "":
-					res_id = res.id
-				elif "name" in res and res.name != "":
-					res_id = res.name
-				else:
-					res_id = file_name.get_basename()
-				target[res_id] = res
-		file_name = dir.get_next()
-	dir.list_dir_end()
+	# Not DirAccess: in exports, text resources are remapped to binary and a raw
+	# listing shows "x.tres.remap". ResourceLoader lists the original names.
+	for file_name in ResourceLoader.list_directory(path):
+		if not file_name.ends_with(".tres"):
+			continue
+		var full_path := path.path_join(file_name)
+		var res: Resource = load(full_path)
+		if res == null or not "id" in res or res.id == "":
+			push_error("DefinitionLibrary: %s has no id" % full_path)
+			assert(false, "DefinitionLibrary: %s has no id" % full_path)
+			continue
+		target[res.id] = res
 
 
 func get_item(id: String) -> ItemDefinition:

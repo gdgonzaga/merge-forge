@@ -4,11 +4,7 @@ extends PanelContainer
 
 
 func setup(data: Dictionary) -> void:
-	var spr = data.get("sprite", null)
-	if spr is Texture2D:
-		_unit.sprite.texture = spr
-	elif spr is String and spr != "" and ResourceLoader.exists(spr):
-		_unit.sprite.texture = load(spr)
+	_unit.sprite.texture = data["sprite"]
 	_unit.update_hp(data.get("current_hp", 30), data.get("max_hp", 30))
 
 

@@ -87,7 +87,7 @@ func _load_party() -> void:
 		party_data.append({
 			"role": data["id"],
 			"name": data.get("name", data["id"]),
-			"sprite": data.get("sprite", ""),
+			"sprite": data["sprite"],
 			"max_hp": data.get("max_hp", 50),
 			"attack": data.get("attack", 10),
 			"member_index": idx,

@@ -65,6 +65,34 @@ func test_load_bool_in_numeric_field_returns_CORRUPT() -> void:
 	assert_int(r["status"]).is_equal(SaveManager.LoadStatus.CORRUPT)
 
 
+func test_load_board_entry_without_item_id_returns_CORRUPT() -> void:
+	# Board entries carry an item id, never the item's data.
+	var bad := GameManager.serialize()
+	bad["shop_board_state"] = [{"col": 0, "row": 0, "item": {"name": "Ore"}}]
+	_write_save_file(JSON.stringify(bad))
+	var r: Dictionary = SaveManager.load_game_ex()
+	assert_int(r["status"]).is_equal(SaveManager.LoadStatus.CORRUPT)
+
+
+func test_load_board_entry_with_non_numeric_position_returns_CORRUPT() -> void:
+	var bad := GameManager.serialize()
+	bad["dungeon_board_state"] = [{"col": "a", "row": 0, "item_id": "ore"}]
+	_write_save_file(JSON.stringify(bad))
+	var r: Dictionary = SaveManager.load_game_ex()
+	assert_int(r["status"]).is_equal(SaveManager.LoadStatus.CORRUPT)
+
+
+func test_board_state_entries_survive_save_and_load() -> void:
+	GameManager.shop_board_state = [{"col": 1, "row": 2, "item_id": "ore"}]
+	SaveManager.save_game()
+	var r: Dictionary = SaveManager.load_game_ex()
+	assert_int(r["status"]).is_equal(SaveManager.LoadStatus.OK)
+	var entry: Dictionary = r["data"]["shop_board_state"][0]
+	assert_int(int(entry["col"])).is_equal(1)
+	assert_int(int(entry["row"])).is_equal(2)
+	assert_str(entry["item_id"]).is_equal("ore")
+
+
 # --- load: OK ---
 
 func test_save_then_load_returns_OK_and_round_trips() -> void:

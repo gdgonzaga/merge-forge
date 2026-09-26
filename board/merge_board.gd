@@ -126,13 +126,7 @@ func animate_move(moves: Array[Dictionary], _callback: Callable) -> void:
 			_board.get_cell_at(from_pos).clear_item()
 		else:
 			var from_screen: Vector2 = m.get("from_screen", Vector2.ZERO)
-			var icon_path: String = m["item_data"].get("icon", "")
-			if icon_path == "":
-				continue
-			var tex: Texture2D = load(icon_path)
-			if tex == null:
-				continue
-			fi = _spawn_icon(tex, from_screen - overlay_global)
+			fi = _spawn_icon(m["item_data"]["sprite"], from_screen - overlay_global)
 		icons.append({"node": fi, "start": fi.position, "end": to_local - fi.size / 2.0})
 	if icons.is_empty():
 		_board.finalize_move(moves)
