@@ -5,11 +5,18 @@
 [node name="CombatUnit" type="VBoxContainer"]
 script = ExtResource("1")
 
-[node name="Sprite" type="TextureRect" parent="."]
-custom_minimum_size = Vector2(80, 80)
+[node name="TargetMarker" type="TextureRect" parent="."]
+visible = false
 layout_mode = 2
-stretch_mode = 5
+custom_minimum_size = Vector2(80, 80)
 size_flags_horizontal = 4
+stretch_mode = 5
+
+[node name="Sprite" type="TextureRect" parent="."]
+layout_mode = 2
+custom_minimum_size = Vector2(80, 80)
+size_flags_horizontal = 4
+stretch_mode = 5
 
 [node name="HPBar" type="ProgressBar" parent="."]
 custom_minimum_size = Vector2(80, 12)

@@ -834,6 +834,8 @@ Crate definitions are fully data-driven. Whatever crates exist in this file are 
 | `dungeon/drop_manager.gd` | Script | Generates enemy drops, places on dungeon board via merge-safe placement. Does NOT own board logic. |
 | `dungeon/party_member.tscn` | Scene | Visual: chibi character + HP bar + buff indicators. Accepts drag-drops of usable items. |
 | `dungeon/enemy_display.tscn` | Scene | Visual: heavy-attack telegraph label + enemy sprite + HP bar. No interaction. |
+| `dungeon/combat_unit.tscn` | Scene | Reusable unit node with sprite, target reticle, HP bar, and animation helpers (lunge, cast, hit, walk, death). |
+| `dungeon/dungeon_vfx.gd` | Script | VFX overlay attached to AnimOverlay in dungeon_run.tscn: floating combat text, slashes, impacts, projectiles, heal/buff sparkles, screen shake. |
 | `dungeon/dungeon_summary.tscn` | Scene | End-of-dungeon results (cleared or failed). |
 
 ### Data Schema: dungeons.json
@@ -960,6 +962,9 @@ No special abilities for MVP — auto-attack only.
 | `enemy_died(enemy_index: int)` | `combat_engine.gd` | `drop_manager.gd` | No | Enemy Death |
 | `member_ko(member_index: int)` | `combat_engine.gd` | `dungeon_controller.gd`, party_member UI | No | Party KO |
 | `party_wiped()` | `combat_engine.gd` | `dungeon_controller.gd` | No | Dungeon Fail |
+| `party_attacked(member_index: int, target_indices: Array[int], damage_per_target: int)` | `combat_engine.gd` | `dungeon_controller.gd` | No | Combat Animation |
+| `enemy_attacked(enemy_index: int, attack_type: String, is_heavy: bool, target_indices: Array[int], damage: int)` | `combat_engine.gd` | `dungeon_controller.gd` | No | Combat Animation |
+| `telegraph_changed(enemy_index: int, target_index: int, turns_remaining: int)` | `combat_engine.gd` | `dungeon_controller.gd` | No | Combat Telegraph |
 
 ### Flow Trace: Dungeon Run (Full Loop)
 
@@ -1072,6 +1077,9 @@ No special abilities for MVP — auto-attack only.
 | `party_wiped()` | All 3 members KO. dungeon_controller listens. |
 | `encounter_ended()` | All enemies dead. dungeon_controller listens. |
 | `tick_resolved()` | Fired once a tick's damage has landed, so views can refresh HP and telegraphs. |
+| `party_attacked(member_index: int, target_indices: Array[int], damage_per_target: int)` | Fired when a party member attacks alive enemies each tick. |
+| `enemy_attacked(enemy_index: int, attack_type: String, is_heavy: bool, target_indices: Array[int], damage: int)` | Fired when an enemy attacks party member(s). |
+| `telegraph_changed(enemy_index: int, target_index: int, turns_remaining: int)` | Fired when an enemy locks, counts down, or clears a heavy attack target. |
 | `effect_applied(member_index: int, effect_type: String, amount: int)` | Fired when a heal or buff effect is applied to a party member. |
 
 **Functions:**

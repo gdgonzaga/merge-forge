@@ -22,6 +22,26 @@ func show_telegraph(text: String) -> void:
 	_telegraph.text = text
 
 
+func get_unit() -> Control:
+	return _unit
+
+
+func play_spawn() -> void:
+	_unit.play_spawn()
+
+
+func play_lunge(on_impact: Callable, offset_x: float = -20.0) -> void:
+	_unit.play_lunge(on_impact, offset_x)
+
+
+func play_cast() -> void:
+	_unit.play_cast()
+
+
+func play_hit(is_heavy: bool) -> void:
+	_unit.play_hit(is_heavy)
+
+
 func play_death() -> void:
 	var tween := create_tween()
 	tween.tween_property(self, "modulate", Color(1, 1, 1, 0), 0.4)

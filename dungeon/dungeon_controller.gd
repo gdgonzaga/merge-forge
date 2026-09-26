@@ -15,8 +15,10 @@ var enemy_displays: Array = []
 
 var _dungeon_data: Dictionary = {}
 var _walk_timer: Timer
+var _walk_phase: float = 0.0
 
 @onready var board: Control = $VBox/Board
+@onready var vfx: Control = $AnimOverlay
 @onready var _progress_bar: ProgressBar = $VBox/TopBar/ProgressBar
 @onready var _encounter_label: Label = $VBox/TopBar/EncounterLabel
 @onready var _party_container: HBoxContainer = $VBox/PartyContainer
@@ -58,6 +60,10 @@ func _ready() -> void:
 	combat_engine.party_wiped.connect(end_dungeon_failed)
 	combat_engine.encounter_ended.connect(end_encounter)
 	combat_engine.tick_resolved.connect(_refresh_combat_displays)
+	combat_engine.party_attacked.connect(_on_party_attacked)
+	combat_engine.enemy_attacked.connect(_on_enemy_attacked)
+	combat_engine.telegraph_changed.connect(_on_telegraph_changed)
+	combat_engine.effect_applied.connect(_on_effect_applied)
 	add_child(combat_engine)
 
 	drop_mgr = load("res://dungeon/drop_manager.gd").new()
@@ -93,6 +99,9 @@ func start_walking() -> void:
 
 func stop_walking() -> void:
 	_walk_timer.stop()
+	for pm in party_members:
+		if is_instance_valid(pm):
+			pm.play_walk(0.0)
 
 
 func start_encounter(encounter_idx: int) -> void:
@@ -116,6 +125,7 @@ func start_encounter(encounter_idx: int) -> void:
 			var ed: Control = ed_scene.instantiate()
 			_enemy_container.add_child(ed)
 			enemy_displays.append(ed)
+			ed.play_spawn()
 
 	combat_engine.start_combat(encounter)
 
@@ -151,6 +161,9 @@ func apply_usable_item(member_index: int, item_data: Dictionary) -> void:
 func end_dungeon_cleared() -> void:
 	stop_walking()
 	_dbg("DUNGEON CLEARED")
+	for pm in party_members:
+		if is_instance_valid(pm):
+			pm.play_victory()
 	var gold_reward: int = _dungeon_data.get("gold_reward", 0)
 	var bp_reward = _dungeon_data.get("blueprint_reward")
 	GameManager.add_gold(gold_reward)
@@ -184,6 +197,10 @@ func end_dungeon_failed() -> void:
 func _on_walk_tick() -> void:
 	progress += walk_speed * 0.1
 	_progress_bar.value = progress * 100
+	_walk_phase += 0.5
+	for pm in party_members:
+		if is_instance_valid(pm):
+			pm.play_walk(sin(_walk_phase) * 3.0)
 
 	if next_encounter_idx < encounter_points.size():
 		if progress >= encounter_points[next_encounter_idx]:
@@ -218,6 +235,111 @@ func _telegraph_text(enemy: Dictionary) -> String:
 	return "%s: %s in %d" % [heavy["name"], party_data[target]["name"], enemy["heavy_in"]]
 
 
+func _on_party_attacked(member_index: int, target_indices: Array[int], damage_per_target: int) -> void:
+	if member_index >= party_members.size() or not is_instance_valid(party_members[member_index]):
+		return
+	var pm = party_members[member_index]
+	var role: String = party_data[member_index].get("role", "") if member_index < party_data.size() else ""
+	if role == "mage":
+		pm.play_cast()
+		var arrow_tex: Texture2D = load("res://resources/sprites/vfx/arrow.png")
+		for t_idx in target_indices:
+			if t_idx < enemy_displays.size() and is_instance_valid(enemy_displays[t_idx]):
+				var ed = enemy_displays[t_idx]
+				var from_pos: Vector2 = pm.global_position + pm.size * 0.5
+				var to_pos: Vector2 = ed.global_position + ed.size * 0.5
+				if vfx:
+					vfx.spawn_projectile(from_pos, to_pos, arrow_tex, func():
+						if is_instance_valid(ed):
+							ed.play_hit(false)
+						if vfx:
+							vfx.spawn_impact(to_pos, false)
+							vfx.spawn_floating_text(to_pos, str(damage_per_target), Color(0.4, 0.8, 1.0))
+					)
+	else:
+		pm.play_lunge(func():
+			for t_idx in target_indices:
+				if t_idx < enemy_displays.size() and is_instance_valid(enemy_displays[t_idx]):
+					var ed = enemy_displays[t_idx]
+					ed.play_hit(false)
+					var target_pos: Vector2 = ed.global_position + ed.size * 0.5
+					if vfx:
+						vfx.spawn_slash(target_pos, Vector2.RIGHT)
+						vfx.spawn_impact(target_pos, false)
+						vfx.spawn_floating_text(target_pos, str(damage_per_target), Color(1.0, 0.9, 0.2))
+		)
+
+
+func _on_enemy_attacked(enemy_index: int, attack_type: String, is_heavy: bool, target_indices: Array[int], damage: int) -> void:
+	if enemy_index >= enemy_displays.size() or not is_instance_valid(enemy_displays[enemy_index]):
+		return
+	var ed = enemy_displays[enemy_index]
+	if is_heavy:
+		if vfx:
+			vfx.screen_shake(8.0, 0.25)
+		ed.play_lunge(func():
+			for t_idx in target_indices:
+				if t_idx < party_members.size() and is_instance_valid(party_members[t_idx]):
+					var pm = party_members[t_idx]
+					pm.play_hit(true)
+					var target_pos: Vector2 = pm.global_position + pm.size * 0.5
+					if vfx:
+						vfx.spawn_impact(target_pos, true)
+						vfx.spawn_floating_text(target_pos, "-%d" % damage, Color(1.0, 0.2, 0.2), true)
+		, -30.0)
+	elif attack_type == "missile":
+		ed.play_cast()
+		var arrow_tex: Texture2D = load("res://resources/sprites/vfx/arrow.png")
+		for t_idx in target_indices:
+			if t_idx < party_members.size() and is_instance_valid(party_members[t_idx]):
+				var pm = party_members[t_idx]
+				var from_pos: Vector2 = ed.global_position + ed.size * 0.5
+				var to_pos: Vector2 = pm.global_position + pm.size * 0.5
+				if vfx:
+					vfx.spawn_projectile(from_pos, to_pos, arrow_tex, func():
+						if is_instance_valid(pm):
+							pm.play_hit(false)
+						if vfx:
+							vfx.spawn_impact(to_pos, false)
+							vfx.spawn_floating_text(to_pos, "-%d" % damage, Color(1.0, 0.3, 0.3))
+					)
+	else:
+		ed.play_lunge(func():
+			for t_idx in target_indices:
+				if t_idx < party_members.size() and is_instance_valid(party_members[t_idx]):
+					var pm = party_members[t_idx]
+					pm.play_hit(false)
+					var target_pos: Vector2 = pm.global_position + pm.size * 0.5
+					if vfx:
+						vfx.spawn_slash(target_pos, Vector2.LEFT)
+						vfx.spawn_impact(target_pos, false)
+						vfx.spawn_floating_text(target_pos, "-%d" % damage, Color(1.0, 0.3, 0.3))
+		, -20.0)
+
+
+func _on_telegraph_changed(enemy_index: int, target_index: int, turns_remaining: int) -> void:
+	for i in range(party_members.size()):
+		if is_instance_valid(party_members[i]):
+			party_members[i].set_target_marker(i == target_index and turns_remaining > 0)
+	if enemy_index < enemy_displays.size() and is_instance_valid(enemy_displays[enemy_index]):
+		enemy_displays[enemy_index].get_unit().play_heavy_charge(target_index >= 0 and turns_remaining > 0)
+
+
+func _on_effect_applied(member_index: int, effect_type: String, amount: int) -> void:
+	if member_index >= party_members.size() or not is_instance_valid(party_members[member_index]):
+		return
+	var pm = party_members[member_index]
+	var pos: Vector2 = pm.global_position + pm.size * 0.5
+	if effect_type == "heal":
+		if vfx:
+			vfx.spawn_heal_fx(pos)
+			vfx.spawn_floating_text(pos, "+%d HP" % amount, Color(0.2, 1.0, 0.3))
+	elif effect_type == "buff_attack":
+		if vfx:
+			vfx.spawn_buff_fx(pos)
+			vfx.spawn_floating_text(pos, "ATK +%d" % amount, Color(1.0, 0.8, 0.2))
+
+
 func _on_enemy_died(enemy_index: int) -> void:
 	if enemy_index < enemy_displays.size() and is_instance_valid(enemy_displays[enemy_index]):
 		var ed = enemy_displays[enemy_index]
@@ -225,6 +347,8 @@ func _on_enemy_died(enemy_index: int) -> void:
 		var drops: Array[Dictionary] = drop_mgr.spawn_drops(data)
 		if board:
 			drop_mgr.add_drops_to_board(drops, board)
+		if vfx:
+			vfx.spawn_death_poof(ed.global_position + ed.size * 0.5)
 		ed.play_death()
 		enemy_displays[enemy_index] = null
 
@@ -239,6 +363,9 @@ func _clear_enemy_displays() -> void:
 		if ed and is_instance_valid(ed):
 			ed.queue_free()
 	enemy_displays.clear()
+	for pm in party_members:
+		if is_instance_valid(pm):
+			pm.set_target_marker(false)
 
 
 func _get_board_grid() -> Node:

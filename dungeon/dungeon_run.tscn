@@ -5,6 +5,7 @@
 [ext_resource type="PackedScene" path="res://dungeon/party_member.tscn" id="3"]
 [ext_resource type="Texture2D" path="res://resources/sprites/backgrounds/bg_dungeon_run.png" id="4"]
 [ext_resource type="FontFile" path="res://resources/fonts/RobotoCondensed-VariableFont_wght.ttf" id="5_font"]
+[ext_resource type="Script" path="res://dungeon/dungeon_vfx.gd" id="6"]
 
 [node name="DungeonRun" type="Control"]
 layout_mode = 3
@@ -70,3 +71,13 @@ theme_override_constants/separation = 8
 [node name="Board" parent="VBox" instance=ExtResource("2")]
 layout_mode = 2
 size_flags_vertical = 3
+
+[node name="AnimOverlay" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("6")

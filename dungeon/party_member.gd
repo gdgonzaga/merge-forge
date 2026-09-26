@@ -39,6 +39,34 @@ func set_ko() -> void:
 	modulate = Color(0.4, 0.4, 0.4, 1.0)
 
 
+func get_unit() -> Control:
+	return _unit
+
+
+func set_target_marker(active: bool) -> void:
+	_unit.set_target_marker(active)
+
+
+func play_lunge(on_impact: Callable, offset_x: float = 20.0) -> void:
+	_unit.play_lunge(on_impact, offset_x)
+
+
+func play_cast() -> void:
+	_unit.play_cast()
+
+
+func play_hit(is_heavy: bool) -> void:
+	_unit.play_hit(is_heavy)
+
+
+func play_walk(offset_y: float) -> void:
+	_unit.play_walk(offset_y)
+
+
+func play_victory() -> void:
+	_unit.play_victory()
+
+
 func _can_drop_data(_at_position: Vector2, data: Variant) -> bool:
 	if data is Dictionary:
 		if data.get("dungeon_usable", false) and "party" in str(data.get("dungeon_use_target", "")):

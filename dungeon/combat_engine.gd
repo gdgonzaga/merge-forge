@@ -6,6 +6,9 @@ signal party_wiped()
 signal encounter_ended()
 # Fired once a tick's damage has landed, so views can refresh HP and telegraphs.
 signal tick_resolved()
+signal party_attacked(member_index: int, target_indices: Array[int], damage_per_target: int)
+signal enemy_attacked(enemy_index: int, attack_type: String, is_heavy: bool, target_indices: Array[int], damage: int)
+signal telegraph_changed(enemy_index: int, target_index: int, turns_remaining: int)
 signal effect_applied(member_index: int, effect_type: String, amount: int)
 
 # Ticks between heavy attacks of neighbouring enemies. At 1, a pair lands on
@@ -69,7 +72,8 @@ func tick() -> void:
 
 	_dbg("tick: alive_enemies=%d active_members=%d" % [alive_enemies, active_members])
 
-	for member in party_members:
+	for idx in range(party_members.size()):
+		var member: Dictionary = party_members[idx]
 		if member.get("is_ko", false):
 			continue
 		var atk: int = member.get("attack", 10)
@@ -78,10 +82,13 @@ func tick() -> void:
 				atk += int(buff.get("power", 0))
 		var dmg_per_enemy := maxi(floori(atk / alive_enemies), 1)
 		_dbg("  %s atk=%d -> %d dmg to each of %d enemies" % [member.get("name", "?"), atk, dmg_per_enemy, alive_enemies])
+		var hit_enemies: Array[int] = []
 		for i in range(enemies.size()):
 			if enemies[i].get("alive", false):
 				enemies[i]["current_hp"] = enemies[i].get("current_hp", 0) - dmg_per_enemy
 				_dbg("    enemy[%d] %s hp now %d/%d" % [i, enemies[i].get("name", "?"), enemies[i].get("current_hp", 0), enemies[i].get("max_hp", 30)])
+				hit_enemies.append(i)
+		party_attacked.emit(idx, hit_enemies, dmg_per_enemy)
 
 	var deaths: Array[int] = []
 	for i in range(enemies.size()):
@@ -91,6 +98,8 @@ func tick() -> void:
 
 	for idx in deaths:
 		_dbg("enemy %d died: %s" % [idx, enemies[idx].get("name", "?")])
+		if enemies[idx].get("heavy_target", -1) >= 0:
+			telegraph_changed.emit(idx, -1, 0)
 		enemy_died.emit(idx)
 
 	if get_alive_enemy_count() == 0:
@@ -191,22 +200,24 @@ func get_member_data(index: int) -> Dictionary:
 
 
 func _resolve_enemy_attacks() -> void:
-	for enemy in enemies:
+	for i in range(enemies.size()):
+		var enemy: Dictionary = enemies[i]
 		if not enemy.get("alive", false):
 			continue
 		enemy["heavy_in"] = int(enemy["heavy_in"]) - 1
 		if enemy["heavy_in"] <= 0:
-			_land_heavy_attack(enemy)
+			_land_heavy_attack(enemy, i)
 		else:
-			_land_basic_attack(enemy)
+			_land_basic_attack(enemy, i)
 	# Targets are picked after every hit has landed, so none locks onto a member
 	# a later enemy drops this same tick.
-	for enemy in enemies:
+	for i in range(enemies.size()):
+		var enemy: Dictionary = enemies[i]
 		if enemy.get("alive", false):
-			_update_heavy_target(enemy)
+			_update_heavy_target(enemy, i)
 
 
-func _land_basic_attack(enemy: Dictionary) -> void:
+func _land_basic_attack(enemy: Dictionary, enemy_index: int) -> void:
 	var eatk: int = enemy.get("attack", 5)
 	var targets := _standing_members()
 	if targets.is_empty():
@@ -217,27 +228,34 @@ func _land_basic_attack(enemy: Dictionary) -> void:
 	_dbg("  %s atk=%d -> %d dmg to members %s" % [enemy.get("name", "?"), eatk, dmg_per_member, str(targets)])
 	for i in targets:
 		party_members[i]["current_hp"] -= dmg_per_member
+	enemy_attacked.emit(enemy_index, enemy["attack_type"], false, targets, dmg_per_member)
 
 
 # The telegraphed hit lands on one member, locked in when the windup starts so
 # the player knows whom to protect.
-func _land_heavy_attack(enemy: Dictionary) -> void:
+func _land_heavy_attack(enemy: Dictionary, enemy_index: int) -> void:
 	var heavy: Dictionary = enemy["heavy_attack"]
 	var target: int = enemy["heavy_target"]
 	if not _is_standing(target):
 		target = _pick_target(enemy)
+	var dmg: int = int(heavy["damage"])
+	var hit_targets: Array[int] = []
 	if target >= 0:
-		party_members[target]["current_hp"] -= int(heavy["damage"])
-		_dbg("  %s %s -> member %d for %d" % [enemy.get("name", "?"), heavy.get("name", "?"), target, int(heavy["damage"])])
+		party_members[target]["current_hp"] -= dmg
+		_dbg("  %s %s -> member %d for %d" % [enemy.get("name", "?"), heavy.get("name", "?"), target, dmg])
+		hit_targets.append(target)
 	enemy["heavy_in"] = int(heavy["interval"])
 	enemy["heavy_target"] = -1
+	enemy_attacked.emit(enemy_index, enemy["attack_type"], true, hit_targets, dmg)
+	telegraph_changed.emit(enemy_index, -1, enemy["heavy_in"])
 
 
-func _update_heavy_target(enemy: Dictionary) -> void:
+func _update_heavy_target(enemy: Dictionary, enemy_index: int) -> void:
 	if enemy["heavy_in"] > int(enemy["heavy_attack"]["windup"]):
 		return
 	if not _is_standing(enemy["heavy_target"]):
 		enemy["heavy_target"] = _pick_target(enemy)
+	telegraph_changed.emit(enemy_index, enemy["heavy_target"], enemy["heavy_in"])
 
 
 # Standing = not KO'd and not already dropped to 0 this tick (KOs are marked
