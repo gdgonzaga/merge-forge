@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="ItemDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/effect_definition.gd" id="1_kksfp"]
+[ext_resource type="Script" path="res://resources/definitions/item_definition.gd" id="2_vm6my"]
+[ext_resource type="Texture2D" path="res://resources/sprites/items/healing_potion.png" id="3_0pdts"]
+
+[sub_resource type="Resource" id="Resource_myrmm"]
+script = ExtResource("1_kksfp")
+type = "heal"
+value = 40
+
+[resource]
+script = ExtResource("2_vm6my")
+id = "healing_potion"
+name = "Healing Potion"
+family = "herb"
+gold_value = 40
+dungeon_usable = true
+dungeon_use_target = "party-individual"
+effect = SubResource("Resource_myrmm")
+sprite = ExtResource("3_0pdts")

@@ -1,0 +1,38 @@
+[gd_resource type="Resource" script_class="EnemyDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/attack_definition.gd" id="1_m4klu"]
+[ext_resource type="Script" path="res://resources/definitions/enemy_definition.gd" id="2_ydbyd"]
+[ext_resource type="Texture2D" path="res://resources/sprites/enemies/goblin.png" id="3_dxv5k"]
+
+[sub_resource type="Resource" id="Resource_wbv7a"]
+script = ExtResource("1_m4klu")
+name = "Smash"
+interval = 5
+windup = 3
+damage = 30
+
+[resource]
+script = ExtResource("2_ydbyd")
+id = "goblin"
+name = "Goblin"
+max_hp = 170
+attack = 4
+heavy_attack = SubResource("Resource_wbv7a")
+sprite = ExtResource("3_dxv5k")
+drop_count = {
+"max": 4.0,
+"min": 3.0
+}
+drop_pool = Array[Dictionary]([{
+"item_id": "iron_ore",
+"weight": 1.0
+}, {
+"item_id": "iron_ingot",
+"weight": 2.0
+}, {
+"item_id": "herb_bundle",
+"weight": 1.0
+}, {
+"item_id": "refined_potion",
+"weight": 2.0
+}])

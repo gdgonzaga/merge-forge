@@ -4,7 +4,7 @@ MergeForge — a portrait mobile merge game for Android, built in Godot 4.7 with
 
 ## Hard rules
 
-1. **Content is data.** Gameplay content (items, recipes, customers, prices, upgrade values, thresholds) lives in `res://data/*.json`. Scripts never hardcode content values or content ids.
+1. **Content is data.** Gameplay content (items, party members, enemies, attacks, effects) lives in `res://resources/definitions/*.tres`, with configuration data (recipes, blueprints, customers, crates, upgrades, dungeons) in `res://data/*.json`. Definitions use dedicated `Resource` subclasses with a single `sprite: Texture2D` property used for visual representation. Scripts never hardcode content values or content ids.
 2. **No cross-subsystem coupling.** A subsystem folder never preloads from, or node-paths into, another subsystem's folder. No `get_node("../../")`. Talk across subsystems through autoloads or EventBus. The shared folders `ui/` and `resources/` are the only exceptions (see Project map).
 3. **`res://` is read-only at runtime.** Saves and every other runtime write go to `user://`.
 4. **Never commit, amend, or rewrite history unless explicitly asked.** "Work lands on main" describes where commits go once requested, not permission to make them.
@@ -17,14 +17,14 @@ MergeForge — a portrait mobile merge game for Android, built in Godot 4.7 with
 
 | Path | Contents |
 |---|---|
-| `autoloads/` | `EventBus` (signal relay), `GameManager` (all persistent state), `SaveManager` (JSON save to `user://save_data.json`), `RecipeResolver` (loads data JSON, merge options, prices), `AudioManager` |
+| `autoloads/` | `EventBus` (signal relay), `GameManager` (all persistent state), `DefinitionLibrary` (loads `.tres` definitions), `RecipeResolver` (loads data JSON / definitions, merge options, prices), `SaveManager` (JSON save to `user://save_data.json`), `AudioManager` |
 | `core/` | `main.tscn` (root; swaps screens in `SceneContainer` on EventBus signals), `main_menu`, `intro`, `prep_phase`, `hud` |
 | `board/` | Merge board shared by shop and dungeon: grid, cells, drag and drop, merge detection and resolution, merge-choice popup, bonus coins |
 | `shop/` | Shop session: customer queue, order and purchase cards, crates, session summary |
 | `dungeon/` | Dungeon run: combat engine and units, party, enemies, drops, summary |
 | `ui/` | **Shared**, subsystem-agnostic widgets (for example `confirm_dialog`). Any subsystem may preload from `ui/`, but `ui/` must never reference a subsystem. |
-| `resources/` | **Shared** assets: sprites, audio, fonts, themes |
-| `data/` | Content JSON: `items`, `recipes`, `blueprints`, `reagents`, `reagent_combos`, `crates`, `upgrades`, `customers`, `enemies`, `party`, `dungeons` |
+| `resources/` | **Shared** assets: definitions (`.tres`), sprites, audio, fonts, themes |
+| `data/` | Content JSON: `recipes`, `blueprints`, `reagents`, `reagent_combos`, `crates`, `upgrades`, `customers`, `dungeons` |
 | `test/unit/`, `test/helpers/` | gdUnit4 suites; `TestBase` is the base class for all suites |
 | `docs/` | Design docs (GDD, architecture, task list). `ARCHITECTURE.md` is the source of truth for the scene tree, the autoload list and the EventBus registry. |
 

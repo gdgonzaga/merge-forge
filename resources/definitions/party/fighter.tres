@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="PartyMemberDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/party_member_definition.gd" id="1_x3ot4"]
+[ext_resource type="Texture2D" path="res://resources/sprites/party/fighter.png" id="2_lftjh"]
+
+[resource]
+script = ExtResource("1_x3ot4")
+id = "fighter"
+name = "Fighter"
+sprite = ExtResource("2_lftjh")
+max_hp = 120
+attack = 14

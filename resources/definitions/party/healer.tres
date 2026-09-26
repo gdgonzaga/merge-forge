@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="PartyMemberDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/party_member_definition.gd" id="1_vh361"]
+[ext_resource type="Texture2D" path="res://resources/sprites/party/healer.png" id="2_7kjqc"]
+
+[resource]
+script = ExtResource("1_vh361")
+id = "healer"
+name = "Healer"
+sprite = ExtResource("2_7kjqc")
+max_hp = 60
+attack = 5
+slot_order = 2

@@ -2,8 +2,9 @@
 	"slime": {
 		"name": "Slime",
 		"max_hp": 90,
-		"attack": 5,
-		"heavy_attack": { "name": "Slam", "interval": 5, "windup": 3, "damage": 15 },
+		"attack_type": "melee",
+		"attack": 2,
+		"heavy_attack": { "name": "Slam", "interval": 5, "windup": 3, "damage": 12 },
 		"drop_count": { "min": 2, "max": 3 },
 		"drop_pool": [
 			{ "item_id": "iron_ore", "weight": 2 },
@@ -15,12 +16,27 @@
 	"goblin": {
 		"name": "Goblin",
 		"max_hp": 170,
-		"attack": 5,
-		"heavy_attack": { "name": "Smash", "interval": 5, "windup": 3, "damage": 26 },
+		"attack_type": "melee",
+		"attack": 4,
+		"heavy_attack": { "name": "Smash", "interval": 5, "windup": 3, "damage": 30 },
 		"drop_count": { "min": 3, "max": 4 },
 		"drop_pool": [
 			{ "item_id": "iron_ore", "weight": 1 },
 			{ "item_id": "iron_ingot", "weight": 2 },
+			{ "item_id": "herb_bundle", "weight": 1 },
+			{ "item_id": "refined_potion", "weight": 2 }
+		],
+		"sprite": "res://resources/sprites/enemies/goblin.png"
+	},
+	"goblin_archer": {
+		"name": "Goblin Archer",
+		"max_hp": 60,
+		"attack_type": "missile",
+		"attack": 3,
+		"heavy_attack": { "name": "Arrow", "interval": 3, "windup": 2, "damage": 12 },
+		"drop_count": { "min": 2, "max": 3 },
+		"drop_pool": [
+			{ "item_id": "iron_ore", "weight": 2 },
 			{ "item_id": "herb_bundle", "weight": 1 },
 			{ "item_id": "refined_potion", "weight": 2 }
 		],

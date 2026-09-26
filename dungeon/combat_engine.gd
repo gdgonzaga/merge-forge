@@ -6,10 +6,16 @@ signal party_wiped()
 signal encounter_ended()
 # Fired once a tick's damage has landed, so views can refresh HP and telegraphs.
 signal tick_resolved()
+signal effect_applied(member_index: int, effect_type: String, amount: int)
 
 # Ticks between heavy attacks of neighbouring enemies. At 1, a pair lands on
 # back-to-back ticks and can one-shot a full-HP member with no window to heal.
 const HEAVY_STAGGER_TICKS := 2
+
+# Melee reaches only the front member (lowest standing party slot); missile
+# reaches the whole party.
+const ATTACK_MELEE := "melee"
+const ATTACK_MISSILE := "missile"
 
 var party_members: Array[Dictionary] = []
 var enemies: Array[Dictionary] = []
@@ -126,22 +132,34 @@ func tick() -> void:
 	tick_resolved.emit()
 
 
-func apply_effect(member_index: int, effect: Dictionary) -> void:
+func apply_effect(member_index: int, effect: Variant) -> void:
 	if member_index < 0 or member_index >= party_members.size():
 		return
 	var member: Dictionary = party_members[member_index]
 	if member.get("is_ko", false):
 		return
-	var etype: String = effect.get("type", "")
+	var etype: String = ""
+	var power: int = 0
+	var duration: int = 0
+	if effect is EffectDefinition:
+		etype = effect.type
+		power = effect.value
+		duration = effect.duration
+	elif effect is Dictionary:
+		etype = effect.get("type", "")
+		power = int(effect.get("power", effect.get("value", 0)))
+		duration = int(effect.get("duration", 10 if etype == "buff_attack" else 0))
+	
 	if etype == "heal":
-		var power: int = int(effect.get("power", 0))
 		member["current_hp"] = mini(member.get("current_hp", 0) + power, member.get("max_hp", 50))
+		effect_applied.emit(member_index, "heal", power)
 	elif etype == "buff_attack":
 		member.get("active_buffs").append({
 			"effect": "buff_attack",
-			"power": effect.get("power", 0),
-			"duration": int(effect.get("duration", 10)),
+			"power": power,
+			"duration": duration,
 		})
+		effect_applied.emit(member_index, "buff_attack", power)
 
 
 func get_active_member_count() -> int:
@@ -173,8 +191,6 @@ func get_member_data(index: int) -> Dictionary:
 
 
 func _resolve_enemy_attacks() -> void:
-	# Counted once per tick, before any KOs this tick are marked.
-	var active_members := get_active_member_count()
 	for enemy in enemies:
 		if not enemy.get("alive", false):
 			continue
@@ -182,7 +198,7 @@ func _resolve_enemy_attacks() -> void:
 		if enemy["heavy_in"] <= 0:
 			_land_heavy_attack(enemy)
 		else:
-			_land_basic_attack(enemy, active_members)
+			_land_basic_attack(enemy)
 	# Targets are picked after every hit has landed, so none locks onto a member
 	# a later enemy drops this same tick.
 	for enemy in enemies:
@@ -190,13 +206,17 @@ func _resolve_enemy_attacks() -> void:
 			_update_heavy_target(enemy)
 
 
-func _land_basic_attack(enemy: Dictionary, active_members: int) -> void:
+func _land_basic_attack(enemy: Dictionary) -> void:
 	var eatk: int = enemy.get("attack", 5)
-	var dmg_per_member := maxi(floori(eatk / active_members), 1)
-	_dbg("  %s atk=%d -> %d dmg to each of %d members" % [enemy.get("name", "?"), eatk, dmg_per_member, active_members])
-	for member in party_members:
-		if not member.get("is_ko", false):
-			member["current_hp"] = member.get("current_hp", 0) - dmg_per_member
+	var targets := _standing_members()
+	if targets.is_empty():
+		return
+	if enemy["attack_type"] == ATTACK_MELEE:
+		targets = [targets[0]]
+	var dmg_per_member := maxi(floori(eatk / targets.size()), 1)
+	_dbg("  %s atk=%d -> %d dmg to members %s" % [enemy.get("name", "?"), eatk, dmg_per_member, str(targets)])
+	for i in targets:
+		party_members[i]["current_hp"] -= dmg_per_member
 
 
 # The telegraphed hit lands on one member, locked in when the windup starts so
@@ -205,7 +225,7 @@ func _land_heavy_attack(enemy: Dictionary) -> void:
 	var heavy: Dictionary = enemy["heavy_attack"]
 	var target: int = enemy["heavy_target"]
 	if not _is_standing(target):
-		target = _weakest_standing_member()
+		target = _pick_target(enemy)
 	if target >= 0:
 		party_members[target]["current_hp"] -= int(heavy["damage"])
 		_dbg("  %s %s -> member %d for %d" % [enemy.get("name", "?"), heavy.get("name", "?"), target, int(heavy["damage"])])
@@ -217,7 +237,7 @@ func _update_heavy_target(enemy: Dictionary) -> void:
 	if enemy["heavy_in"] > int(enemy["heavy_attack"]["windup"]):
 		return
 	if not _is_standing(enemy["heavy_target"]):
-		enemy["heavy_target"] = _weakest_standing_member()
+		enemy["heavy_target"] = _pick_target(enemy)
 
 
 # Standing = not KO'd and not already dropped to 0 this tick (KOs are marked
@@ -227,6 +247,26 @@ func _is_standing(member_index: int) -> bool:
 		return false
 	var member: Dictionary = party_members[member_index]
 	return not member.get("is_ko", false) and member.get("current_hp", 0) > 0
+
+
+func _pick_target(enemy: Dictionary) -> int:
+	if enemy["attack_type"] == ATTACK_MELEE:
+		return _front_member()
+	return _weakest_standing_member()
+
+
+# Party order is slot order, so the front member is the first one standing.
+func _front_member() -> int:
+	var standing := _standing_members()
+	return standing[0] if not standing.is_empty() else -1
+
+
+func _standing_members() -> Array[int]:
+	var standing: Array[int] = []
+	for i in range(party_members.size()):
+		if _is_standing(i):
+			standing.append(i)
+	return standing
 
 
 func _weakest_standing_member() -> int:
@@ -240,11 +280,14 @@ func _weakest_standing_member() -> int:
 func _make_enemy(enemy_id: String, slot: int) -> Dictionary:
 	var base: Dictionary = RecipeResolver.enemies.get(enemy_id, {})
 	var heavy: Dictionary = base["heavy_attack"].duplicate()
+	var attack_type: String = base["attack_type"]
+	assert(attack_type in [ATTACK_MELEE, ATTACK_MISSILE], "%s: unknown attack_type '%s'" % [enemy_id, attack_type])
 	return {
 		"enemy_id": enemy_id,
 		"name": base.get("name", enemy_id),
 		"max_hp": base.get("max_hp", 30),
 		"current_hp": base.get("max_hp", 30),
+		"attack_type": attack_type,
 		"attack": base.get("attack", 5),
 		"sprite": base.get("sprite", ""),
 		"drop_count": base.get("drop_count", {"min": 1, "max": 1}),

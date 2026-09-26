@@ -40,13 +40,14 @@ Scene transitions are driven by `main.gd` listening to EventBus signals. Main fr
 
 ## Autoloads / Singletons
 
-| Name           | Script               | Responsibility                                                                                                   |
-| -------------- | -------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| GameManager    | `game_manager.gd`    | Persistent state: gold, reputation, blueprints, reagent inventory, upgrades, shop board state, grid size         |
-| EventBus       | `event_bus.gd`       | Cross-scene signal relay (see registry below)                                                                    |
-| AudioManager   | `audio_manager.gd`   | Music playback with crossfade, SFX one-shots                                                                     |
-| RecipeResolver | `recipe_resolver.gd` | Loads recipe/blueprint/reagent/crate/upgrade JSON data. Filters merge options by blueprint ownership and reagent availability. Provides crate and pricing data for shop/prep. |
-| SaveManager    | `save_manager.gd`    | Auto-save/load to single JSON file at checkpoints                                                                |
+| Name              | Script                  | Responsibility                                                                                                   |
+| ----------------- | ----------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| GameManager       | `game_manager.gd`       | Persistent state: gold, reputation, blueprints, reagent inventory, upgrades, shop board state, grid size         |
+| EventBus          | `event_bus.gd`          | Cross-scene signal relay (see registry below)                                                                    |
+| DefinitionLibrary | `definition_library.gd` | Loads and indexes all `.tres` definition resources (items, party, enemies, attacks, effects)                    |
+| RecipeResolver    | `recipe_resolver.gd`    | Loads recipe/blueprint/reagent/crate/upgrade JSON data. Filters merge options by blueprint ownership and reagent availability. Provides crate and pricing data for shop/prep. |
+| SaveManager       | `save_manager.gd`       | Auto-save/load to single JSON file at checkpoints                                                                |
+| AudioManager      | `audio_manager.gd`      | Music playback with crossfade, SFX one-shots                                                                     |
 
 No autoload uses `class_name` — globally accessible by registration name only (per GDD decision log).
 
@@ -859,7 +860,7 @@ Crate definitions are fully data-driven. Whatever crates exist in this file are 
   "encounter_points": [0.2, 0.5, 0.8],
   "encounters": [
     [{"enemy_id": "slime", "count": 2}],
-    [{"enemy_id": "slime", "count": 1}, {"enemy_id": "goblin", "count": 1}],
+    [{"enemy_id": "goblin_archer", "count": 1}, {"enemy_id": "goblin", "count": 1}],
     [{"enemy_id": "goblin", "count": 2}]
   ],
   "gold_reward": 80,
@@ -874,8 +875,9 @@ Crate definitions are fully data-driven. Whatever crates exist in this file are 
 | `enemy_id` | `String` | Unique identifier (key) |
 | `name` | `String` | Display name |
 | `max_hp` | `int` | Base HP |
-| `attack` | `int` | Damage dealt per tick (distributed across targets) |
-| `heavy_attack` | `Dictionary` | Telegraphed single-target hit: `{name: String, interval: int, windup: int, damage: int}`. Lands every `interval` ticks; for the last `windup` ticks the target (weakest standing member, locked when the windup starts) is shown above the enemy. Enemies in one encounter are staggered by `HEAVY_STAGGER_TICKS` per spawn slot. |
+| `attack_type` | `String` | `"melee"` or `"missile"`; required. Sets who both attacks can reach. Melee reaches only the front member (the lowest party slot still standing, so the next slot takes over when the front falls); missile reaches the whole party. |
+| `attack` | `int` | Basic damage per tick. Melee: all of it to the front member. Missile: `floor(attack / standing_count)` to each standing member, min 1. |
+| `heavy_attack` | `Dictionary` | Telegraphed single-target hit: `{name: String, interval: int, windup: int, damage: int}`. Lands every `interval` ticks; for the last `windup` ticks the target (locked when the windup starts: the front member for melee, the weakest standing member for missile) is shown above the enemy. Enemies in one encounter are staggered by `HEAVY_STAGGER_TICKS` per spawn slot. |
 | `drop_count` | `Dictionary` | `{min: int, max: int}` number of drops on death |
 | `drop_pool` | `Array[Dictionary]` | Weighted item pool: `{item_id: String, weight: int or float}`. Same structure and algorithm as crate pools. |
 | `sprite` | `String` | Resource path to sprite texture |
@@ -886,30 +888,36 @@ Crate definitions are fully data-driven. Whatever crates exist in this file are 
 3. Iterate items, accumulating weights — the item whose cumulative range contains the random number is selected
 4. Each roll is independent (same item can drop multiple times from one enemy)
 
-**MVP enemy data:**
+**Example entries (melee and missile):**
 
 ```json
 {
-  "slime": {
-    "name": "Slime",
-    "max_hp": 30,
-    "attack": 5,
-    "drop_count": {"min": 1, "max": 2},
-    "drop_pool": [
-      {"item_id": "iron_ore", "weight": 3},
-      {"item_id": "herb_leaf", "weight": 2}
-    ],
-    "sprite": "res://resources/sprites/enemies/slime.png"
-  },
   "goblin": {
     "name": "Goblin",
-    "max_hp": 50,
-    "attack": 8,
+    "max_hp": 170,
+    "attack_type": "melee",
+    "attack": 4,
+    "heavy_attack": {"name": "Smash", "interval": 5, "windup": 3, "damage": 30},
+    "drop_count": {"min": 3, "max": 4},
+    "drop_pool": [
+      {"item_id": "iron_ore", "weight": 1},
+      {"item_id": "iron_ingot", "weight": 2},
+      {"item_id": "herb_bundle", "weight": 1},
+      {"item_id": "refined_potion", "weight": 2}
+    ],
+    "sprite": "res://resources/sprites/enemies/goblin.png"
+  },
+  "goblin_archer": {
+    "name": "Goblin Archer",
+    "max_hp": 60,
+    "attack_type": "missile",
+    "attack": 3,
+    "heavy_attack": {"name": "Arrow", "interval": 3, "windup": 2, "damage": 12},
     "drop_count": {"min": 2, "max": 3},
     "drop_pool": [
       {"item_id": "iron_ore", "weight": 2},
-      {"item_id": "iron_ingot", "weight": 1},
-      {"item_id": "herb_leaf", "weight": 2}
+      {"item_id": "herb_bundle", "weight": 1},
+      {"item_id": "refined_potion", "weight": 2}
     ],
     "sprite": "res://resources/sprites/enemies/goblin.png"
   }
@@ -920,7 +928,8 @@ Crate definitions are fully data-driven. Whatever crates exist in this file are 
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `party_members` | `Dictionary` | Keyed by role (`"fighter"`, `"mage"`, `"healer"`). Each value is a Dictionary with the fields below. |
+| `party_members` | `Array[Dictionary]` | Ordered front to back: the index is the member's slot, and slot 0 is the front member melee enemies hit. Each entry has the fields below. |
+| `party_members.*.id` | `String` | Unique identifier (e.g. `"fighter"`) |
 | `party_members.*.name` | `String` | Display name |
 | `party_members.*.sprite` | `String` | Resource path to chibi sprite texture |
 | `party_members.*.max_hp` | `int` | Base HP |
@@ -930,24 +939,11 @@ Crate definitions are fully data-driven. Whatever crates exist in this file are 
 
 ```json
 {
-  "fighter": {
-    "name": "Fighter",
-    "sprite": "res://resources/sprites/party/fighter.png",
-    "max_hp": 90,
-    "attack": 14
-  },
-  "mage": {
-    "name": "Mage",
-    "sprite": "res://resources/sprites/party/mage.png",
-    "max_hp": 50,
-    "attack": 18
-  },
-  "healer": {
-    "name": "Healer",
-    "sprite": "res://resources/sprites/party/healer.png",
-    "max_hp": 60,
-    "attack": 5
-  }
+  "party_members": [
+    {"id": "fighter", "name": "Fighter", "sprite": "res://resources/sprites/party/fighter.png", "max_hp": 120, "attack": 14},
+    {"id": "mage", "name": "Mage", "sprite": "res://resources/sprites/party/mage.png", "max_hp": 50, "attack": 18},
+    {"id": "healer", "name": "Healer", "sprite": "res://resources/sprites/party/healer.png", "max_hp": 60, "attack": 5}
+  ]
 }
 ```
 
@@ -975,7 +971,7 @@ No special abilities for MVP — auto-attack only.
 4. Dungeon controller spawns enemy display nodes (calling `EnemyDisplay.setup(enemy_data)` on each to load sprites), then calls `combat_engine.start_combat(enemies)` → initializes enemy array, starts 1-second tick timer
 5. **Combat tick** (every 1 second):
    a. Each active party member: deal `floor(attack / alive_enemy_count)` damage to each alive enemy, min 1
-   b. Each alive enemy counts down its heavy attack. At 0 it deals `heavy_attack.damage` to its locked target (retargeting the weakest standing member if that one fell) and resets to `interval`; otherwise it deals `floor(attack / active_member_count)` damage to each active member, min 1. Once the countdown is within `windup`, it locks a target if it has none.
+   b. Each alive enemy counts down its heavy attack. At 0 it deals `heavy_attack.damage` to its locked target (retargeting if that one fell) and resets to `interval`; otherwise it lands its basic attack. Targets follow `attack_type`: melee hits the front member (lowest standing slot) with the full `attack`; missile splits `attack` over every standing member and locks heavies onto the weakest one. After every enemy has acted, each one whose countdown is within `windup` locks a target if it has none.
    c. Check enemy deaths → emit `enemy_died(index)` → dungeon_controller looks up enemy_data from combat_engine → `drop_manager.spawn_drops(enemy_data)` returns drops array → `drop_manager.add_drops_to_board(drops, board)` creates FloatingItems
    d. Check member KO (HP ≤ 0) → emit `member_ko(index)` → update portrait visual
    e. If all enemies dead → emit `encounter_ended()` → resume walking
@@ -1075,6 +1071,8 @@ No special abilities for MVP — auto-attack only.
 | `member_ko(member_index: int)` | Party member HP reached 0. dungeon_controller and portrait UI listen. |
 | `party_wiped()` | All 3 members KO. dungeon_controller listens. |
 | `encounter_ended()` | All enemies dead. dungeon_controller listens. |
+| `tick_resolved()` | Fired once a tick's damage has landed, so views can refresh HP and telegraphs. |
+| `effect_applied(member_index: int, effect_type: String, amount: int)` | Fired when a heal or buff effect is applied to a party member. |
 
 **Functions:**
 
@@ -1083,7 +1081,7 @@ No special abilities for MVP — auto-attack only.
 | `start_combat(enemy_definitions: Array[Dictionary])` | Initializes enemy array, starts tick timer. |
 | `stop_combat()` | Stops tick timer. |
 | `tick()` | One combat tick: distribute damage, check deaths/KOs, tick buffs. Called by timer timeout. |
-| `apply_effect(member_index: int, effect: Dictionary)` | Applies heal (restore HP) or buff (add to active_buffs). |
+| `apply_effect(member_index: int, effect: Variant)` | Applies heal (restore HP) or buff (add to active_buffs). Accepts `EffectDefinition` or `Dictionary`. |
 | `get_active_member_count() -> int` | Returns count of non-KO members. |
 | `get_alive_enemy_count() -> int` | Returns count of alive enemies. |
 | `get_enemy_data(index: int) -> Dictionary` | Returns enemy definition at index. Used by DropManager after `enemy_died` signal. |

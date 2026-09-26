@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="ItemDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/item_definition.gd" id="1_7tts8"]
+[ext_resource type="Texture2D" path="res://resources/sprites/items/iron_plate.png" id="2_v567f"]
+
+[resource]
+script = ExtResource("1_7tts8")
+id = "iron_plate"
+name = "Iron Plate"
+family = "metal"
+gold_value = 40
+sprite = ExtResource("2_v567f")

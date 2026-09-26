@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="ItemDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/item_definition.gd" id="1_4dlc4"]
+[ext_resource type="Texture2D" path="res://resources/sprites/items/fire_essence.png" id="2_iru8c"]
+
+[resource]
+script = ExtResource("1_4dlc4")
+id = "fire_essence"
+name = "Fire Essence"
+family = "reagent"
+gold_value = 100
+sprite = ExtResource("2_iru8c")

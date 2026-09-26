@@ -143,6 +143,10 @@ All input is touch-based. Mouse is emulated as touch for testing.
 
 Enemies are auto-combat opponents in dungeon mode. The player does not control combat directly — they influence it by crafting usable items and dragging them to party members.
 
+Every enemy has one attack type:
+- **Melee** (most enemies) hits only the front member — the lowest party slot still standing. The party is ordered Fighter, Mage, Healer, so the Fighter tanks; when the Fighter falls, the Mage becomes the front member, then the Healer.
+- **Missile** reaches the whole party: basic damage is split across everyone standing, and the heavy attack picks the weakest member. Missile damage is kept low.
+
 ### Enemy — Slime
 
 **Description:** A weak gelatinous blob. First enemy encountered in Goblin Cave.
@@ -158,8 +162,9 @@ Transitions:
 | Property | Value |
 |----------|-------|
 | Health | 90 |
-| Attack damage | 5 |
-| Heavy attack | Slam: 15 damage to one member every 5s, telegraphed 3s ahead |
+| Attack type | Melee |
+| Attack damage | 2 |
+| Heavy attack | Slam: 12 damage to the front member every 5s, telegraphed 3s ahead |
 | Drop pool | `[{item_id: "iron_ore", weight: 2}, {item_id: "herb_bundle", weight: 2}, {item_id: "refined_potion", weight: 2}]` |
 | Drop count | 2–3 |
 
@@ -180,13 +185,37 @@ Transitions:
 | Property | Value |
 |----------|-------|
 | Health | 170 |
-| Attack damage | 5 |
-| Heavy attack | Smash: 26 damage to one member every 5s, telegraphed 3s ahead |
+| Attack type | Melee |
+| Attack damage | 4 |
+| Heavy attack | Smash: 30 damage to the front member every 5s, telegraphed 3s ahead |
 | Drop pool | `[{item_id: "iron_ore", weight: 1}, {item_id: "iron_ingot", weight: 2}, {item_id: "herb_bundle", weight: 1}, {item_id: "refined_potion", weight: 2}]` |
 | Drop count | 3–4 |
 
 **Cannot do:** Cannot move, cannot buff itself.
 **Notes:** Appears as a solo enemy or in groups in the later encounters of Goblin Cave.
+
+### Enemy — Goblin Archer
+
+**Description:** A goblin that shoots from behind the melee line. Uses the Goblin sprite for now.
+**Role:** Low-damage pressure on the back line, so the Mage and Healer are not perfectly safe while the Fighter tanks.
+
+```
+States: Alive, Dead
+
+Transitions:
+- Alive → Dead: HP <= 0
+```
+
+| Property | Value |
+|----------|-------|
+| Health | 60 |
+| Attack type | Missile |
+| Attack damage | 3 (split across the standing party) |
+| Heavy attack | Arrow: 12 damage to the weakest member every 3s, telegraphed 2s ahead |
+| Drop pool | `[{item_id: "iron_ore", weight: 2}, {item_id: "herb_bundle", weight: 1}, {item_id: "refined_potion", weight: 2}]` |
+| Drop count | 2–3 |
+
+**Cannot do:** Cannot move, cannot buff itself.
 
 ---
 
@@ -217,7 +246,7 @@ Transitions:
 
 - **Level structure:** Linear. One dungeon (Goblin Cave) with 3 encounters at 20%, 50%, 80% progress:
   - Encounter 1 (20%): 2× Slime
-  - Encounter 2 (50%): 1× Slime, 1× Goblin
+  - Encounter 2 (50%): 1× Goblin Archer, 1× Goblin
   - Encounter 3 (80%): 2× Goblin
 - **Number of dungeons:** 1 (MVP). More planned for later versions.
 - **Progression unlock:** Reputation-based. Fulfilling orders earns reputation points. Crossing thresholds unlocks new customer tiers and dungeon access.
@@ -332,7 +361,7 @@ Transitions:
 | Despawn timer (default) | 12 seconds | Staging area items |
 | Despawn timer (upgraded) | 18 seconds | With Slow Timer upgrade |
 | Combat tick interval | 1.0 second | Auto-combat damage frequency |
-| Party: Fighter | HP 90, ATK 14 | Auto-attack only for MVP |
+| Party: Fighter | HP 120, ATK 14 | Slot 0 (front); takes all melee damage while standing |
 | Party: Mage | HP 50, ATK 18 | Auto-attack only for MVP |
 | Party: Healer | HP 60, ATK 5 | Auto-attack only for MVP |
 | Dungeon walk speed | 0.075 progress/second | Default value; configurable per dungeon definition |
@@ -738,7 +767,9 @@ Party members (3): Fighter, Mage, Healer
 
 Combat tick (every 1 second):
 1. For each active party member: deal floor(attack / alive_enemy_count) damage to each enemy, min 1
-2. For each alive enemy: deal floor(attack / active_member_count) damage to each member, min 1
+2. For each alive enemy: melee deals its full attack to the front member (lowest standing slot);
+   missile deals floor(attack / standing_count) to each standing member, min 1.
+   Every few ticks the enemy's telegraphed heavy attack replaces its basic attack.
 3. Check enemy deaths → spawn drops
 4. Check member knockouts → emit signal
 5. If all enemies dead → victory
@@ -805,6 +836,7 @@ Combat tick (every 1 second):
 | 2026-06-10 | Remove `tier` field from items.json | Merge chains fully defined by recipes.json; reagent variant eligibility determined by reagent_combos.json entries; no derived or computed tier property needed |
 | 2026-06-11 | Merge-safe placement for generated items | Crate contents and enemy drops are placed directly on the board when a "safe" empty cell exists (won't trigger an unintended merge). Staging area used only as fallback. Does not apply to player drag placement. |
 | 2026-09-25 | Goblin Cave retune + telegraphed heavy attacks | Unassisted party wipes in encounter 3; one Healing Potion (now 40 HP) clears with a KO, two clear cleanly. Enemies drop refined_potion / herb_bundle so a potion is craftable in-run (~90% by encounter 3). Walk cut from ~50s to ~13s. Healing Potion blueprint is effectively required to clear. |
+| 2026-09-26 | Melee vs. missile attacks, party slots | Melee enemies hit the front member (party slot order Fighter, Mage, Healer; the next slot takes over when the front falls); only missile enemies reach the back line, with low damage. New Goblin Archer (missile) replaces the Slime in encounter 2. Retune: Fighter HP 90 → 120; Slime ATK 2 / Slam 12; Goblin ATK 4 / Smash 30. Balance targets unchanged: unassisted wipe in encounter 3, one potion clears with a KO, two clear cleanly. |
 
 ---
 

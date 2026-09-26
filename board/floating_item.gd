@@ -25,9 +25,12 @@ func setup(data: Dictionary, time: float) -> void:
 func _apply_icon() -> void:
 	if _icon == null:
 		return
-	var icon_path: String = item_data.get("icon", "")
-	if icon_path != "" and ResourceLoader.exists(icon_path):
-		_icon.texture = load(icon_path)
+	var spr = item_data.get("sprite", item_data.get("icon", null))
+	if spr is Texture2D:
+		_icon.texture = spr
+		_icon.visible = true
+	elif spr is String and spr != "" and ResourceLoader.exists(spr):
+		_icon.texture = load(spr)
 		_icon.visible = true
 
 
@@ -56,9 +59,11 @@ func _get_drag_data(at_position: Vector2) -> Variant:
 	preview.size = Vector2(96, 96)
 	preview.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	preview.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	var icon_path: String = item_data.get("icon", "")
-	if icon_path != "" and ResourceLoader.exists(icon_path):
-		preview.texture = load(icon_path)
+	var spr = item_data.get("sprite", item_data.get("icon", null))
+	if spr is Texture2D:
+		preview.texture = spr
+	elif spr is String and spr != "" and ResourceLoader.exists(spr):
+		preview.texture = load(spr)
 	else:
 		preview.texture = null
 	set_drag_preview(preview)

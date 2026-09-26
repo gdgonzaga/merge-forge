@@ -6,7 +6,7 @@
 		"encounter_points": [0.2, 0.5, 0.8],
 		"encounters": [
 			[{ "enemy_id": "slime", "count": 2 }],
-			[{ "enemy_id": "slime", "count": 1 }, { "enemy_id": "goblin", "count": 1 }],
+			[{ "enemy_id": "goblin_archer", "count": 1 }, { "enemy_id": "goblin", "count": 1 }],
 			[{ "enemy_id": "goblin", "count": 2 }]
 		],
 		"gold_reward": 80,

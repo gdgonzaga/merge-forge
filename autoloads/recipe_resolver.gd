@@ -13,16 +13,97 @@ var party: Dictionary = {}
 
 
 func _ready() -> void:
-	items = _load_json("res://data/items.json")
+	_load_from_definitions()
 	recipes = _load_json("res://data/recipes.json")
 	blueprints = _load_json("res://data/blueprints.json")
 	reagent_combos = _load_json("res://data/reagent_combos.json")
 	crates = _load_json("res://data/crates.json")
 	upgrades = _load_json("res://data/upgrades.json")
 	reagents = _load_json("res://data/reagents.json")
-	enemies = _load_json("res://data/enemies.json")
 	dungeons = _load_json("res://data/dungeons.json")
-	party = _load_json("res://data/party.json")
+
+
+func _load_from_definitions() -> void:
+	items.clear()
+	if DefinitionLibrary != null and not DefinitionLibrary.items.is_empty():
+		for item_id in DefinitionLibrary.items:
+			var idef = DefinitionLibrary.items[item_id]
+			if idef is ItemDefinition:
+				items[item_id] = _item_to_dict(idef)
+	else:
+		items = _load_json("res://data/items.json")
+
+	party.clear()
+	if DefinitionLibrary != null and not DefinitionLibrary.party.is_empty():
+		var party_list: Array = []
+		for pdef in DefinitionLibrary.get_all_party_members():
+			party_list.append(_party_member_to_dict(pdef))
+		party["party_members"] = party_list
+	else:
+		party = _load_json("res://data/party.json")
+
+	enemies.clear()
+	if DefinitionLibrary != null and not DefinitionLibrary.enemies.is_empty():
+		for enemy_id in DefinitionLibrary.enemies:
+			var edef = DefinitionLibrary.enemies[enemy_id]
+			if edef is EnemyDefinition:
+				enemies[enemy_id] = _enemy_to_dict(edef)
+	else:
+		enemies = _load_json("res://data/enemies.json")
+
+
+func _item_to_dict(def: ItemDefinition) -> Dictionary:
+	var eff_dict = null
+	if def.effect != null:
+		eff_dict = {
+			"type": def.effect.type,
+			"power": def.effect.value,
+			"duration": def.effect.duration,
+		}
+	return {
+		"id": def.id,
+		"name": def.name,
+		"family": def.family,
+		"gold_value": def.gold_value,
+		"dungeon_usable": def.dungeon_usable,
+		"dungeon_use_target": def.dungeon_use_target,
+		"effect": eff_dict,
+		"sprite": def.sprite,
+	}
+
+
+func _party_member_to_dict(def: PartyMemberDefinition) -> Dictionary:
+	return {
+		"id": def.id,
+		"name": def.name,
+		"sprite": def.sprite,
+		"max_hp": def.max_hp,
+		"attack": def.attack,
+		"slot_order": def.slot_order,
+	}
+
+
+func _enemy_to_dict(def: EnemyDefinition) -> Dictionary:
+	var heavy_dict: Dictionary = {}
+	if def.heavy_attack != null:
+		heavy_dict = {
+			"name": def.heavy_attack.name,
+			"interval": def.heavy_attack.interval,
+			"windup": def.heavy_attack.windup,
+			"damage": def.heavy_attack.damage,
+			"type": def.heavy_attack.type,
+		}
+	return {
+		"id": def.id,
+		"name": def.name,
+		"max_hp": def.max_hp,
+		"attack_type": def.attack_type,
+		"attack": def.attack,
+		"heavy_attack": heavy_dict,
+		"sprite": def.sprite,
+		"drop_count": def.drop_count,
+		"drop_pool": def.drop_pool,
+	}
 
 
 func get_options(item_id: String) -> Array[Dictionary]:

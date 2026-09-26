@@ -72,19 +72,18 @@ func _ready() -> void:
 
 
 func _load_party() -> void:
-	var members: Dictionary = RecipeResolver.party.get("party_members", {})
-	var idx := 0
-	for role in ["fighter", "mage", "healer"]:
-		var data: Dictionary = members.get(role, {})
+	# Array order is slot order: index 0 is the front member melee enemies hit.
+	var members: Array = RecipeResolver.party["party_members"]
+	for idx in range(members.size()):
+		var data: Dictionary = members[idx]
 		party_data.append({
-			"role": role,
-			"name": data.get("name", role),
+			"role": data["id"],
+			"name": data.get("name", data["id"]),
 			"sprite": data.get("sprite", ""),
 			"max_hp": data.get("max_hp", 50),
 			"attack": data.get("attack", 10),
 			"member_index": idx,
 		})
-		idx += 1
 
 
 func start_walking() -> void:
@@ -142,10 +141,11 @@ func apply_usable_item(member_index: int, item_data: Dictionary) -> void:
 	var board_grid = _get_board_grid()
 	if board_grid and source_pos.x >= 0:
 		board_grid.discard_item(source_pos)
-	var effect: Dictionary = item_data.get("effect", {})
-	if not effect.is_empty():
-		combat_engine.apply_effect(member_index, effect)
-		_refresh_combat_displays()
+	var effect = item_data.get("effect", null)
+	if effect != null:
+		if effect is EffectDefinition or (effect is Dictionary and not effect.is_empty()):
+			combat_engine.apply_effect(member_index, effect)
+			_refresh_combat_displays()
 
 
 func end_dungeon_cleared() -> void:

@@ -1,0 +1,36 @@
+[gd_resource type="Resource" script_class="EnemyDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/attack_definition.gd" id="1_s7l3k"]
+[ext_resource type="Script" path="res://resources/definitions/enemy_definition.gd" id="2_w2asp"]
+[ext_resource type="Texture2D" path="res://resources/sprites/enemies/goblin.png" id="3_8ia7f"]
+
+[sub_resource type="Resource" id="Resource_jt5v2"]
+script = ExtResource("1_s7l3k")
+name = "Arrow"
+interval = 3
+windup = 2
+damage = 12
+
+[resource]
+script = ExtResource("2_w2asp")
+id = "goblin_archer"
+name = "Goblin Archer"
+max_hp = 60
+attack_type = "missile"
+attack = 3
+heavy_attack = SubResource("Resource_jt5v2")
+sprite = ExtResource("3_8ia7f")
+drop_count = {
+"max": 3.0,
+"min": 2.0
+}
+drop_pool = Array[Dictionary]([{
+"item_id": "iron_ore",
+"weight": 2.0
+}, {
+"item_id": "herb_bundle",
+"weight": 1.0
+}, {
+"item_id": "refined_potion",
+"weight": 2.0
+}])

@@ -31,9 +31,11 @@ func _ready() -> void:
 func _apply_data() -> void:
 	var item_id: String = order_data.get("item_id", "")
 	var item_info: Dictionary = RecipeResolver.get_item_data(item_id)
-	var icon_path: String = item_info.get("icon", "")
-	if icon_path != "" and ResourceLoader.exists(icon_path):
-		_icon.texture = load(icon_path)
+	var spr = item_info.get("sprite", item_info.get("icon", null))
+	if spr is Texture2D:
+		_icon.texture = spr
+	elif spr is String and spr != "" and ResourceLoader.exists(spr):
+		_icon.texture = load(spr)
 	_qty_label.text = "x%d" % order_data.get("quantity", 1)
 	_reward_label.text = "%dg" % order_data.get("gold_reward", 0)
 
