@@ -38,8 +38,8 @@ func before_test() -> void:
 
 func _init_party(hp_a: int, hp_b: int) -> void:
 	var party: Array[Dictionary] = [
-		{"role": "fighter", "name": "Fighter", "max_hp": hp_a, "attack": 10},
-		{"role": "healer", "name": "Healer", "max_hp": hp_b, "attack": 8},
+		{"name": "Fighter", "max_hp": hp_a, "attack": 10, "attack_type": "melee"},
+		{"name": "Healer", "max_hp": hp_b, "attack": 8, "attack_type": "missile"},
 	]
 	_engine.init_party(party)
 
@@ -49,17 +49,19 @@ func test_party_attacked_signal_emits_with_targets_and_damage() -> void:
 	_engine.party_attacked.connect(func(idx: int, targets: Array[int], dmg: int):
 		events.append({"idx": idx, "targets": targets, "dmg": dmg})
 	)
-	_engine.start_combat([{"enemy_id": BRUTE_ID, "count": 1}])
+	_engine.start_combat([{"enemy_id": BRUTE_ID, "count": 2}])
 	_engine.tick()
 
+	# Fighter (melee) hits only the front enemy with its full 10; Healer
+	# (missile) splits 8 over both enemies.
 	assert_int(events.size()).is_equal(2)
 	assert_int(events[0]["idx"]).is_equal(0)
 	assert_array(events[0]["targets"]).is_equal([0])
 	assert_int(events[0]["dmg"]).is_equal(10)
 
 	assert_int(events[1]["idx"]).is_equal(1)
-	assert_array(events[1]["targets"]).is_equal([0])
-	assert_int(events[1]["dmg"]).is_equal(8)
+	assert_array(events[1]["targets"]).is_equal([0, 1])
+	assert_int(events[1]["dmg"]).is_equal(4)
 
 
 func test_enemy_attacked_melee_emits_front_target() -> void:

@@ -6,7 +6,7 @@
 [ext_resource type="Texture2D" path="res://resources/sprites/backgrounds/bg_dungeon_run.png" id="4"]
 [ext_resource type="FontFile" path="res://resources/fonts/RobotoCondensed-VariableFont_wght.ttf" id="5_font"]
 [ext_resource type="Script" path="res://dungeon/dungeon_vfx.gd" id="6"]
-[ext_resource type="Script" path="res://dungeon/telegraph_overlay.gd" id="7"]
+[ext_resource type="Script" path="res://dungeon/combat_lines.gd" id="7"]
 
 [node name="DungeonRun" type="Control"]
 layout_mode = 3
@@ -70,7 +70,7 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="EnemyContainer" type="HBoxContainer" parent="VBox"]
-custom_minimum_size = Vector2(0, 110)
+custom_minimum_size = Vector2(0, 140)
 layout_mode = 2
 alignment = 1
 theme_override_constants/separation = 8
@@ -89,7 +89,7 @@ grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("6")
 
-[node name="TelegraphOverlay" type="Control" parent="AnimOverlay"]
+[node name="CombatLines" type="Control" parent="AnimOverlay"]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 15

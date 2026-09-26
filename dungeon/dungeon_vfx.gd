@@ -3,7 +3,7 @@ extends Control
 
 # This node is instantiated as `AnimOverlay` in `dungeon_run.tscn`.
 # It provides lightweight helpers for spawning temporary VFX such as floating text,
-# slash sprites, impact bursts, projectiles, heal/buff sparkles, and screen shake.
+# slash sprites, impact bursts, heal/buff sparkles, and screen shake.
 # All effects are short‑lived (0.2‑0.4 s) and free themselves when finished.
 
 func _to_local(global_pos: Vector2) -> Vector2:
@@ -56,25 +56,6 @@ func spawn_impact(global_pos: Vector2, is_heavy: bool) -> void:
 	var tween := create_tween()
 	tween.tween_property(sprite, "modulate:a", 0.0, 0.25).set_ease(Tween.EASE_IN)
 	tween.finished.connect(sprite.queue_free)
-
-
-# Projectile (arrow or magic missile)
-func spawn_projectile(from_pos: Vector2, to_pos: Vector2, texture: Texture2D, on_hit: Callable) -> void:
-	var sprite := TextureRect.new()
-	sprite.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	sprite.texture = texture
-	var tex_size := texture.get_size() if texture else Vector2(16, 16)
-	sprite.pivot_offset = tex_size * 0.5
-	sprite.position = _to_local(from_pos) - tex_size * 0.5
-	var dir := to_pos - from_pos
-	sprite.rotation = dir.angle()
-	add_child(sprite)
-	var tween := create_tween()
-	tween.tween_property(sprite, "position", _to_local(to_pos) - tex_size * 0.5, 0.25).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
-	tween.finished.connect(func():
-		sprite.queue_free()
-		on_hit.call()
-	)
 
 
 # Heal sparkle

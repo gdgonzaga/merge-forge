@@ -1,0 +1,16 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://dungeon/attack_badge.gd" id="1"]
+[ext_resource type="Texture2D" path="res://resources/sprites/vfx/slash.png" id="2"]
+[ext_resource type="Texture2D" path="res://resources/sprites/vfx/arrow.png" id="3"]
+
+[node name="AttackBadge" type="TextureRect"]
+custom_minimum_size = Vector2(40, 40)
+size_flags_horizontal = 4
+size_flags_vertical = 4
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+script = ExtResource("1")
+melee_texture = ExtResource("2")
+missile_texture = ExtResource("3")

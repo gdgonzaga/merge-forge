@@ -15,8 +15,8 @@ signal effect_applied(member_index: int, effect_type: String, amount: int)
 # back-to-back ticks and can one-shot a full-HP member with no window to heal.
 const HEAVY_STAGGER_TICKS := 2
 
-# Melee reaches only the front member (lowest standing party slot); missile
-# reaches the whole party.
+# One rule for both sides: melee reaches only the front of the other side (the
+# lowest standing slot), missile reaches all of it.
 const ATTACK_MELEE := "melee"
 const ATTACK_MISSILE := "missile"
 
@@ -51,8 +51,11 @@ func stop_combat() -> void:
 func init_party(party_data: Array[Dictionary]) -> void:
 	party_members.clear()
 	for data in party_data:
+		var attack_type: String = data["attack_type"]
+		assert(attack_type in [ATTACK_MELEE, ATTACK_MISSILE], "%s: unknown attack_type '%s'" % [data.get("name", "?"), attack_type])
 		party_members.append({
 			"name": data.get("name", ""),
+			"attack_type": attack_type,
 			"max_hp": data.get("max_hp", 50),
 			"current_hp": data.get("max_hp", 50),
 			"attack": data.get("attack", 10),
@@ -73,22 +76,8 @@ func tick() -> void:
 	_dbg("tick: alive_enemies=%d active_members=%d" % [alive_enemies, active_members])
 
 	for idx in range(party_members.size()):
-		var member: Dictionary = party_members[idx]
-		if member.get("is_ko", false):
-			continue
-		var atk: int = member.get("attack", 10)
-		for buff in member.get("active_buffs", []):
-			if buff.get("effect", "") == "buff_attack":
-				atk += int(buff.get("power", 0))
-		var dmg_per_enemy := maxi(floori(atk / alive_enemies), 1)
-		_dbg("  %s atk=%d -> %d dmg to each of %d enemies" % [member.get("name", "?"), atk, dmg_per_enemy, alive_enemies])
-		var hit_enemies: Array[int] = []
-		for i in range(enemies.size()):
-			if enemies[i].get("alive", false):
-				enemies[i]["current_hp"] = enemies[i].get("current_hp", 0) - dmg_per_enemy
-				_dbg("    enemy[%d] %s hp now %d/%d" % [i, enemies[i].get("name", "?"), enemies[i].get("current_hp", 0), enemies[i].get("max_hp", 30)])
-				hit_enemies.append(i)
-		party_attacked.emit(idx, hit_enemies, dmg_per_enemy)
+		if not party_members[idx].get("is_ko", false):
+			_land_party_attack(idx)
 
 	var deaths: Array[int] = []
 	for i in range(enemies.size()):
@@ -199,26 +188,35 @@ func get_member_data(index: int) -> Dictionary:
 	return party_members[index]
 
 
+# Which of the candidate slots (ordered front to back) an attack reaches.
+static func reach(attack_type: String, candidates: Array[int]) -> Array[int]:
+	if attack_type == ATTACK_MELEE and not candidates.is_empty():
+		return [candidates[0]]
+	return candidates.duplicate()
+
+
 func is_combat_running() -> bool:
 	return not tick_timer.is_stopped()
 
 
 # 0 when the windup starts (end of the tick that locked the target), 1 when the
-# heavy attack lands. Pure so views and tests don't depend on a running timer.
-static func windup_progress(heavy_in: int, windup: int, tick_time_left: float, tick_wait: float) -> float:
-	var total := windup * tick_wait
+# heavy attack plays. The view plays enemy hits `landing_delay` seconds after
+# the tick that resolves them, so the countdown stretches to end on that beat.
+# Pure so views and tests don't depend on a running timer.
+static func windup_progress(heavy_in: int, windup: int, tick_time_left: float, tick_wait: float, landing_delay: float) -> float:
+	var total := windup * tick_wait + landing_delay
 	if total <= 0.0:
 		return 1.0
-	var remaining := (heavy_in - 1) * tick_wait + tick_time_left
+	var remaining := (heavy_in - 1) * tick_wait + tick_time_left + landing_delay
 	return clampf(1.0 - remaining / total, 0.0, 1.0)
 
 
 # -1 when the enemy isn't winding up a heavy attack or combat is stopped.
-func get_windup_progress(enemy_index: int) -> float:
+func get_windup_progress(enemy_index: int, landing_delay: float) -> float:
 	if not is_combat_running() or not _is_winding_up(enemy_index):
 		return -1.0
 	var enemy: Dictionary = enemies[enemy_index]
-	return windup_progress(enemy["heavy_in"], int(enemy["heavy_attack"]["windup"]), tick_timer.time_left, tick_timer.wait_time)
+	return windup_progress(enemy["heavy_in"], int(enemy["heavy_attack"]["windup"]), tick_timer.time_left, tick_timer.wait_time, landing_delay)
 
 
 # Total heavy damage currently telegraphed at this member.
@@ -237,6 +235,32 @@ func _is_winding_up(enemy_index: int) -> bool:
 		return false
 	var enemy: Dictionary = enemies[enemy_index]
 	return enemy.get("alive", false) and enemy["heavy_target"] >= 0
+
+
+func _land_party_attack(member_index: int) -> void:
+	var member: Dictionary = party_members[member_index]
+	var targets := reach(member["attack_type"], _alive_enemies())
+	if targets.is_empty():
+		return
+	var atk: int = member.get("attack", 10)
+	for buff in member.get("active_buffs", []):
+		if buff.get("effect", "") == "buff_attack":
+			atk += int(buff.get("power", 0))
+	var dmg_per_enemy := maxi(floori(atk / targets.size()), 1)
+	_dbg("  %s atk=%d -> %d dmg to enemies %s" % [member.get("name", "?"), atk, dmg_per_enemy, str(targets)])
+	for i in targets:
+		enemies[i]["current_hp"] -= dmg_per_enemy
+	party_attacked.emit(member_index, targets, dmg_per_enemy)
+
+
+# Alive and not already dropped to 0 this tick (deaths are marked only after
+# the whole party has attacked), mirroring _standing_members.
+func _alive_enemies() -> Array[int]:
+	var alive: Array[int] = []
+	for i in range(enemies.size()):
+		if enemies[i].get("alive", false) and enemies[i].get("current_hp", 0) > 0:
+			alive.append(i)
+	return alive
 
 
 func _resolve_enemy_attacks() -> void:
@@ -259,11 +283,9 @@ func _resolve_enemy_attacks() -> void:
 
 func _land_basic_attack(enemy: Dictionary, enemy_index: int) -> void:
 	var eatk: int = enemy.get("attack", 5)
-	var targets := _standing_members()
+	var targets := reach(enemy["attack_type"], _standing_members())
 	if targets.is_empty():
 		return
-	if enemy["attack_type"] == ATTACK_MELEE:
-		targets = [targets[0]]
 	var dmg_per_member := maxi(floori(eatk / targets.size()), 1)
 	_dbg("  %s atk=%d -> %d dmg to members %s" % [enemy.get("name", "?"), eatk, dmg_per_member, str(targets)])
 	for i in targets:

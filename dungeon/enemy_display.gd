@@ -1,10 +1,12 @@
 extends PanelContainer
 
 @onready var _unit = %Unit
+@onready var _badge: TextureRect = %AttackBadge
 
 
 func setup(data: Dictionary) -> void:
 	_unit.sprite.texture = data["sprite"]
+	_badge.set_attack_type(data["attack_type"])
 	_unit.update_hp(data.get("current_hp", 30), data.get("max_hp", 30))
 
 
@@ -20,8 +22,8 @@ func play_spawn() -> void:
 	_unit.play_spawn()
 
 
-func play_lunge(on_impact: Callable, offset_x: float = -20.0) -> void:
-	_unit.play_lunge(on_impact, offset_x)
+func play_lunge(direction: Vector2, distance: float) -> void:
+	_unit.play_lunge(direction, distance)
 
 
 func play_cast() -> void:

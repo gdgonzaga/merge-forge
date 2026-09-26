@@ -52,7 +52,7 @@ func test_definition_library_missing_returns_null() -> void:
 func test_combat_engine_applies_effect_definition() -> void:
 	var engine: Node = auto_free(load("res://dungeon/combat_engine.gd").new())
 	add_child(engine)
-	var test_party: Array[Dictionary] = [{"name": "Hero", "max_hp": 100, "attack": 10}]
+	var test_party: Array[Dictionary] = [{"name": "Hero", "max_hp": 100, "attack": 10, "attack_type": "melee"}]
 	engine.init_party(test_party)
 	# Reduce HP to 50
 	engine.party_members[0]["current_hp"] = 50

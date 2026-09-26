@@ -6,12 +6,14 @@ var _max_hp: int = 50
 @onready var _unit = %Unit
 @onready var _hp_label: Label = %HPLabel
 @onready var _buff_label: Label = %BuffLabel
+@onready var _badge: TextureRect = %AttackBadge
 
 
 func setup(data: Dictionary) -> void:
 	member_index = data.get("member_index", -1)
 	_max_hp = data.get("max_hp", 50)
 	_unit.sprite.texture = data["sprite"]
+	_badge.set_attack_type(data["attack_type"])
 	update_hp(_max_hp, _max_hp)
 
 
@@ -22,6 +24,10 @@ func update_hp(current: int, max_hp: int) -> void:
 
 func set_incoming_damage(amount: int) -> void:
 	_unit.set_incoming_damage(amount)
+
+
+func get_displayed_hp() -> int:
+	return _unit.get_displayed_hp()
 
 
 func update_buffs(buffs: Array) -> void:
@@ -45,8 +51,8 @@ func get_unit() -> Control:
 	return _unit
 
 
-func play_lunge(on_impact: Callable, offset_x: float = 20.0) -> void:
-	_unit.play_lunge(on_impact, offset_x)
+func play_lunge(direction: Vector2, distance: float) -> void:
+	_unit.play_lunge(direction, distance)
 
 
 func play_cast() -> void:

@@ -10,6 +10,7 @@ extends VBoxContainer
 @onready var _hp_ghost: Control = %HPGhost
 
 var _charge_tween: Tween
+var _displayed_hp := 0
 
 
 func _ready() -> void:
@@ -18,6 +19,7 @@ func _ready() -> void:
 
 
 func update_hp(current: int, max_hp: int) -> void:
+	_displayed_hp = current
 	hp_bar.max_value = max_hp
 	hp_bar.value = current
 	var ratio := float(current) / float(max(1, max_hp))
@@ -25,18 +27,22 @@ func update_hp(current: int, max_hp: int) -> void:
 	_hp_ghost.set_hp(current, max_hp)
 
 
+# The HP the bar shows, which trails the engine until a hit's tracer arrives.
+func get_displayed_hp() -> int:
+	return _displayed_hp
+
+
 # Heavy damage telegraphed at this unit, shown as a pulsing chunk of the HP bar.
 func set_incoming_damage(amount: int) -> void:
 	_hp_ghost.set_incoming(amount)
 
 
-# Brief lunge toward opponent; on_impact fires at the apex so VFX can spawn there.
-func play_lunge(on_impact: Callable, offset_x: float = 20.0) -> void:
-	var start_x := sprite.position.x
+# Brief lunge toward the target; the hit itself lands when its tracer arrives.
+func play_lunge(direction: Vector2, distance: float) -> void:
+	var start := sprite.position
 	var tween := create_tween()
-	tween.tween_property(sprite, "position:x", start_x + offset_x, 0.1).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	tween.tween_callback(on_impact)
-	tween.tween_property(sprite, "position:x", start_x, 0.1).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	tween.tween_property(sprite, "position", start + direction.normalized() * distance, 0.1).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tween.tween_property(sprite, "position", start, 0.1).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 
 
 # Scale pulse used for ranged / cast attacks.

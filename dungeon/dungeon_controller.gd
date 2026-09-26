@@ -13,6 +13,11 @@ var party_data: Array[Dictionary] = []
 var party_members: Array = []
 var enemy_displays: Array = []
 
+# Pause after an encounter is won or lost, so the final volley's tracers,
+# numbers and death fades play out before the scene moves on.
+const END_BEAT := 0.8
+
+var _presenter: Node
 var _dungeon_data: Dictionary = {}
 var _walk_timer: Timer
 var _walk_phase: float = 0.0
@@ -23,7 +28,7 @@ var _walk_phase: float = 0.0
 @onready var _encounter_label: Label = $VBox/TopBar/EncounterLabel
 @onready var _party_container: HBoxContainer = $VBox/PartyContainer
 @onready var _enemy_container: HBoxContainer = $VBox/EnemyContainer
-@onready var _telegraph: Control = %TelegraphOverlay
+@onready var _lines: Control = %CombatLines
 
 
 func _ready() -> void:
@@ -57,16 +62,12 @@ func _ready() -> void:
 	combat_engine = load("res://dungeon/combat_engine.gd").new()
 	combat_engine.init_party(party_data)
 	combat_engine.enemy_died.connect(_on_enemy_died)
-	combat_engine.member_ko.connect(_on_member_ko)
-	combat_engine.party_wiped.connect(end_dungeon_failed)
+	combat_engine.party_wiped.connect(_on_party_wiped)
 	combat_engine.encounter_ended.connect(end_encounter)
-	combat_engine.tick_resolved.connect(_refresh_combat_displays)
-	combat_engine.party_attacked.connect(_on_party_attacked)
-	combat_engine.enemy_attacked.connect(_on_enemy_attacked)
-	combat_engine.telegraph_changed.connect(_on_telegraph_changed)
-	combat_engine.effect_applied.connect(_on_effect_applied)
 	add_child(combat_engine)
-	_telegraph.setup(combat_engine, party_members)
+	_presenter = load("res://dungeon/combat_presenter.gd").new()
+	add_child(_presenter)
+	_presenter.setup(combat_engine, party_members, vfx, _lines)
 
 	drop_mgr = load("res://dungeon/drop_manager.gd").new()
 	add_child(drop_mgr)
@@ -85,11 +86,11 @@ func _load_party() -> void:
 	for idx in range(members.size()):
 		var data: Dictionary = members[idx]
 		party_data.append({
-			"role": data["id"],
 			"name": data.get("name", data["id"]),
 			"sprite": data["sprite"],
 			"max_hp": data.get("max_hp", 50),
 			"attack": data.get("attack", 10),
+			"attack_type": data["attack_type"],
 			"member_index": idx,
 		})
 
@@ -130,7 +131,7 @@ func start_encounter(encounter_idx: int) -> void:
 			ed.play_spawn()
 
 	combat_engine.start_combat(encounter)
-	_telegraph.set_enemy_units(enemy_displays)
+	_presenter.set_enemy_units(enemy_displays)
 
 	for i in range(combat_engine.enemies.size()):
 		if i < enemy_displays.size() and is_instance_valid(enemy_displays[i]):
@@ -138,6 +139,10 @@ func start_encounter(encounter_idx: int) -> void:
 
 
 func end_encounter() -> void:
+	get_tree().create_timer(END_BEAT).timeout.connect(_finish_encounter)
+
+
+func _finish_encounter() -> void:
 	_clear_enemy_displays()
 	encounters_cleared += 1
 
@@ -158,7 +163,7 @@ func apply_usable_item(member_index: int, item_data: Dictionary) -> void:
 	if effect != null:
 		if effect is EffectDefinition or (effect is Dictionary and not effect.is_empty()):
 			combat_engine.apply_effect(member_index, effect)
-			_refresh_combat_displays()
+			_presenter.refresh_member(member_index)
 
 
 func end_dungeon_cleared() -> void:
@@ -217,139 +222,16 @@ func _on_walk_tick() -> void:
 			end_dungeon_cleared()
 
 
-func _refresh_combat_displays() -> void:
-	for i in range(party_members.size()):
-		if is_instance_valid(party_members[i]):
-			var md: Dictionary = combat_engine.get_member_data(i)
-			party_members[i].update_hp(md.get("current_hp", 0), md.get("max_hp", 50))
-			party_members[i].update_buffs(md.get("active_buffs", []))
-	for i in range(enemy_displays.size()):
-		if enemy_displays[i] and is_instance_valid(enemy_displays[i]):
-			var ed_data: Dictionary = combat_engine.get_enemy_data(i)
-			enemy_displays[i].update_hp(ed_data.get("current_hp", 0), ed_data.get("max_hp", 30))
-
-
-func _on_party_attacked(member_index: int, target_indices: Array[int], damage_per_target: int) -> void:
-	if member_index >= party_members.size() or not is_instance_valid(party_members[member_index]):
-		return
-	var pm = party_members[member_index]
-	var role: String = party_data[member_index].get("role", "") if member_index < party_data.size() else ""
-	if role == "mage":
-		pm.play_cast()
-		var arrow_tex: Texture2D = load("res://resources/sprites/vfx/arrow.png")
-		for t_idx in target_indices:
-			if t_idx < enemy_displays.size() and is_instance_valid(enemy_displays[t_idx]):
-				var ed = enemy_displays[t_idx]
-				var from_pos: Vector2 = pm.global_position + pm.size * 0.5
-				var to_pos: Vector2 = ed.global_position + ed.size * 0.5
-				if vfx:
-					vfx.spawn_projectile(from_pos, to_pos, arrow_tex, func():
-						if is_instance_valid(ed):
-							ed.play_hit(false)
-						if vfx:
-							vfx.spawn_impact(to_pos, false)
-							vfx.spawn_floating_text(to_pos, str(damage_per_target), Color(0.4, 0.8, 1.0))
-					)
-	else:
-		pm.play_lunge(func():
-			for t_idx in target_indices:
-				if t_idx < enemy_displays.size() and is_instance_valid(enemy_displays[t_idx]):
-					var ed = enemy_displays[t_idx]
-					ed.play_hit(false)
-					var target_pos: Vector2 = ed.global_position + ed.size * 0.5
-					if vfx:
-						vfx.spawn_slash(target_pos, Vector2.RIGHT)
-						vfx.spawn_impact(target_pos, false)
-						vfx.spawn_floating_text(target_pos, str(damage_per_target), Color(1.0, 0.9, 0.2))
-		)
-
-
-func _on_enemy_attacked(enemy_index: int, attack_type: String, is_heavy: bool, target_indices: Array[int], damage: int) -> void:
-	if enemy_index >= enemy_displays.size() or not is_instance_valid(enemy_displays[enemy_index]):
-		return
-	var ed = enemy_displays[enemy_index]
-	if is_heavy:
-		if vfx:
-			vfx.screen_shake(8.0, 0.25)
-			var heavy_name: String = combat_engine.get_enemy_data(enemy_index)["heavy_attack"]["name"]
-			vfx.spawn_floating_text(ed.global_position + Vector2(ed.size.x * 0.5, 0.0), heavy_name, Color(1.0, 0.6, 0.15), true)
-		ed.play_lunge(func():
-			for t_idx in target_indices:
-				if t_idx < party_members.size() and is_instance_valid(party_members[t_idx]):
-					var pm = party_members[t_idx]
-					pm.play_hit(true)
-					var target_pos: Vector2 = pm.global_position + pm.size * 0.5
-					if vfx:
-						vfx.spawn_impact(target_pos, true)
-						vfx.spawn_floating_text(target_pos, "-%d" % damage, Color(1.0, 0.2, 0.2), true)
-		, -30.0)
-	elif attack_type == "missile":
-		ed.play_cast()
-		var arrow_tex: Texture2D = load("res://resources/sprites/vfx/arrow.png")
-		for t_idx in target_indices:
-			if t_idx < party_members.size() and is_instance_valid(party_members[t_idx]):
-				var pm = party_members[t_idx]
-				var from_pos: Vector2 = ed.global_position + ed.size * 0.5
-				var to_pos: Vector2 = pm.global_position + pm.size * 0.5
-				if vfx:
-					vfx.spawn_projectile(from_pos, to_pos, arrow_tex, func():
-						if is_instance_valid(pm):
-							pm.play_hit(false)
-						if vfx:
-							vfx.spawn_impact(to_pos, false)
-							vfx.spawn_floating_text(to_pos, "-%d" % damage, Color(1.0, 0.3, 0.3))
-					)
-	else:
-		ed.play_lunge(func():
-			for t_idx in target_indices:
-				if t_idx < party_members.size() and is_instance_valid(party_members[t_idx]):
-					var pm = party_members[t_idx]
-					pm.play_hit(false)
-					var target_pos: Vector2 = pm.global_position + pm.size * 0.5
-					if vfx:
-						vfx.spawn_slash(target_pos, Vector2.LEFT)
-						vfx.spawn_impact(target_pos, false)
-						vfx.spawn_floating_text(target_pos, "-%d" % damage, Color(1.0, 0.3, 0.3))
-		, -20.0)
-
-
-# The telegraph line and HP ghost come from TelegraphOverlay; this only drives
-# the enemy's charge pulse.
-func _on_telegraph_changed(enemy_index: int, target_index: int, turns_remaining: int) -> void:
-	if enemy_index < enemy_displays.size() and is_instance_valid(enemy_displays[enemy_index]):
-		enemy_displays[enemy_index].get_unit().play_heavy_charge(target_index >= 0 and turns_remaining > 0)
-
-
-func _on_effect_applied(member_index: int, effect_type: String, amount: int) -> void:
-	if member_index >= party_members.size() or not is_instance_valid(party_members[member_index]):
-		return
-	var pm = party_members[member_index]
-	var pos: Vector2 = pm.global_position + pm.size * 0.5
-	if effect_type == "heal":
-		if vfx:
-			vfx.spawn_heal_fx(pos)
-			vfx.spawn_floating_text(pos, "+%d HP" % amount, Color(0.2, 1.0, 0.3))
-	elif effect_type == "buff_attack":
-		if vfx:
-			vfx.spawn_buff_fx(pos)
-			vfx.spawn_floating_text(pos, "ATK +%d" % amount, Color(1.0, 0.8, 0.2))
-
-
+# Drops land at once; the death itself is shown when the killing hit arrives
+# (CombatPresenter).
 func _on_enemy_died(enemy_index: int) -> void:
-	if enemy_index < enemy_displays.size() and is_instance_valid(enemy_displays[enemy_index]):
-		var ed = enemy_displays[enemy_index]
-		var data: Dictionary = combat_engine.get_enemy_data(enemy_index)
-		var drops: Array[Dictionary] = drop_mgr.spawn_drops(data)
-		if board:
-			drop_mgr.add_drops_to_board(drops, board)
-		if vfx:
-			vfx.spawn_death_poof(ed.global_position + ed.size * 0.5)
-		ed.play_death()
+	var drops: Array[Dictionary] = drop_mgr.spawn_drops(combat_engine.get_enemy_data(enemy_index))
+	if board:
+		drop_mgr.add_drops_to_board(drops, board)
 
 
-func _on_member_ko(member_index: int) -> void:
-	if member_index < party_members.size() and is_instance_valid(party_members[member_index]):
-		party_members[member_index].set_ko()
+func _on_party_wiped() -> void:
+	get_tree().create_timer(END_BEAT).timeout.connect(end_dungeon_failed)
 
 
 func _clear_enemy_displays() -> void:
@@ -357,6 +239,7 @@ func _clear_enemy_displays() -> void:
 		if ed and is_instance_valid(ed):
 			ed.queue_free()
 	enemy_displays.clear()
+	_presenter.set_enemy_units(enemy_displays)
 
 
 func _get_board_grid() -> Node:

@@ -68,6 +68,7 @@ func _party_member_to_dict(def: PartyMemberDefinition) -> Dictionary:
 		"sprite": def.sprite,
 		"max_hp": def.max_hp,
 		"attack": def.attack,
+		"attack_type": def.attack_type,
 		"slot_order": def.slot_order,
 	}
 

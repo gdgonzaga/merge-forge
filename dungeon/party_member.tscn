@@ -1,8 +1,9 @@
-[gd_scene load_steps=4 format=3 uid="uid://v0mmjm7vvs1e"]
+[gd_scene load_steps=5 format=3 uid="uid://v0mmjm7vvs1e"]
 
 [ext_resource type="Script" path="res://dungeon/party_member.gd" id="1"]
 [ext_resource type="PackedScene" path="res://dungeon/combat_unit.tscn" id="2"]
 [ext_resource type="FontFile" path="res://resources/fonts/RobotoCondensed-VariableFont_wght.ttf" id="3_font"]
+[ext_resource type="PackedScene" path="res://dungeon/attack_badge.tscn" id="4"]
 
 [node name="PartyMember" type="PanelContainer"]
 custom_minimum_size = Vector2(300, 0)
@@ -28,8 +29,13 @@ size_flags_horizontal = 3
 theme_override_fonts/font = ExtResource("3_font")
 theme_override_font_sizes/font_size = 32
 
+[node name="AttackBadge" parent="VBox/StatusRow" instance=ExtResource("4")]
+unique_name_in_owner = true
+layout_mode = 2
+
 [node name="BuffLabel" type="Label" parent="VBox/StatusRow"]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(110, 0)
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.8, 0.2, 1)
 theme_override_fonts/font = ExtResource("3_font")

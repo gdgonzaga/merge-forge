@@ -10,3 +10,4 @@ name = "Fighter"
 sprite = ExtResource("2_lftjh")
 max_hp = 120
 attack = 14
+attack_type = "melee"

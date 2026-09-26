@@ -9,4 +9,5 @@ id = "mage"
 name = "Mage"
 sprite = ExtResource("2_4g1oy")
 attack = 18
+attack_type = "missile"
 slot_order = 1

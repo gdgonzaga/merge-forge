@@ -118,7 +118,7 @@ These are emitted directly on GameManager. Connect via `GameManager.gold_changed
   - `session_start` — shop_session._ready(), no EventBus signal
   - `session_end` — session_ended exists on EventBus but covers summary transition, not the SFX moment
   - `dungeon_start` — dungeon_controller._ready(), no EventBus signal
-  - `ko` — member_ko is a same-scene signal (combat_engine → party_member UI), not on EventBus
+  - `ko` — played by combat_engine when a member is KO'd (same scene, not on EventBus)
   - `crate_open` — shop_session.try_buy_crate(), no EventBus signal
 - **Resolved SFX paths (AudioManager can connect to existing signal):**
   - `dungeon_clear` / `dungeon_fail` → `dungeon_cleared` / `dungeon_failed` on EventBus
@@ -637,7 +637,7 @@ RecipeResolver has no signals — it is queried synchronously by MergeResolver, 
 | `reagents: Dictionary` | Dictionary | reagent_id → reagent data (name, cost, icon, description) |
 | `enemies: Dictionary` | Dictionary | enemy_id → enemy data (name, max_hp, attack, drop_count, drop_pool, sprite) |
 | `dungeons: Dictionary` | Dictionary | dungeon_id → dungeon data (name, walk_speed, encounter_points, encounters, gold_reward, blueprint_reward) |
-| `party: Dictionary` | Dictionary | party data including party_members keyed by role |
+| `party: Dictionary` | Dictionary | `{party_members: Array}`, ordered front to back by `slot_order` |
 
 **Functions:**
 
@@ -816,12 +816,15 @@ Crate definitions are fully data-driven. Whatever crates exist in this file are 
 | `dungeon/dungeon_controller.gd` | Script | Orchestrates dungeon flow: walking → encounter → combat → walking → end. Reads dungeon/enemy/party data from RecipeResolver (loaded at startup). Does NOT own combat math. |
 | `dungeon/combat_engine.gd` | Script | 1-second combat ticks. Damage distribution, HP tracking, knockout detection, buff timers. Does NOT own dungeon flow. |
 | `dungeon/drop_manager.gd` | Script | Generates enemy drops, places on dungeon board via merge-safe placement. Does NOT own board logic. |
-| `dungeon/party_member.tscn` | Scene | Visual: 300 px wide card with a 128x128 sprite, a 270x24 HP bar, an HP number and buff text. Accepts drag-drops of usable items. |
-| `dungeon/enemy_display.tscn` | Scene | Visual: enemy sprite + HP bar. No interaction. Fades on death but keeps its slot until the encounter ends. |
-| `dungeon/combat_unit.tscn` | Scene | Reusable unit node with sprite, HP bar (with HP ghost overlay), and animation helpers (lunge, cast, hit, walk, death). Sprite and bar sizes are exported so PartyMember can enlarge them. |
+| `dungeon/party_member.tscn` | Scene | Visual: 300 px wide card with a 128x128 sprite, a 270x24 HP bar, an HP number, an attack-type badge and buff text. Accepts drag-drops of usable items. |
+| `dungeon/enemy_display.tscn` | Scene | Visual: enemy sprite + HP bar + attack-type badge (100x140). No interaction. Fades on death but keeps its slot until the encounter ends. |
+| `dungeon/combat_unit.tscn` | Scene | Reusable unit node with sprite, HP bar (with HP ghost overlay), and animation helpers (directional lunge, cast, hit, walk, death). Sprite and bar sizes are exported so PartyMember can enlarge them. Tracks the HP it displays, which trails the engine until a hit's tracer arrives. |
+| `dungeon/attack_badge.tscn` | Scene | 40x40 sword (melee) or bow (missile) badge. Textures are exports (placeholders: `vfx/slash.png`, `vfx/arrow.png`). |
+| `dungeon/combat_presenter.gd` | Script | Child node created by dungeon_controller. Plays combat from CombatEngine's signals: attacker motions (melee lunges toward the target, missile pulses in place), a tracer per hit, impacts and floating numbers (offset by attacker slot), HP/KO/death visuals. Party volley on the tick, enemy volley `ENEMY_VOLLEY_DELAY` (0.3 s) later. HP bars change when a hit's tracer arrives, not when the engine resolves it. |
+| `dungeon/combat_lane.gd` | Script | Pure lane geometry (RefCounted, static only). Every attack line is shifted and bowed toward the attacker's right, so A-to-B and B-to-A attacks use separate lanes. Also the tracer comet span. |
 | `dungeon/hp_ghost.gd` | Script | On CombatUnit's `HPGhost` node, drawn over the HP bar: the pulsing chunk a telegraphed heavy attack will take (faster pulse when lethal) and the pale trail of HP just lost draining away. |
-| `dungeon/telegraph_overlay.gd` | Script | On `AnimOverlay/TelegraphOverlay` in dungeon_run.tscn. Each frame, reads CombatEngine state and draws a line from every enemy winding up a heavy attack to its target; a fill travels from the enemy and the hit lands when it arrives. Red if the telegraphed damage on the target is lethal, orange otherwise; width steps by damage relative to the target's max HP. Also pushes each party member's incoming heavy damage to its HP ghost. |
-| `dungeon/dungeon_vfx.gd` | Script | VFX overlay attached to AnimOverlay in dungeon_run.tscn: floating combat text, slashes, impacts, projectiles, heal/buff sparkles, screen shake. |
+| `dungeon/combat_lines.gd` | Script | On `AnimOverlay/CombatLines` in dungeon_run.tscn; draws every attack line on its lane. Heavy telegraphs: each frame, reads CombatEngine state and draws a line from every enemy winding up a heavy attack to its target, filling from the enemy; the hit plays when the fill arrives, `landing_delay` after its tick (a landed line is held at full until then). Red if the telegraphed damage would KO the target (against its displayed HP), orange otherwise; width steps by damage relative to the target's max HP. Tracers: a fixed pool of 24 comets, one per basic hit (`spawn_tracer(side, from, to, missile, on_arrive)`); melee comets are short, fast and solid with a slash head, missile comets longer, slower and dotted with an arrow head; party comets cool, enemy comets warm. Also pushes each party member's incoming heavy damage to its HP ghost. |
+| `dungeon/dungeon_vfx.gd` | Script | VFX overlay attached to AnimOverlay in dungeon_run.tscn: floating combat text, slashes, impacts, heal/buff sparkles, screen shake. |
 | `dungeon/dungeon_summary.tscn` | Scene | End-of-dungeon results (cleared or failed). |
 
 ### Data Schema: dungeons.json
@@ -888,10 +891,11 @@ RecipeResolver exposes the party as `party["party_members"]`, an array ordered f
 | `name` | `String` | Display name |
 | `sprite` | `Texture2D` | Chibi sprite |
 | `max_hp` | `int` | Base HP |
-| `attack` | `int` | Damage dealt per tick (distributed across alive enemies) |
+| `attack` | `int` | Damage dealt per tick |
+| `attack_type` | `String` | `"melee"` or `"missile"`; required (the empty default fails CombatEngine's check). Same rule as enemies: melee deals the full attack to the front enemy (lowest alive slot); missile splits it over every alive enemy, min 1. |
 | `slot_order` | `int` | Party order, front (0) to back |
 
-MVP party: Fighter (slot 0, 120 HP, 14 ATK), Mage (slot 1, 50 HP, 18 ATK), Healer (slot 2, 60 HP, 5 ATK).
+MVP party: Fighter (slot 0, 120 HP, 14 ATK, melee), Mage (slot 1, 50 HP, 18 ATK, missile), Healer (slot 2, 60 HP, 5 ATK, melee).
 
 No special abilities for MVP — auto-attack only.
 
@@ -904,11 +908,13 @@ No special abilities for MVP — auto-attack only.
 | `dungeon_summary_dismissed()` | `dungeon_summary.gd` | `main.gd` | Yes | Summary → Prep |
 | `encounter_ended()` | `combat_engine.gd` | `dungeon_controller.gd` | No | Combat End |
 | `enemy_died(enemy_index: int)` | `combat_engine.gd` | `drop_manager.gd` | No | Enemy Death |
-| `member_ko(member_index: int)` | `combat_engine.gd` | `dungeon_controller.gd`, party_member UI | No | Party KO |
+| `member_ko(member_index: int)` | `combat_engine.gd` | (none; the KO greying is shown when the killing hit's tracer arrives) | No | Party KO |
 | `party_wiped()` | `combat_engine.gd` | `dungeon_controller.gd` | No | Dungeon Fail |
-| `party_attacked(member_index: int, target_indices: Array[int], damage_per_target: int)` | `combat_engine.gd` | `dungeon_controller.gd` | No | Combat Animation |
-| `enemy_attacked(enemy_index: int, attack_type: String, is_heavy: bool, target_indices: Array[int], damage: int)` | `combat_engine.gd` | `dungeon_controller.gd` | No | Combat Animation |
-| `telegraph_changed(enemy_index: int, target_index: int, turns_remaining: int)` | `combat_engine.gd` | `dungeon_controller.gd` (enemy charge pulse only; lines and ghosts are drawn by `telegraph_overlay.gd` from engine state) | No | Combat Telegraph |
+| `party_attacked(member_index: int, target_indices: Array[int], damage_per_target: int)` | `combat_engine.gd` | `combat_presenter.gd` | No | Combat Animation |
+| `enemy_attacked(enemy_index: int, attack_type: String, is_heavy: bool, target_indices: Array[int], damage: int)` | `combat_engine.gd` | `combat_presenter.gd` (played `ENEMY_VOLLEY_DELAY` later) | No | Combat Animation |
+| `telegraph_changed(enemy_index: int, target_index: int, turns_remaining: int)` | `combat_engine.gd` | `combat_presenter.gd` (enemy charge pulse only; lines and ghosts are drawn by `combat_lines.gd` from engine state) | No | Combat Telegraph |
+| `tick_resolved()` | `combat_engine.gd` | `combat_presenter.gd` (buff timers) | No | Combat |
+| `effect_applied(member_index: int, effect_type: String, amount: int)` | `combat_engine.gd` | `combat_presenter.gd` | No | Item Use |
 
 ### Flow Trace: Dungeon Run (Full Loop)
 
@@ -919,14 +925,14 @@ No special abilities for MVP — auto-attack only.
 3. Progress reaches encounter threshold (e.g. 0.2) → walk timer **stops** → `dungeon_controller.start_encounter(encounter_data[0])`
 4. Dungeon controller spawns enemy display nodes (calling `EnemyDisplay.setup(enemy_data)` on each to load sprites), then calls `combat_engine.start_combat(enemies)` → initializes enemy array, starts 1-second tick timer
 5. **Combat tick** (every 1 second):
-   a. Each active party member: deal `floor(attack / alive_enemy_count)` damage to each alive enemy, min 1
-   b. Each alive enemy counts down its heavy attack. At 0 it deals `heavy_attack.damage` to its locked target (retargeting if that one fell) and resets to `interval`; otherwise it lands its basic attack. Targets follow `attack_type`: melee hits the front member (lowest standing slot) with the full `attack`; missile splits `attack` over every standing member and locks heavies onto the weakest one. After every enemy has acted, each one whose countdown is within `windup` locks a target if it has none.
+   a. Each active party member attacks by its `attack_type`, using the same `reach` rule as enemies: melee deals its full attack (plus buffs) to the front enemy (lowest alive slot); missile splits it over every enemy still above 0 HP, `floor(attack / count)`, min 1. Enemies die one at a time, front first.
+   b. Each alive enemy counts down its heavy attack. At 0 it deals `heavy_attack.damage` to its locked target (retargeting if that one fell) and resets to `interval`; otherwise it lands its basic attack. Targets follow `attack_type` via `reach`: melee hits the front member (lowest standing slot) with the full `attack`; missile splits `attack` over every standing member and locks heavies onto the weakest one. After every enemy has acted, each one whose countdown is within `windup` locks a target if it has none.
    c. Check enemy deaths → emit `enemy_died(index)` → dungeon_controller looks up enemy_data from combat_engine → `drop_manager.spawn_drops(enemy_data)` returns drops array → `drop_manager.add_drops_to_board(drops, board)` creates FloatingItems
-   d. Check member KO (HP ≤ 0) → emit `member_ko(index)` → update portrait visual
+   d. Check member KO (HP ≤ 0) → emit `member_ko(index)` (the card greys when the killing hit's tracer arrives)
    e. If all enemies dead → emit `encounter_ended()` → resume walking
    f. If all members KO → emit `party_wiped()` → go to step 9 (fail)
    g. Tick all buffs: reduce duration, remove expired
-   h. Emit `tick_resolved()` → dungeon_controller refreshes party/enemy HP bars and buff indicators. (Telegraph lines and HP ghosts don't wait for ticks: `telegraph_overlay.gd` reads engine state every frame.)
+   h. Emit `tick_resolved()` → combat_presenter refreshes buff indicators. HP bars aren't refreshed here: each unit's bar updates when the tracer of a hit on it arrives (party volley on the tick, enemy volley 0.3 s later). Telegraph lines and HP ghosts read engine state every frame (`combat_lines.gd`).
 6. During combat, player merges on the dungeon board (standard merge flow, combat continues)
 7. During combat, player drags usable items to party member portraits → `dungeon_controller.apply_usable_item(index, item)` → `combat_engine.apply_effect(index, effect)`
 8. All enemies dead → `encounter_ended()` → walk timer **resumes** → encounters at next threshold (0.5, 0.8) → repeat steps 3–7
@@ -991,8 +997,8 @@ No special abilities for MVP — auto-attack only.
 | Function | Description |
 |----------|-------------|
 | `start_encounter(encounter_idx: int)` | Looks up encounter data by index, spawns EnemyDisplay nodes, calls `setup(enemy_data)` on each, starts combat via combat_engine, pauses walk timer. |
-| `end_encounter()` | Frees all EnemyDisplay nodes, clears `enemy_displays` array, resumes walk timer. |
-| `apply_usable_item(member_index: int, item_data: Dictionary)` | Routes item effect to combat_engine, removes item from board. |
+| `end_encounter()` | After `END_BEAT` (0.8 s, so the final volley plays out), frees all EnemyDisplay nodes, clears `enemy_displays`, resumes walking. A party wipe waits the same beat before `end_dungeon_failed()`. |
+| `apply_usable_item(member_index: int, item_data: Dictionary)` | Routes item effect to combat_engine, removes item from board, and has combat_presenter refresh that member at once. |
 | `end_dungeon_cleared()` | Calculates rewards (gold, blueprint, +25 reputation), applies to GameManager, emits `dungeon_cleared`. |
 | `end_dungeon_failed()` | Applies -20 reputation penalty, emits `dungeon_failed({cleared: false, gold_reward: 0, blueprint_reward: null, reputation_change: -20})`. |
 
@@ -1038,8 +1044,9 @@ No special abilities for MVP — auto-attack only.
 | `get_alive_enemy_count() -> int` | Returns count of alive enemies. |
 | `get_enemy_data(index: int) -> Dictionary` | Returns enemy definition at index. Used by DropManager after `enemy_died` signal. |
 | `is_combat_running() -> bool` | True while the tick timer runs. |
-| `windup_progress(heavy_in: int, windup: int, tick_time_left: float, tick_wait: float) -> float` | Static and pure. 0 when a windup starts, 1 when its heavy attack lands, clamped. |
-| `get_windup_progress(enemy_index: int) -> float` | `windup_progress` for a live enemy using the tick timer; -1 if it isn't winding up or combat is stopped. |
+| `reach(attack_type: String, candidates: Array[int]) -> Array[int]` | Static. The one targeting rule for both sides: melee returns the first (front) candidate, missile returns all. |
+| `windup_progress(heavy_in: int, windup: int, tick_time_left: float, tick_wait: float, landing_delay: float) -> float` | Static and pure. 0 when a windup starts, 1 when its heavy attack plays; the view plays enemy hits `landing_delay` after their tick, so the countdown stretches to end on that beat. Clamped. |
+| `get_windup_progress(enemy_index: int, landing_delay: float) -> float` | `windup_progress` for a live enemy using the tick timer; -1 if it isn't winding up or combat is stopped. |
 | `get_incoming_heavy_damage(member_index: int) -> int` | Sum of heavy damage alive enemies have telegraphed at this member. |
 
 #### DropManager
@@ -1077,12 +1084,14 @@ No special abilities for MVP — auto-attack only.
 |----------|-------------|
 | `update_hp(current: int, max_hp: int)` | Sets HP bar value and color based on ratio; forwards to the ghost (a drop starts the damage trail). |
 | `set_incoming_damage(amount: int)` | Shows `amount` of telegraphed heavy damage as the HP ghost; 0 hides it. |
+| `get_displayed_hp() -> int` | The HP the bar shows (it trails the engine until a hit arrives). CombatLines judges lethality against it. |
+| `play_lunge(direction: Vector2, distance: float)` | Moves the sprite toward the target and back over 0.2 s. The hit itself lands when its tracer arrives. |
 
 #### PartyMember
 
 **Extends:** PanelContainer
 **Script:** `dungeon/party_member.gd`
-**Scene:** `dungeon/party_member.tscn` (instances CombatUnit + a StatusRow with HPLabel and BuffLabel, both 32 px)
+**Scene:** `dungeon/party_member.tscn` (instances CombatUnit + a StatusRow with HPLabel, AttackBadge and a fixed-width BuffLabel; text 32 px)
 **Description:** Visual representation of a party member: chibi sprite, HP bar, buff icons. Drop target for usable items via Godot's `_can_drop_data` / `_drop_data` — player drags from BoardCell to here.
 
 **Properties:**

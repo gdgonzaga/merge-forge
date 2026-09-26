@@ -10,4 +10,5 @@ name = "Healer"
 sprite = ExtResource("2_7kjqc")
 max_hp = 60
 attack = 5
+attack_type = "melee"
 slot_order = 2

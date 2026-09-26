@@ -1,8 +1,8 @@
 extends TestBase
 
 # Enemy attacks: telegraphed heavy attacks (windup targeting, the locked-in
-# target, the per-slot stagger, the incoming-damage read-outs views use) and
-# melee vs. missile reach. Fixture enemies
+# target, the per-slot stagger, the incoming-damage read-outs views use), and
+# melee vs. missile reach for both enemy and party attacks. Fixture enemies
 # have huge HP so no encounter ends mid-test; ticks are driven by hand, never
 # by the engine's timer. Party index is slot order: A (0) is the front member.
 
@@ -126,7 +126,7 @@ func test_incoming_heavy_damage_is_zero_before_windup() -> void:
 	_engine.tick()
 	# heavy_in 3 is still above windup 2.
 	assert_int(_engine.get_incoming_heavy_damage(0)).is_equal(0)
-	assert_float(_engine.get_windup_progress(0)).is_equal(-1.0)
+	assert_float(_engine.get_windup_progress(0, 0.0)).is_equal(-1.0)
 
 
 func test_incoming_heavy_damage_counts_locked_target_during_windup() -> void:
@@ -135,7 +135,7 @@ func test_incoming_heavy_damage_counts_locked_target_during_windup() -> void:
 	_engine.tick()
 	assert_int(_engine.get_incoming_heavy_damage(0)).is_equal(20)
 	assert_int(_engine.get_incoming_heavy_damage(1)).is_equal(0)
-	assert_float(_engine.get_windup_progress(0)).is_between(0.0, 1.0)
+	assert_float(_engine.get_windup_progress(0, 0.0)).is_between(0.0, 1.0)
 	_engine.tick()
 	assert_int(_engine.get_incoming_heavy_damage(0)).is_equal(20)
 
@@ -145,7 +145,7 @@ func test_incoming_heavy_damage_clears_after_hit_lands() -> void:
 	for _i in range(4):
 		_engine.tick()
 	assert_int(_engine.get_incoming_heavy_damage(0)).is_equal(0)
-	assert_float(_engine.get_windup_progress(0)).is_equal(-1.0)
+	assert_float(_engine.get_windup_progress(0, 0.0)).is_equal(-1.0)
 
 
 func test_incoming_heavy_damage_sums_two_enemies_on_one_target() -> void:
@@ -164,12 +164,79 @@ func test_incoming_heavy_damage_ignores_dead_enemy() -> void:
 	_engine.start_combat([{"enemy_id": FRAGILE_ID, "count": 1}, {"enemy_id": BRUISER_ID, "count": 1}])
 	_engine.tick()
 	_engine.tick()
-	# Fragile (slot 0) locked A at tick 2. Each member deals max(1 / 2, 1) = 1 to
-	# each enemy, so Fragile goes 5 -> 3 -> 1 -> dead at tick 3.
+	# Fragile (slot 0) locked A at tick 2. Both members are melee and deal 1 to
+	# the front enemy, so Fragile goes 5 -> 3 -> 1 -> dead at tick 3.
 	assert_int(_engine.get_incoming_heavy_damage(0)).is_equal(20)
 	_engine.tick()
 	assert_bool(_engine.get_enemy_data(0)["alive"]).is_false()
 	assert_int(_engine.get_incoming_heavy_damage(0)).is_equal(0)
+
+
+func test_reach_melee_takes_front_missile_takes_all() -> void:
+	var script: GDScript = load("res://dungeon/combat_engine.gd")
+	var candidates: Array[int] = [2, 3]
+	var none: Array[int] = []
+	assert_array(script.reach("melee", candidates)).is_equal([2])
+	assert_array(script.reach("missile", candidates)).is_equal([2, 3])
+	assert_array(script.reach("melee", none)).is_empty()
+
+
+func test_party_melee_hits_only_front_enemy() -> void:
+	_init_single_attacker(10, "melee")
+	_engine.start_combat([{"enemy_id": BRUISER_ID, "count": 2}])
+	_engine.tick()
+	assert_int(_engine.get_enemy_data(0)["current_hp"]).is_equal(9990)
+	assert_int(_engine.get_enemy_data(1)["current_hp"]).is_equal(10000)
+
+
+func test_party_missile_splits_across_alive_enemies() -> void:
+	_init_single_attacker(10, "missile")
+	_engine.start_combat([{"enemy_id": BRUISER_ID, "count": 2}])
+	_engine.tick()
+	assert_int(_engine.get_enemy_data(0)["current_hp"]).is_equal(9995)
+	assert_int(_engine.get_enemy_data(1)["current_hp"]).is_equal(9995)
+
+
+func test_party_melee_moves_to_next_enemy_when_front_dies() -> void:
+	set_catalog_entry(RecipeResolver.enemies, FRAGILE_ID, _melee_fixture("Fragile", 5, 2))
+	_init_single_attacker(3, "melee")
+	_engine.start_combat([{"enemy_id": FRAGILE_ID, "count": 1}, {"enemy_id": BRUISER_ID, "count": 1}])
+	# Fragile: 5 -> 2 -> dead at tick 2; the Bruiser is untouched until tick 3.
+	_engine.tick()
+	_engine.tick()
+	assert_bool(_engine.get_enemy_data(0)["alive"]).is_false()
+	assert_int(_engine.get_enemy_data(1)["current_hp"]).is_equal(10000)
+	_engine.tick()
+	assert_int(_engine.get_enemy_data(1)["current_hp"]).is_equal(9997)
+
+
+func test_party_melee_hit_includes_attack_buff() -> void:
+	_init_single_attacker(10, "melee")
+	_engine.start_combat([{"enemy_id": BRUISER_ID, "count": 2}])
+	_engine.apply_effect(0, {"type": "buff_attack", "power": 5, "duration": 3})
+	_engine.tick()
+	assert_int(_engine.get_enemy_data(0)["current_hp"]).is_equal(9985)
+	assert_int(_engine.get_enemy_data(1)["current_hp"]).is_equal(10000)
+
+
+func test_party_missile_split_skips_enemy_killed_earlier_this_tick() -> void:
+	set_catalog_entry(RecipeResolver.enemies, FRAGILE_ID, _melee_fixture("Fragile", 5, 2))
+	var party: Array[Dictionary] = [
+		{"name": "F", "max_hp": 100, "attack": 5, "attack_type": "melee"},
+		{"name": "M", "max_hp": 100, "attack": 10, "attack_type": "missile"},
+	]
+	_engine.init_party(party)
+	_engine.start_combat([{"enemy_id": FRAGILE_ID, "count": 1}, {"enemy_id": BRUISER_ID, "count": 1}])
+	_engine.tick()
+	# F drops Fragile to 0 first, so M's 10 all goes to the Bruiser.
+	assert_int(_engine.get_enemy_data(1)["current_hp"]).is_equal(9990)
+
+
+func _init_single_attacker(attack: int, attack_type: String) -> void:
+	var party: Array[Dictionary] = [
+		{"name": "A", "max_hp": 100, "attack": attack, "attack_type": attack_type},
+	]
+	_engine.init_party(party)
 
 
 func _melee_fixture(enemy_name: String, max_hp: int, windup: int) -> Dictionary:
@@ -187,7 +254,7 @@ func _melee_fixture(enemy_name: String, max_hp: int, windup: int) -> Dictionary:
 
 func _init_party(a_hp: int, b_hp: int) -> void:
 	var party: Array[Dictionary] = [
-		{"name": "A", "max_hp": a_hp, "attack": 1},
-		{"name": "B", "max_hp": b_hp, "attack": 1},
+		{"name": "A", "max_hp": a_hp, "attack": 1, "attack_type": "melee"},
+		{"name": "B", "max_hp": b_hp, "attack": 1, "attack_type": "melee"},
 	]
 	_engine.init_party(party)
