@@ -157,10 +157,11 @@ Transitions:
 
 | Property | Value |
 |----------|-------|
-| Health | 30 |
+| Health | 90 |
 | Attack damage | 5 |
-| Drop pool | `[{item_id: "iron_ore", weight: 3}, {item_id: "herb_leaf", weight: 2}]` |
-| Drop count | 1–2 |
+| Heavy attack | Slam: 15 damage to one member every 5s, telegraphed 3s ahead |
+| Drop pool | `[{item_id: "iron_ore", weight: 2}, {item_id: "herb_bundle", weight: 2}, {item_id: "refined_potion", weight: 2}]` |
+| Drop count | 2–3 |
 
 **Cannot do:** Cannot move, cannot buff itself.
 
@@ -178,10 +179,11 @@ Transitions:
 
 | Property | Value |
 |----------|-------|
-| Health | 50 |
-| Attack damage | 8 |
-| Drop pool | `[{item_id: "iron_ore", weight: 2}, {item_id: "iron_ingot", weight: 1}, {item_id: "herb_leaf", weight: 2}]` |
-| Drop count | 2–3 |
+| Health | 170 |
+| Attack damage | 5 |
+| Heavy attack | Smash: 26 damage to one member every 5s, telegraphed 3s ahead |
+| Drop pool | `[{item_id: "iron_ore", weight: 1}, {item_id: "iron_ingot", weight: 2}, {item_id: "herb_bundle", weight: 1}, {item_id: "refined_potion", weight: 2}]` |
+| Drop count | 3–4 |
 
 **Cannot do:** Cannot move, cannot buff itself.
 **Notes:** Appears as a solo enemy or in groups in the later encounters of Goblin Cave.
@@ -333,7 +335,7 @@ Transitions:
 | Party: Fighter | HP 90, ATK 14 | Auto-attack only for MVP |
 | Party: Mage | HP 50, ATK 18 | Auto-attack only for MVP |
 | Party: Healer | HP 60, ATK 5 | Auto-attack only for MVP |
-| Dungeon walk speed | 0.02 progress/second | Default value; configurable per dungeon definition |
+| Dungeon walk speed | 0.075 progress/second | Default value; configurable per dungeon definition |
 | Session size | 10 customers per session | |
 | Starting gold | 50 | |
 | Crate discount | 20% | With Crate Discount upgrade |
@@ -367,7 +369,7 @@ All items in `items.json`. 2 families with merge chains defined in `recipes.json
 | herb_leaf | Herb Leaf | 5 | No | Base material. Crates and enemy drops. |
 | herb_bundle | Herb Bundle | 15 | No | 3× herb_leaf merge. |
 | refined_potion | Refined Potion | 40 | No | 3× herb_bundle merge. |
-| healing_potion | Healing Potion | 40 | Yes | 3× refined_potion merge. Blueprint-gated (bp_healing_potion). Effect: heal 30 HP. |
+| healing_potion | Healing Potion | 40 | Yes | 3× refined_potion merge. Blueprint-gated (bp_healing_potion). Effect: heal 40 HP. |
 | battle_elixir | Battle Elixir | 50 | Yes | 3× refined_potion merge. Blueprint-gated (bp_battle_elixir). Effect: +5 ATK for 10s. |
 
 **Variant items (reagent combos):**
@@ -750,7 +752,7 @@ Combat tick (every 1 second):
 |----------|-------|-------|
 | Combat tick interval | 1.0 second | |
 | Min damage per tick | 1 | Even if attack / targets < 1 |
-| Walk speed | 0.02 progress/sec | Default value; configurable per dungeon definition; ~50s total walk time (combat adds variable time) |
+| Walk speed | 0.075 progress/sec | Default value; configurable per dungeon definition; ~13s total walk time (combat adds ~25s) |
 | Party size | 3 members | Fighter, Mage, Healer |
 
 **Does NOT:**
@@ -802,6 +804,7 @@ Combat tick (every 1 second):
 | 2026-06-04 | Goblin Cave: no blueprint reward | First dungeon awards gold + reputation only. Post-MVP dungeons may award blueprints. |
 | 2026-06-10 | Remove `tier` field from items.json | Merge chains fully defined by recipes.json; reagent variant eligibility determined by reagent_combos.json entries; no derived or computed tier property needed |
 | 2026-06-11 | Merge-safe placement for generated items | Crate contents and enemy drops are placed directly on the board when a "safe" empty cell exists (won't trigger an unintended merge). Staging area used only as fallback. Does not apply to player drag placement. |
+| 2026-09-25 | Goblin Cave retune + telegraphed heavy attacks | Unassisted party wipes in encounter 3; one Healing Potion (now 40 HP) clears with a KO, two clear cleanly. Enemies drop refined_potion / herb_bundle so a potion is craftable in-run (~90% by encounter 3). Walk cut from ~50s to ~13s. Healing Potion blueprint is effectively required to clear. |
 
 ---
 

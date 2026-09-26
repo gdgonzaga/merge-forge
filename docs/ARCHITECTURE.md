@@ -162,7 +162,7 @@ The GDD lists effect types (heal, buff_attack). Party stats are confirmed (see p
     "gold_value": 40,
     "dungeon_usable": true,
     "dungeon_use_target": "party-individual",
-    "effect": { "type": "heal", "power": 30 }
+    "effect": { "type": "heal", "power": 40 }
   },
   "battle_elixir": {
     "name": "Battle Elixir",
@@ -832,7 +832,7 @@ Crate definitions are fully data-driven. Whatever crates exist in this file are 
 | `dungeon/combat_engine.gd` | Script | 1-second combat ticks. Damage distribution, HP tracking, knockout detection, buff timers. Does NOT own dungeon flow. |
 | `dungeon/drop_manager.gd` | Script | Generates enemy drops, places on dungeon board via merge-safe placement. Does NOT own board logic. |
 | `dungeon/party_member.tscn` | Scene | Visual: chibi character + HP bar + buff indicators. Accepts drag-drops of usable items. |
-| `dungeon/enemy_display.tscn` | Scene | Visual: enemy sprite + HP bar. No interaction. |
+| `dungeon/enemy_display.tscn` | Scene | Visual: heavy-attack telegraph label + enemy sprite + HP bar. No interaction. |
 | `dungeon/dungeon_summary.tscn` | Scene | End-of-dungeon results (cleared or failed). |
 
 ### Data Schema: dungeons.json
@@ -842,7 +842,7 @@ Crate definitions are fully data-driven. Whatever crates exist in this file are 
 | `dungeon_id` | `String` | Unique identifier (key) |
 | `name` | `String` | Display name |
 | `reputation_required` | `int` | Minimum reputation to unlock |
-| `walk_speed` | `float` | Progress per second while walking (default 0.02) |
+| `walk_speed` | `float` | Progress per second while walking |
 | `encounter_points` | `Array[float]` | Progress thresholds triggering encounters (e.g. [0.2, 0.5, 0.8]) |
 | `encounters` | `Array[Array[Dictionary]]` | One enemy group per encounter point. Each enemy: `{enemy_id, count}` |
 | `gold_reward` | `int` | Gold awarded on clear |
@@ -855,7 +855,7 @@ Crate definitions are fully data-driven. Whatever crates exist in this file are 
   "dungeon_id": "goblin_cave",
   "name": "Goblin Cave",
   "reputation_required": 150,
-  "walk_speed": 0.02,
+  "walk_speed": 0.075,
   "encounter_points": [0.2, 0.5, 0.8],
   "encounters": [
     [{"enemy_id": "slime", "count": 2}],
@@ -875,6 +875,7 @@ Crate definitions are fully data-driven. Whatever crates exist in this file are 
 | `name` | `String` | Display name |
 | `max_hp` | `int` | Base HP |
 | `attack` | `int` | Damage dealt per tick (distributed across targets) |
+| `heavy_attack` | `Dictionary` | Telegraphed single-target hit: `{name: String, interval: int, windup: int, damage: int}`. Lands every `interval` ticks; for the last `windup` ticks the target (weakest standing member, locked when the windup starts) is shown above the enemy. Enemies in one encounter are staggered by `HEAVY_STAGGER_TICKS` per spawn slot. |
 | `drop_count` | `Dictionary` | `{min: int, max: int}` number of drops on death |
 | `drop_pool` | `Array[Dictionary]` | Weighted item pool: `{item_id: String, weight: int or float}`. Same structure and algorithm as crate pools. |
 | `sprite` | `String` | Resource path to sprite texture |
@@ -968,18 +969,19 @@ No special abilities for MVP — auto-attack only.
 
 **Trigger:** Main instances `dungeon_run.tscn` from prep phase.
 
-1. `dungeon_controller.gd._ready()`: reads dungeon data from RecipeResolver. Progress = 0.0, initialize 3 party members with base stats (from `party.json`), call `PartyMember.setup(data)` on each to load sprites and store stats, create empty dungeon board, start walk timer (walk speed from dungeon definition — default 0.02 progress/sec, configurable per dungeon)
+1. `dungeon_controller.gd._ready()`: reads dungeon data from RecipeResolver. Progress = 0.0, initialize 3 party members with base stats (from `party.json`), call `PartyMember.setup(data)` on each to load sprites and store stats, create empty dungeon board, start walk timer (walk speed from dungeon definition)
 2. Walk timer ticks → progress bar updates. Player can rearrange dungeon board during walk. Progress only advances while walking.
 3. Progress reaches encounter threshold (e.g. 0.2) → walk timer **stops** → `dungeon_controller.start_encounter(encounter_data[0])`
 4. Dungeon controller spawns enemy display nodes (calling `EnemyDisplay.setup(enemy_data)` on each to load sprites), then calls `combat_engine.start_combat(enemies)` → initializes enemy array, starts 1-second tick timer
 5. **Combat tick** (every 1 second):
    a. Each active party member: deal `floor(attack / alive_enemy_count)` damage to each alive enemy, min 1
-   b. Each alive enemy: deal `floor(attack / active_member_count)` damage to each active member, min 1
+   b. Each alive enemy counts down its heavy attack. At 0 it deals `heavy_attack.damage` to its locked target (retargeting the weakest standing member if that one fell) and resets to `interval`; otherwise it deals `floor(attack / active_member_count)` damage to each active member, min 1. Once the countdown is within `windup`, it locks a target if it has none.
    c. Check enemy deaths → emit `enemy_died(index)` → dungeon_controller looks up enemy_data from combat_engine → `drop_manager.spawn_drops(enemy_data)` returns drops array → `drop_manager.add_drops_to_board(drops, board)` creates FloatingItems
    d. Check member KO (HP ≤ 0) → emit `member_ko(index)` → update portrait visual
    e. If all enemies dead → emit `encounter_ended()` → resume walking
    f. If all members KO → emit `party_wiped()` → go to step 9 (fail)
-   g. Tick all buffs: reduce duration, remove expired, update buff indicators
+   g. Tick all buffs: reduce duration, remove expired
+   h. Emit `tick_resolved()` → dungeon_controller refreshes party/enemy HP bars, buff indicators and heavy-attack telegraph labels
 6. During combat, player merges on the dungeon board (standard merge flow, combat continues)
 7. During combat, player drags usable items to party member portraits → `dungeon_controller.apply_usable_item(index, item)` → `combat_engine.apply_effect(index, effect)`
 8. All enemies dead → `encounter_ended()` → walk timer **resumes** → encounters at next threshold (0.5, 0.8) → repeat steps 3–7

@@ -57,6 +57,7 @@ func _ready() -> void:
 	combat_engine.member_ko.connect(_on_member_ko)
 	combat_engine.party_wiped.connect(end_dungeon_failed)
 	combat_engine.encounter_ended.connect(end_encounter)
+	combat_engine.tick_resolved.connect(_refresh_combat_displays)
 	add_child(combat_engine)
 
 	drop_mgr = load("res://dungeon/drop_manager.gd").new()
@@ -144,10 +145,7 @@ func apply_usable_item(member_index: int, item_data: Dictionary) -> void:
 	var effect: Dictionary = item_data.get("effect", {})
 	if not effect.is_empty():
 		combat_engine.apply_effect(member_index, effect)
-		var md: Dictionary = combat_engine.get_member_data(member_index)
-		if member_index < party_members.size() and is_instance_valid(party_members[member_index]):
-			party_members[member_index].update_hp(md.get("current_hp", 0), md.get("max_hp", 50))
-			party_members[member_index].update_buffs(md.get("active_buffs", []))
+		_refresh_combat_displays()
 
 
 func end_dungeon_cleared() -> void:
@@ -197,6 +195,27 @@ func _on_walk_tick() -> void:
 		stop_walking()
 		if encounters_cleared >= encounter_points.size():
 			end_dungeon_cleared()
+
+
+func _refresh_combat_displays() -> void:
+	for i in range(party_members.size()):
+		if is_instance_valid(party_members[i]):
+			var md: Dictionary = combat_engine.get_member_data(i)
+			party_members[i].update_hp(md.get("current_hp", 0), md.get("max_hp", 50))
+			party_members[i].update_buffs(md.get("active_buffs", []))
+	for i in range(enemy_displays.size()):
+		if enemy_displays[i] and is_instance_valid(enemy_displays[i]):
+			var ed_data: Dictionary = combat_engine.get_enemy_data(i)
+			enemy_displays[i].update_hp(ed_data.get("current_hp", 0), ed_data.get("max_hp", 30))
+			enemy_displays[i].show_telegraph(_telegraph_text(ed_data))
+
+
+func _telegraph_text(enemy: Dictionary) -> String:
+	var heavy: Dictionary = enemy["heavy_attack"]
+	var target: int = enemy["heavy_target"]
+	if enemy["heavy_in"] > int(heavy["windup"]) or target < 0:
+		return ""
+	return "%s: %s in %d" % [heavy["name"], party_data[target]["name"], enemy["heavy_in"]]
 
 
 func _on_enemy_died(enemy_index: int) -> void:

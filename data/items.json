@@ -68,7 +68,7 @@
 		"gold_value": 40,
 		"dungeon_usable": true,
 		"dungeon_use_target": "party-individual",
-		"effect": { "type": "heal", "power": 30 },
+		"effect": { "type": "heal", "power": 40 },
 		"icon": "res://resources/sprites/items/healing_potion.png"
 	},
 	"battle_elixir": {
