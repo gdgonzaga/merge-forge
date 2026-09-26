@@ -1,10 +1,20 @@
 extends VBoxContainer
 
+# Party members override these on their instance for bigger sprites and bars.
+@export var sprite_size := Vector2(80, 80)
+@export var hp_bar_size := Vector2(80, 12)
+
 @onready var sprite: TextureRect = $Sprite
-@onready var hp_bar: ProgressBar = $HPBar
-@onready var target_marker: TextureRect = $TargetMarker
+@onready var hp_bar: ProgressBar = %HPBar
+@onready var _hp_frame: Control = %HPFrame
+@onready var _hp_ghost: Control = %HPGhost
 
 var _charge_tween: Tween
+
+
+func _ready() -> void:
+	sprite.custom_minimum_size = sprite_size
+	_hp_frame.custom_minimum_size = hp_bar_size
 
 
 func update_hp(current: int, max_hp: int) -> void:
@@ -12,10 +22,12 @@ func update_hp(current: int, max_hp: int) -> void:
 	hp_bar.value = current
 	var ratio := float(current) / float(max(1, max_hp))
 	hp_bar.modulate = Color(0.2, 0.8, 0.2) if ratio > 0.6 else Color(0.9, 0.7, 0.2) if ratio > 0.3 else Color(0.9, 0.2, 0.2)
+	_hp_ghost.set_hp(current, max_hp)
 
 
-func set_target_marker(active: bool) -> void:
-	target_marker.visible = active
+# Heavy damage telegraphed at this unit, shown as a pulsing chunk of the HP bar.
+func set_incoming_damage(amount: int) -> void:
+	_hp_ghost.set_incoming(amount)
 
 
 # Brief lunge toward opponent; on_impact fires at the apex so VFX can spawn there.

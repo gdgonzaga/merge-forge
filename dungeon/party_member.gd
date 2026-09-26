@@ -3,8 +3,9 @@ extends PanelContainer
 var member_index: int = -1
 var _max_hp: int = 50
 
-@onready var _unit = $VBox/Unit
-@onready var _buff_label: Label = $VBox/BuffLabel
+@onready var _unit = %Unit
+@onready var _hp_label: Label = %HPLabel
+@onready var _buff_label: Label = %BuffLabel
 
 
 func setup(data: Dictionary) -> void:
@@ -15,11 +16,16 @@ func setup(data: Dictionary) -> void:
 		_unit.sprite.texture = spr
 	elif spr is String and spr != "" and ResourceLoader.exists(spr):
 		_unit.sprite.texture = load(spr)
-	_unit.update_hp(_max_hp, _max_hp)
+	update_hp(_max_hp, _max_hp)
 
 
 func update_hp(current: int, max_hp: int) -> void:
 	_unit.update_hp(current, max_hp)
+	_hp_label.text = "%d/%d" % [maxi(current, 0), max_hp]
+
+
+func set_incoming_damage(amount: int) -> void:
+	_unit.set_incoming_damage(amount)
 
 
 func update_buffs(buffs: Array) -> void:
@@ -41,10 +47,6 @@ func set_ko() -> void:
 
 func get_unit() -> Control:
 	return _unit
-
-
-func set_target_marker(active: bool) -> void:
-	_unit.set_target_marker(active)
 
 
 func play_lunge(on_impact: Callable, offset_x: float = 20.0) -> void:

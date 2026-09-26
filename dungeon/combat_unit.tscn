@@ -1,16 +1,10 @@
 [gd_scene format=3 uid="uid://combatunit001"]
 
 [ext_resource type="Script" path="res://dungeon/combat_unit.gd" id="1"]
+[ext_resource type="Script" path="res://dungeon/hp_ghost.gd" id="2"]
 
 [node name="CombatUnit" type="VBoxContainer"]
 script = ExtResource("1")
-
-[node name="TargetMarker" type="TextureRect" parent="."]
-visible = false
-layout_mode = 2
-custom_minimum_size = Vector2(80, 80)
-size_flags_horizontal = 4
-stretch_mode = 5
 
 [node name="Sprite" type="TextureRect" parent="."]
 layout_mode = 2
@@ -18,8 +12,31 @@ custom_minimum_size = Vector2(80, 80)
 size_flags_horizontal = 4
 stretch_mode = 5
 
-[node name="HPBar" type="ProgressBar" parent="."]
+[node name="HPFrame" type="Control" parent="."]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(80, 12)
 layout_mode = 2
-show_percentage = false
 size_flags_horizontal = 4
+mouse_filter = 2
+
+[node name="HPBar" type="ProgressBar" parent="HPFrame"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+show_percentage = false
+
+[node name="HPGhost" type="Control" parent="HPFrame"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("2")

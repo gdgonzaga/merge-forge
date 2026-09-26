@@ -23,6 +23,7 @@ var _walk_phase: float = 0.0
 @onready var _encounter_label: Label = $VBox/TopBar/EncounterLabel
 @onready var _party_container: HBoxContainer = $VBox/PartyContainer
 @onready var _enemy_container: HBoxContainer = $VBox/EnemyContainer
+@onready var _telegraph: Control = %TelegraphOverlay
 
 
 func _ready() -> void:
@@ -65,6 +66,7 @@ func _ready() -> void:
 	combat_engine.telegraph_changed.connect(_on_telegraph_changed)
 	combat_engine.effect_applied.connect(_on_effect_applied)
 	add_child(combat_engine)
+	_telegraph.setup(combat_engine, party_members)
 
 	drop_mgr = load("res://dungeon/drop_manager.gd").new()
 	add_child(drop_mgr)
@@ -128,6 +130,7 @@ func start_encounter(encounter_idx: int) -> void:
 			ed.play_spawn()
 
 	combat_engine.start_combat(encounter)
+	_telegraph.set_enemy_units(enemy_displays)
 
 	for i in range(combat_engine.enemies.size()):
 		if i < enemy_displays.size() and is_instance_valid(enemy_displays[i]):
@@ -224,15 +227,6 @@ func _refresh_combat_displays() -> void:
 		if enemy_displays[i] and is_instance_valid(enemy_displays[i]):
 			var ed_data: Dictionary = combat_engine.get_enemy_data(i)
 			enemy_displays[i].update_hp(ed_data.get("current_hp", 0), ed_data.get("max_hp", 30))
-			enemy_displays[i].show_telegraph(_telegraph_text(ed_data))
-
-
-func _telegraph_text(enemy: Dictionary) -> String:
-	var heavy: Dictionary = enemy["heavy_attack"]
-	var target: int = enemy["heavy_target"]
-	if enemy["heavy_in"] > int(heavy["windup"]) or target < 0:
-		return ""
-	return "%s: %s in %d" % [heavy["name"], party_data[target]["name"], enemy["heavy_in"]]
 
 
 func _on_party_attacked(member_index: int, target_indices: Array[int], damage_per_target: int) -> void:
@@ -277,6 +271,8 @@ func _on_enemy_attacked(enemy_index: int, attack_type: String, is_heavy: bool, t
 	if is_heavy:
 		if vfx:
 			vfx.screen_shake(8.0, 0.25)
+			var heavy_name: String = combat_engine.get_enemy_data(enemy_index)["heavy_attack"]["name"]
+			vfx.spawn_floating_text(ed.global_position + Vector2(ed.size.x * 0.5, 0.0), heavy_name, Color(1.0, 0.6, 0.15), true)
 		ed.play_lunge(func():
 			for t_idx in target_indices:
 				if t_idx < party_members.size() and is_instance_valid(party_members[t_idx]):
@@ -317,10 +313,9 @@ func _on_enemy_attacked(enemy_index: int, attack_type: String, is_heavy: bool, t
 		, -20.0)
 
 
+# The telegraph line and HP ghost come from TelegraphOverlay; this only drives
+# the enemy's charge pulse.
 func _on_telegraph_changed(enemy_index: int, target_index: int, turns_remaining: int) -> void:
-	for i in range(party_members.size()):
-		if is_instance_valid(party_members[i]):
-			party_members[i].set_target_marker(i == target_index and turns_remaining > 0)
 	if enemy_index < enemy_displays.size() and is_instance_valid(enemy_displays[enemy_index]):
 		enemy_displays[enemy_index].get_unit().play_heavy_charge(target_index >= 0 and turns_remaining > 0)
 
@@ -350,7 +345,6 @@ func _on_enemy_died(enemy_index: int) -> void:
 		if vfx:
 			vfx.spawn_death_poof(ed.global_position + ed.size * 0.5)
 		ed.play_death()
-		enemy_displays[enemy_index] = null
 
 
 func _on_member_ko(member_index: int) -> void:
@@ -363,9 +357,6 @@ func _clear_enemy_displays() -> void:
 		if ed and is_instance_valid(ed):
 			ed.queue_free()
 	enemy_displays.clear()
-	for pm in party_members:
-		if is_instance_valid(pm):
-			pm.set_target_marker(false)
 
 
 func _get_board_grid() -> Node:

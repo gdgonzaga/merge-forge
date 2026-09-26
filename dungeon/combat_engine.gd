@@ -199,6 +199,46 @@ func get_member_data(index: int) -> Dictionary:
 	return party_members[index]
 
 
+func is_combat_running() -> bool:
+	return not tick_timer.is_stopped()
+
+
+# 0 when the windup starts (end of the tick that locked the target), 1 when the
+# heavy attack lands. Pure so views and tests don't depend on a running timer.
+static func windup_progress(heavy_in: int, windup: int, tick_time_left: float, tick_wait: float) -> float:
+	var total := windup * tick_wait
+	if total <= 0.0:
+		return 1.0
+	var remaining := (heavy_in - 1) * tick_wait + tick_time_left
+	return clampf(1.0 - remaining / total, 0.0, 1.0)
+
+
+# -1 when the enemy isn't winding up a heavy attack or combat is stopped.
+func get_windup_progress(enemy_index: int) -> float:
+	if not is_combat_running() or not _is_winding_up(enemy_index):
+		return -1.0
+	var enemy: Dictionary = enemies[enemy_index]
+	return windup_progress(enemy["heavy_in"], int(enemy["heavy_attack"]["windup"]), tick_timer.time_left, tick_timer.wait_time)
+
+
+# Total heavy damage currently telegraphed at this member.
+func get_incoming_heavy_damage(member_index: int) -> int:
+	var total := 0
+	for i in range(enemies.size()):
+		if _is_winding_up(i) and enemies[i]["heavy_target"] == member_index:
+			total += int(enemies[i]["heavy_attack"]["damage"])
+	return total
+
+
+# heavy_target is set only once the windup starts and cleared when the hit
+# lands, but a dead enemy keeps its last target.
+func _is_winding_up(enemy_index: int) -> bool:
+	if enemy_index < 0 or enemy_index >= enemies.size():
+		return false
+	var enemy: Dictionary = enemies[enemy_index]
+	return enemy.get("alive", false) and enemy["heavy_target"] >= 0
+
+
 func _resolve_enemy_attacks() -> void:
 	for i in range(enemies.size()):
 		var enemy: Dictionary = enemies[i]

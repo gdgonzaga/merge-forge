@@ -298,8 +298,11 @@ Transitions:
 
 ### Dungeon Mode (In-Game)
 - **Top:** Progress bar (0–100%)
-- **Upper left:** Party side — 3 party members full body with HP bars. **Parked:** Add walking/attack/hit animations.
-- **Upper right:** Enemy side — full body enemy, with HP bars
+- **Top row:** Party side — 3 party member cards in slot order (Fighter, Mage, Healer), each with a large sprite, a wide HP bar, the HP number and active buffs. The cards are drop targets for usable items.
+- **Below the party, after a gap:** Enemy side — enemies with HP bars. A defeated enemy fades but keeps its place, so the others don't slide over.
+- **Heavy-attack telegraph:** while an enemy winds up a heavy attack, a line runs from it to its target. A bright fill travels from the enemy toward the target, and the hit lands when the fill arrives, so the line is both the damage indicator and the countdown. The line is red when the hit would KO the target and orange otherwise, and thicker for heavier hits. The target's HP bar shows the chunk the hit will take as a pulsing "ghost"; healing during the windup visibly shrinks the danger (red turns orange, solid HP returns). The attack's name pops up when it lands.
+- **Damage trail:** when HP drops, the lost chunk stays pale for a moment and then drains away.
+- **Layout rule:** nothing that appears during combat (telegraphs, VFX, floating text) may move the board or the unit rows.
 - **Between sides:** Encounter banner — label showing encounter number (e.g. "Encounter 1/3"), shown during combat
 - **Center/bottom:** Merge board (same grid as shop, separate board state)
 - **Staging area:** Enemy drops appear here
@@ -769,7 +772,7 @@ Combat tick (every 1 second):
 1. For each active party member: deal floor(attack / alive_enemy_count) damage to each enemy, min 1
 2. For each alive enemy: melee deals its full attack to the front member (lowest standing slot);
    missile deals floor(attack / standing_count) to each standing member, min 1.
-   Every few ticks the enemy's telegraphed heavy attack replaces its basic attack.
+   Every few ticks the enemy's telegraphed heavy attack replaces its basic attack. The telegraph is a line from enemy to target that fills up over the windup (see Dungeon Mode (In-Game)).
 3. Check enemy deaths → spawn drops
 4. Check member knockouts → emit signal
 5. If all enemies dead → victory
@@ -837,6 +840,7 @@ Combat tick (every 1 second):
 | 2026-06-11 | Merge-safe placement for generated items | Crate contents and enemy drops are placed directly on the board when a "safe" empty cell exists (won't trigger an unintended merge). Staging area used only as fallback. Does not apply to player drag placement. |
 | 2026-09-25 | Goblin Cave retune + telegraphed heavy attacks | Unassisted party wipes in encounter 3; one Healing Potion (now 40 HP) clears with a KO, two clear cleanly. Enemies drop refined_potion / herb_bundle so a potion is craftable in-run (~90% by encounter 3). Walk cut from ~50s to ~13s. Healing Potion blueprint is effectively required to clear. |
 | 2026-09-26 | Melee vs. missile attacks, party slots | Melee enemies hit the front member (party slot order Fighter, Mage, Healer; the next slot takes over when the front falls); only missile enemies reach the back line, with low damage. New Goblin Archer (missile) replaces the Slime in encounter 2. Retune: Fighter HP 90 → 120; Slime ATK 2 / Slam 12; Goblin ATK 4 / Smash 30. Balance targets unchanged: unassisted wipe in encounter 3, one potion clears with a KO, two clear cleanly. |
+| 2026-09-27 | Telegraph lines and HP ghost instead of labels | The "Smash: Fighter in 2" label and the hidden target marker resized the unit rows and pushed the board down. Replaced with a line from enemy to target whose fill is the countdown (red when lethal, width by damage) and a ghost chunk on the target's HP bar. Party cards widened (128 px sprites, 270 px HP bars, HP numbers, 32 px buff text); a fixed gap between the party and enemy rows gives the lines room; dead enemies keep their slot. |
 
 ---
 
