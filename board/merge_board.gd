@@ -45,19 +45,15 @@ func setup(config: Dictionary) -> void:
 
 
 func buy_crate(crate_id: String) -> bool:
-	var crate_data: Dictionary = RecipeResolver.get_crate_data(crate_id)
-	if crate_data.is_empty():
+	var crate := DefinitionLibrary.get_crate(crate_id)
+	if crate == null:
 		return false
-	var cost: int = int(crate_data.get("cost", 0) * GameManager.get_crate_discount())
+	var cost: int = int(crate.cost * GameManager.get_crate_discount())
 	if not GameManager.deduct_gold(cost):
 		return false
 	AudioManager.play_sfx("crate_open")
-	var pool: Array = crate_data.get("pool", [])
-	var item_count: Dictionary = crate_data.get("item_count", {"min": 1, "max": 1})
-	for entry in RecipeResolver.roll_weighted_pool(pool, item_count):
-		var data: Dictionary = RecipeResolver.get_item_data(entry.get("item_id", ""))
-		if not data.is_empty():
-			place_drop(data)
+	for item in RecipeResolver.roll_weighted_pool(crate.pool, crate.min_items, crate.max_items):
+		place_drop(RecipeResolver.make_item(item))
 	EventBus.save_requested.emit()
 	return true
 
@@ -126,7 +122,7 @@ func animate_move(moves: Array[Dictionary], _callback: Callable) -> void:
 			_board.get_cell_at(from_pos).clear_item()
 		else:
 			var from_screen: Vector2 = m.get("from_screen", Vector2.ZERO)
-			fi = _spawn_icon(m["item_data"]["sprite"], from_screen - overlay_global)
+			fi = _spawn_icon(m["item_data"]["definition"].sprite, from_screen - overlay_global)
 		icons.append({"node": fi, "start": fi.position, "end": to_local - fi.size / 2.0})
 	if icons.is_empty():
 		_board.finalize_move(moves)

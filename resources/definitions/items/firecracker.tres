@@ -2,12 +2,21 @@
 
 [ext_resource type="Script" path="res://resources/definitions/effect_definition.gd" id="1_effect"]
 [ext_resource type="Script" path="res://resources/definitions/item_definition.gd" id="2_item"]
+[ext_resource type="Script" path="res://resources/definitions/merge_result.gd" id="2_n3ngn"]
+[ext_resource type="Resource" path="res://resources/definitions/blueprints/bp_bomb.tres" id="3_isfx1"]
 [ext_resource type="Texture2D" path="res://resources/sprites/items/firecracker.png" id="3_sprite"]
+[ext_resource type="Resource" path="res://resources/definitions/items/bomb.tres" id="4_iyrm6"]
+[ext_resource type="Script" path="res://resources/definitions/reagent_variant.gd" id="5_v5on1"]
 
 [sub_resource type="Resource" id="Resource_effect"]
 script = ExtResource("1_effect")
 type = "damage"
 value = 15
+
+[sub_resource type="Resource" id="Resource_1og4k"]
+script = ExtResource("2_n3ngn")
+result = ExtResource("4_iyrm6")
+blueprint = ExtResource("3_isfx1")
 
 [resource]
 script = ExtResource("2_item")
@@ -19,3 +28,4 @@ dungeon_usable = true
 dungeon_use_target = "enemy-individual"
 effect = SubResource("Resource_effect")
 sprite = ExtResource("3_sprite")
+merge_results = Array[ExtResource("2_n3ngn")]([SubResource("Resource_1og4k")])

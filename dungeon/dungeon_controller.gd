@@ -2,14 +2,14 @@ extends Control
 
 var progress: float = 0.0
 var walk_speed: float = 0.02
-var encounter_points: Array = []
-var encounters_data: Array = []
+var encounter_points: Array[float] = []
+var encounters_data: Array[EncounterDefinition] = []
 var encounters_cleared: int = 0
 var next_encounter_idx: int = 0
 
 var combat_engine: Node
 var drop_mgr: Node
-var party_data: Array[Dictionary] = []
+var party_defs: Array[PartyMemberDefinition] = []
 var party_members: Array = []
 var enemy_displays: Array = []
 
@@ -18,7 +18,7 @@ var enemy_displays: Array = []
 const END_BEAT := 0.8
 
 var _presenter: Node
-var _dungeon_data: Dictionary = {}
+var _dungeon: DungeonDefinition
 var _walk_timer: Timer
 var _walk_phase: float = 0.0
 
@@ -33,24 +33,23 @@ var _walk_phase: float = 0.0
 
 func _ready() -> void:
 	var dungeon_id := "goblin_cave"
-	_dungeon_data = RecipeResolver.dungeons.get(dungeon_id, {})
-	_dbg("dungeon_data: %s" % str(_dungeon_data))
-	walk_speed = _dungeon_data.get("walk_speed", 0.02)
-	encounter_points = _dungeon_data.get("encounter_points", [])
-	encounters_data = _dungeon_data.get("encounters", [])
+	_dungeon = DefinitionLibrary.get_dungeon(dungeon_id)
+	walk_speed = _dungeon.walk_speed
+	encounter_points = _dungeon.encounter_points
+	encounters_data = _dungeon.encounters
 	_dbg("walk_speed=%s encounter_points=%s encounters_count=%d" % [str(walk_speed), str(encounter_points), encounters_data.size()])
 
-	_load_party()
+	party_defs = DefinitionLibrary.get_all_party_members()
 	AudioManager.play_sfx("dungeon_start")
 
 	for child in _party_container.get_children():
 		child.queue_free()
 
 	var pm_scene: PackedScene = load("res://dungeon/party_member.tscn")
-	for i in range(party_data.size()):
+	for i in range(party_defs.size()):
 		var pm: Control = pm_scene.instantiate()
 		_party_container.add_child(pm)
-		pm.setup(party_data[i])
+		pm.setup(party_defs[i], i)
 		party_members.append(pm)
 
 	board.setup({})
@@ -60,7 +59,7 @@ func _ready() -> void:
 			board_grid.load_board_state(GameManager.dungeon_board_state)
 
 	combat_engine = load("res://dungeon/combat_engine.gd").new()
-	combat_engine.init_party(party_data)
+	combat_engine.init_party(party_defs)
 	combat_engine.enemy_died.connect(_on_enemy_died)
 	combat_engine.party_wiped.connect(_on_party_wiped)
 	combat_engine.encounter_ended.connect(end_encounter)
@@ -78,24 +77,6 @@ func _ready() -> void:
 	add_child(_walk_timer)
 
 	start_walking()
-
-
-func _load_party() -> void:
-	# Array order is slot order: index 0 is the front member melee enemies hit.
-	var members: Array = RecipeResolver.party["party_members"]
-	for idx in range(members.size()):
-		var data: Dictionary = members[idx]
-		party_data.append({
-			"name": data.get("name", data["id"]),
-			"sprite": data["sprite"],
-			"max_hp": data.get("max_hp", 50),
-			"attack": data.get("attack", 10),
-			"attack_type": data["attack_type"],
-			"windup": data["windup"],
-			"crit_chance": data["crit_chance"],
-			"crit_name": data["crit_name"],
-			"member_index": idx,
-		})
 
 
 func start_walking() -> void:
@@ -119,21 +100,18 @@ func start_encounter(encounter_idx: int) -> void:
 		_dbg("start_encounter: idx out of range")
 		return
 
-	var encounter: Array = encounters_data[encounter_idx]
-	_dbg("encounter data: %s" % str(encounter))
+	var encounter := encounters_data[encounter_idx]
 	_clear_enemy_displays()
 
 	var ed_scene: PackedScene = load("res://dungeon/enemy_display.tscn")
-	for entry in encounter:
-		var enemy_id: String = entry.get("enemy_id", "")
-		var count: int = entry.get("count", 1)
-		for _i in range(count):
+	for spawn in encounter.spawns:
+		for _i in range(spawn.count):
 			var ed: Control = ed_scene.instantiate()
 			_enemy_container.add_child(ed)
 			enemy_displays.append(ed)
 			ed.play_spawn()
 
-	combat_engine.start_combat(encounter)
+	combat_engine.start_combat(encounter.spawns)
 	_presenter.set_enemy_units(enemy_displays)
 
 	for i in range(combat_engine.enemies.size()):
@@ -162,11 +140,10 @@ func apply_usable_item(member_index: int, item_data: Dictionary) -> void:
 	var board_grid = _get_board_grid()
 	if board_grid and source_pos.x >= 0:
 		board_grid.discard_item(source_pos)
-	var effect = item_data.get("effect", null)
+	var effect: EffectDefinition = item_data["definition"].effect
 	if effect != null:
-		if effect is EffectDefinition or (effect is Dictionary and not effect.is_empty()):
-			combat_engine.apply_effect(member_index, effect)
-			_presenter.refresh_member(member_index)
+		combat_engine.apply_effect(member_index, effect)
+		_presenter.refresh_member(member_index)
 
 
 func end_dungeon_cleared() -> void:
@@ -175,12 +152,14 @@ func end_dungeon_cleared() -> void:
 	for pm in party_members:
 		if is_instance_valid(pm):
 			pm.play_victory()
-	var gold_reward: int = _dungeon_data.get("gold_reward", 0)
-	var bp_reward = _dungeon_data.get("blueprint_reward")
+	var gold_reward := _dungeon.gold_reward
+	# The summary shows the id, or nothing for null.
+	var bp_reward: Variant = null
+	if _dungeon.blueprint_reward != null:
+		bp_reward = _dungeon.blueprint_reward.id
+		GameManager.add_blueprint(bp_reward)
 	GameManager.add_gold(gold_reward)
 	GameManager.add_reputation(25)
-	if bp_reward and bp_reward != null:
-		GameManager.add_blueprint(bp_reward)
 	_save_board_state()
 	EventBus.save_requested.emit()
 	EventBus.dungeon_cleared.emit({
@@ -228,7 +207,7 @@ func _on_walk_tick() -> void:
 # Drops land at once; the death itself is shown when the killing hit arrives
 # (CombatPresenter).
 func _on_enemy_died(enemy_index: int) -> void:
-	var drops: Array[Dictionary] = drop_mgr.spawn_drops(combat_engine.get_enemy_data(enemy_index))
+	var drops: Array[Dictionary] = drop_mgr.spawn_drops(combat_engine.get_enemy_data(enemy_index)["definition"])
 	if board:
 		drop_mgr.add_drops_to_board(drops, board)
 

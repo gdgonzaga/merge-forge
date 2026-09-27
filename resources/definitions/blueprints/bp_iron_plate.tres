@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="BlueprintDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/blueprint_definition.gd" id="1_rq263"]
+
+[resource]
+script = ExtResource("1_rq263")
+id = "bp_iron_plate"
+name = "Iron Plate Blueprint"
+cost = 50

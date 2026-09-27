@@ -8,7 +8,7 @@ const PORTRAIT_SIZE := 200
 # the queue shrinks, since position is the renumbered (current) index.
 const SHADOW_ALPHA_STEP := 100.0 / 9.0 / 100.0  # 0.0..1.0 scale, ~= 0.111
 
-var customers: Array[Dictionary] = []
+var customers: Array[CustomerDefinition] = []
 var current_index: int = 0
 var summary_data: Dictionary = {}
 
@@ -32,8 +32,7 @@ func _ready() -> void:
 		"portraits": [],
 	}
 
-	var generator: RefCounted = load("res://shop/customer_generator.gd").new()
-	customers = generator.generate_customers()
+	customers = DefinitionLibrary.get_all_customers()
 
 	AudioManager.play_sfx("session_start")
 
@@ -62,14 +61,12 @@ func _ready() -> void:
 
 
 func _build_crate_buttons() -> void:
-	var crate_ids: Array[String] = RecipeResolver.get_all_crate_ids()
 	var crate_scene: PackedScene = load("res://shop/crate_button.tscn")
-	for crate_id in crate_ids:
-		var crate_data: Dictionary = RecipeResolver.get_crate_data(crate_id)
+	for crate in DefinitionLibrary.get_all_crates():
 		var btn: Button = crate_scene.instantiate()
-		var cost: int = int(crate_data.get("cost", 0) * GameManager.get_crate_discount())
-		btn.text = "%s (%dg)" % [crate_data.get("name", crate_id), cost]
-		btn.pressed.connect(try_buy_crate.bind(crate_id))
+		var cost: int = int(crate.cost * GameManager.get_crate_discount())
+		btn.text = "%s (%dg)" % [crate.name, cost]
+		btn.pressed.connect(try_buy_crate.bind(crate.id))
 		_crate_buttons.add_child(btn)
 
 
@@ -84,8 +81,7 @@ func advance_customer() -> void:
 		end_session()
 		return
 
-	var customer: Dictionary = customers[current_index]
-	_display_customer(customer)
+	_display_customer(customers[current_index])
 
 
 # Pending customer portrait stack: shows customers[current_index+1 ..] as
@@ -120,20 +116,17 @@ func _populate_queue() -> void:
 	# drawn on top — gives the "stacked behind" depth.
 	var n: int = pending.size()
 	for i in range(n - 1, -1, -1):
-		var customer: Dictionary = pending[i]
 		# i is the index into `pending`; position 0 == next customer.
-		var portrait: TextureRect = _build_queue_portrait(customer, i)
+		var portrait: TextureRect = _build_queue_portrait(pending[i], i)
 		portrait.position = Vector2(spacing * float(i), 0.0)
 		_pending_content.add_child(portrait)
 
 
-func _build_queue_portrait(customer: Dictionary, position: int) -> TextureRect:
+func _build_queue_portrait(customer: CustomerDefinition, position: int) -> TextureRect:
 	var portrait := TextureRect.new()
 	portrait.custom_minimum_size = Vector2(PORTRAIT_SIZE, PORTRAIT_SIZE)
 	portrait.size = Vector2(PORTRAIT_SIZE, PORTRAIT_SIZE)
-	var portrait_path: String = customer.get("portrait_id", "")
-	if portrait_path != "" and ResourceLoader.exists(portrait_path):
-		portrait.texture = load(portrait_path)
+	portrait.texture = customer.sprite
 	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	# Shadow: same texture as the portrait, tinted black, alpha-scaled by
@@ -161,14 +154,13 @@ func try_fulfill_order(order_index: int) -> void:
 	if current_index >= customers.size():
 		return
 
-	var customer: Dictionary = customers[current_index]
-	var orders: Array = customer.get("orders", [])
-	if order_index < 0 or order_index >= orders.size():
+	var customer := customers[current_index]
+	if order_index < 0 or order_index >= customer.orders.size():
 		return
 
-	var order: Dictionary = orders[order_index]
-	var item_id: String = order.get("item_id", "")
-	var needed: int = order.get("quantity", 1)
+	var order := customer.orders[order_index]
+	var item_id := order.item.id
+	var needed := order.quantity
 	var board_ref = _get_board_grid()
 
 	if board_ref == null:
@@ -182,16 +174,16 @@ func try_fulfill_order(order_index: int) -> void:
 		return
 
 	board_ref.remove_items_by_id(item_id, needed)
-	var reward: int = order.get("gold_reward", 0)
+	var reward := order.gold_reward
 	GameManager.add_gold(reward)
 	GameManager.add_reputation(10)
-	EventBus.customer_fulfilled.emit(order.get("item_id", ""))
+	EventBus.customer_fulfilled.emit(item_id)
 	EventBus.save_requested.emit()
 
 	summary_data["gold_earned"] = summary_data.get("gold_earned", 0) + reward
 	summary_data["items_sold"] = summary_data.get("items_sold", 0) + needed
 	summary_data["fulfilled"] = summary_data.get("fulfilled", 0) + 1
-	summary_data["portraits"].append(customer.get("portrait_id", ""))
+	summary_data["portraits"].append(customer.sprite)
 
 	current_index += 1
 	advance_customer.call_deferred()
@@ -202,8 +194,7 @@ func reject_customer() -> void:
 		return
 
 	GameManager.add_reputation(-2)
-	var customer: Dictionary = customers[current_index]
-	EventBus.customer_rejected.emit(customer.get("id", ""))
+	EventBus.customer_rejected.emit(customers[current_index].id)
 	EventBus.save_requested.emit()
 
 	summary_data["rejected"] = summary_data.get("rejected", 0) + 1
@@ -237,27 +228,17 @@ func try_buy_crate(crate_id: String) -> bool:
 	return false
 
 
-func _display_customer(customer: Dictionary) -> void:
-	var portrait_path: String = customer.get("portrait_id", "")
-	if portrait_path != "" and ResourceLoader.exists(portrait_path):
-		_portrait_rect.texture = load(portrait_path)
-	else:
-		_portrait_rect.texture = null
-
-	# `name` would shadow Node.name, so use cust_name. Fall back to id, then a
-	# literal, so a customer missing the new field still renders something.
-	var cust_name: String = customer.get("name", customer.get("id", "Customer"))
-	var role: String = customer.get("role", "")
-	_customer_label.text = cust_name if role.is_empty() else "%s the %s" % [cust_name, role]
+func _display_customer(customer: CustomerDefinition) -> void:
+	_portrait_rect.texture = customer.sprite
+	_customer_label.text = customer.name if customer.role.is_empty() else "%s the %s" % [customer.name, customer.role]
 	_remaining_label.text = "Customer %d of %d" % [current_index + 1, customers.size()]
 
 	_clear_orders()
-	var orders: Array = customer.get("orders", [])
 	var order_card_scene: PackedScene = load("res://shop/order_card.tscn")
-	for i in range(orders.size()):
+	for i in range(customer.orders.size()):
 		var card: Control = order_card_scene.instantiate()
 		_orders_container.add_child(card)
-		card.setup(orders[i], i)
+		card.setup(customer.orders[i], i)
 		card.order_tapped.connect(try_fulfill_order)
 
 	_reject_btn.disabled = false

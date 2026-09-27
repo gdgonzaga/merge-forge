@@ -1,0 +1,28 @@
+[gd_resource type="Resource" script_class="CustomerDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/order_definition.gd" id="1_o2daw"]
+[ext_resource type="Resource" path="res://resources/definitions/items/herb_bundle.tres" id="2_e6404"]
+[ext_resource type="Resource" path="res://resources/definitions/items/iron_ingot.tres" id="3_gelq6"]
+[ext_resource type="Script" path="res://resources/definitions/customer_definition.gd" id="4_0i6q0"]
+[ext_resource type="Texture2D" path="res://resources/sprites/portraits/customer_06.png" id="5_kxi50"]
+
+[sub_resource type="Resource" id="Resource_a85lc"]
+script = ExtResource("1_o2daw")
+item = ExtResource("2_e6404")
+quantity = 3
+gold_reward = 45
+
+[sub_resource type="Resource" id="Resource_7e66d"]
+script = ExtResource("1_o2daw")
+item = ExtResource("3_gelq6")
+quantity = 2
+gold_reward = 30
+
+[resource]
+script = ExtResource("4_0i6q0")
+id = "cust_06"
+name = "Hilda"
+role = "Innkeeper"
+sprite = ExtResource("5_kxi50")
+queue_order = 5
+orders = Array[ExtResource("1_o2daw")]([SubResource("Resource_a85lc"), SubResource("Resource_7e66d")])

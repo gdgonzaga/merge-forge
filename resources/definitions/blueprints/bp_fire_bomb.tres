@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="BlueprintDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/blueprint_definition.gd" id="1_j4gp2"]
+[ext_resource type="Resource" path="res://resources/definitions/blueprints/bp_bomb.tres" id="2_j6luh"]
+
+[resource]
+script = ExtResource("1_j4gp2")
+id = "bp_fire_bomb"
+name = "Fire Bomb Blueprint"
+cost = 250
+dependencies = Array[ExtResource("1_j4gp2")]([ExtResource("2_j6luh")])

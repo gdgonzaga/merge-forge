@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="UpgradeDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/upgrade_definition.gd" id="1_vitjk"]
+
+[resource]
+script = ExtResource("1_vitjk")
+id = "slow_timer"
+name = "Patience Clock"
+cost = 80
+effect = "despawn_time"
+value = 15.0

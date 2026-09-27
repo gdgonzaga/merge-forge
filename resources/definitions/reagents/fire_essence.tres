@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="ReagentDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/reagent_definition.gd" id="1_a1cum"]
+[ext_resource type="Texture2D" path="res://resources/sprites/items/fire_essence.png" id="2_h7gtd"]
+
+[resource]
+script = ExtResource("1_a1cum")
+id = "fire_essence"
+name = "Fire Essence"
+cost = 100
+description = "A crackling ember used to forge flame-infused weapons."
+sprite = ExtResource("2_h7gtd")

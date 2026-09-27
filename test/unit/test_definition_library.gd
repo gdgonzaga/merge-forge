@@ -1,19 +1,27 @@
 extends TestBase
 
-# Tests for DefinitionLibrary and .tres definition resources.
-# Verifies that items, party members, enemies, and effects load
-# as valid Resource instances with Texture2D sprites.
+# Tests for DefinitionLibrary and the shipped .tres definitions. Content checks
+# loop over whatever ships, so they hold for any content set.
 
 
 const USE_TARGETS: Array[String] = ["party-individual", "enemy-individual", "enemy-all"]
+const UPGRADE_EFFECTS: Array[String] = ["grid_size", "despawn_time", "crate_discount"]
+
+
+# A copy-pasted file that kept its source's id would shadow it in the catalog.
+func test_every_definition_id_matches_its_file_name() -> void:
+	var catalogs := DefinitionLibrary.get_catalogs()
+	for folder: String in catalogs:
+		var catalog: Dictionary = catalogs[folder]
+		assert_bool(catalog.is_empty()).override_failure_message("no %s loaded" % folder).is_false()
+		for id: String in catalog:
+			var file_id: String = (catalog[id] as Resource).resource_path.get_file().get_basename()
+			assert_str(id).override_failure_message("%s/%s.tres has id '%s'" % [folder, file_id, id]).is_equal(file_id)
 
 
 func test_definition_library_loads_items() -> void:
-	var items: Dictionary = DefinitionLibrary.get_all_items()
-	assert_bool(items.is_empty()).is_false()
-	for item_id: String in items:
-		var item_def: ItemDefinition = items[item_id]
-		assert_str(item_def.id).is_equal(item_id)
+	for item_id: String in DefinitionLibrary.get_all_items():
+		var item_def := DefinitionLibrary.get_item(item_id)
 		assert_str(item_def.name).is_not_empty()
 		assert_bool(item_def.sprite is Texture2D).override_failure_message("%s has no sprite" % item_id).is_true()
 
@@ -23,20 +31,54 @@ func test_usable_items_have_an_effect_and_a_known_target() -> void:
 		if not item_def.dungeon_usable:
 			continue
 		assert_object(item_def.effect).override_failure_message("%s has no effect" % item_def.id).is_not_null()
-		assert_str(item_def.effect.type).is_not_empty()
+		assert_str(item_def.effect.type).override_failure_message("%s effect has no type" % item_def.id).is_not_empty()
 		assert_bool(item_def.dungeon_use_target in USE_TARGETS) \
 			.override_failure_message("%s has target '%s'" % [item_def.id, item_def.dungeon_use_target]).is_true()
 
 
 # Dungeon drops are ready to use: raw materials never drop.
-func test_enemy_drops_are_defined_dungeon_usable_items() -> void:
+func test_enemy_drops_are_dungeon_usable_items() -> void:
 	for enemy_def: EnemyDefinition in DefinitionLibrary.get_all_enemies().values():
-		for entry: Dictionary in enemy_def.drop_pool:
-			var drop_id: String = entry.get("item_id", "")
-			var item_def: ItemDefinition = DefinitionLibrary.get_item(drop_id)
-			assert_object(item_def).override_failure_message("%s drops unknown '%s'" % [enemy_def.id, drop_id]).is_not_null()
-			assert_bool(item_def.dungeon_usable) \
-				.override_failure_message("%s drops non-usable '%s'" % [enemy_def.id, drop_id]).is_true()
+		for entry in enemy_def.drop_pool:
+			assert_object(entry.item).override_failure_message("%s has an empty drop" % enemy_def.id).is_not_null()
+			assert_bool(entry.item.dungeon_usable) \
+				.override_failure_message("%s drops non-usable '%s'" % [enemy_def.id, entry.item.id]).is_true()
+
+
+# Broken references load as null instead of failing, so check every link.
+func test_item_merge_links_are_complete() -> void:
+	for item_def: ItemDefinition in DefinitionLibrary.get_all_items().values():
+		for option in item_def.merge_results:
+			assert_object(option.result).override_failure_message("%s has an empty merge result" % item_def.id).is_not_null()
+		for variant in item_def.reagent_variants:
+			assert_object(variant.result).override_failure_message("%s has an empty variant" % item_def.id).is_not_null()
+			assert_object(variant.reagent).override_failure_message("%s variant has no reagent" % item_def.id).is_not_null()
+
+
+func test_shop_links_are_complete() -> void:
+	for crate in DefinitionLibrary.get_all_crates():
+		for entry in crate.pool:
+			assert_object(entry.item).override_failure_message("crate %s has an empty entry" % crate.id).is_not_null()
+	for customer in DefinitionLibrary.get_all_customers():
+		for order in customer.orders:
+			assert_object(order.item).override_failure_message("%s has an order with no item" % customer.id).is_not_null()
+	for blueprint in DefinitionLibrary.get_all_blueprints():
+		for dep in blueprint.dependencies:
+			assert_object(dep).override_failure_message("%s has an empty dependency" % blueprint.id).is_not_null()
+
+
+func test_dungeon_links_are_complete() -> void:
+	for dungeon: DungeonDefinition in DefinitionLibrary.dungeons.values():
+		assert_int(dungeon.encounters.size()).is_equal(dungeon.encounter_points.size())
+		for encounter in dungeon.encounters:
+			for spawn in encounter.spawns:
+				assert_object(spawn.enemy).override_failure_message("%s spawns no enemy" % dungeon.id).is_not_null()
+
+
+func test_upgrades_have_a_known_effect() -> void:
+	for upgrade in DefinitionLibrary.get_all_upgrades():
+		assert_bool(upgrade.effect in UPGRADE_EFFECTS) \
+			.override_failure_message("%s has effect '%s'" % [upgrade.id, upgrade.effect]).is_true()
 
 
 func test_definition_library_loads_party_members() -> void:
@@ -64,31 +106,3 @@ func test_definition_library_missing_returns_null() -> void:
 	assert_object(DefinitionLibrary.get_item("__nonexistent__")).is_null()
 	assert_object(DefinitionLibrary.get_party_member("__nonexistent__")).is_null()
 	assert_object(DefinitionLibrary.get_enemy("__nonexistent__")).is_null()
-
-
-func test_combat_engine_applies_effect_definition() -> void:
-	var engine: Node = auto_free(load("res://dungeon/combat_engine.gd").new())
-	add_child(engine)
-	var test_party: Array[Dictionary] = [{"name": "Hero", "max_hp": 100, "attack": 10, "attack_type": "melee", "windup": 1, "crit_chance": 0.0, "crit_name": "Crit"}]
-	engine.init_party(test_party)
-	# Reduce HP to 50
-	engine.party_members[0]["current_hp"] = 50
-
-	var heal_effect := EffectDefinition.new()
-	heal_effect.type = "heal"
-	heal_effect.value = 30
-
-	var sig_data := {"received": false, "idx": -1, "type": "", "amt": 0}
-	engine.effect_applied.connect(func(idx: int, etype: String, amt: int) -> void:
-		sig_data["received"] = true
-		sig_data["idx"] = idx
-		sig_data["type"] = etype
-		sig_data["amt"] = amt
-	)
-
-	engine.apply_effect(0, heal_effect)
-	assert_int(engine.get_member_data(0)["current_hp"]).is_equal(80)
-	assert_bool(sig_data["received"]).is_true()
-	assert_int(sig_data["idx"]).is_equal(0)
-	assert_str(sig_data["type"]).is_equal("heal")
-	assert_int(sig_data["amt"]).is_equal(30)

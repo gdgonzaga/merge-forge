@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="CustomerDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/order_definition.gd" id="1_sbh2n"]
+[ext_resource type="Resource" path="res://resources/definitions/items/herb_bundle.tres" id="2_ey1dr"]
+[ext_resource type="Resource" path="res://resources/definitions/items/iron_ingot.tres" id="3_tnunr"]
+[ext_resource type="Script" path="res://resources/definitions/customer_definition.gd" id="4_el0t8"]
+[ext_resource type="Texture2D" path="res://resources/sprites/portraits/customer_02.png" id="5_822m7"]
+
+[sub_resource type="Resource" id="Resource_v8vgh"]
+script = ExtResource("1_sbh2n")
+item = ExtResource("2_ey1dr")
+gold_reward = 15
+
+[sub_resource type="Resource" id="Resource_kqfjq"]
+script = ExtResource("1_sbh2n")
+item = ExtResource("3_tnunr")
+gold_reward = 15
+
+[resource]
+script = ExtResource("4_el0t8")
+id = "cust_02"
+name = "Mira"
+role = "Apothecary"
+sprite = ExtResource("5_822m7")
+queue_order = 1
+orders = Array[ExtResource("1_sbh2n")]([SubResource("Resource_v8vgh"), SubResource("Resource_kqfjq")])

@@ -6,38 +6,32 @@ extends TestBase
 
 const GEM_ID := "__test_gem"
 
-var _gem_texture: Texture2D
+var _gem: ItemDefinition
 
 
 func before_test() -> void:
 	super.before_test()
-	_gem_texture = PlaceholderTexture2D.new()
-	set_catalog_entry(RecipeResolver.items, GEM_ID, {
-		"id": GEM_ID,
-		"name": "Gem",
-		"family": "test",
-		"gold_value": 1,
-		"dungeon_usable": false,
-		"dungeon_use_target": "",
-		"effect": null,
-		"sprite": _gem_texture,
-	})
+	_gem = ItemDefinition.new()
+	_gem.id = GEM_ID
+	_gem.name = "Gem"
+	_gem.sprite = PlaceholderTexture2D.new()
+	set_definition(DefinitionLibrary.items, _gem)
 
 
 func test_board_state_saves_only_ids() -> void:
 	var board := _make_board()
-	board.place_item(RecipeResolver.get_item_data(GEM_ID), Vector2i(1, 2))
+	board.place_item(RecipeResolver.make_item(_gem), Vector2i(1, 2))
 	assert_array(board.get_board_state()).is_equal([{"col": 1, "row": 2, "item_id": GEM_ID}])
 
 
 func test_board_state_restores_sprite_after_json_round_trip() -> void:
 	var board := _make_board()
-	board.place_item(RecipeResolver.get_item_data(GEM_ID), Vector2i(1, 2))
+	board.place_item(RecipeResolver.make_item(_gem), Vector2i(1, 2))
 	var saved: Array = JSON.parse_string(JSON.stringify(board.get_board_state()))
 
 	var reloaded := _make_board()
 	reloaded.load_board_state(saved)
-	assert_object(reloaded.get_cell_at(Vector2i(1, 2)).get_icon_texture()).is_same(_gem_texture)
+	assert_object(reloaded.get_cell_at(Vector2i(1, 2)).get_icon_texture()).is_same(_gem.sprite)
 	assert_str(reloaded.grid[2][1]["item_id"]).is_equal(GEM_ID)
 
 

@@ -25,7 +25,7 @@
 - Connected-group merge detection (3+ identical orthogonally adjacent items auto-triggers)
 - Fixed recipe tree with player choice (2–4 options per merge)
 - Blueprint system gating recipe branches
-- 2 material families in MVP gameplay (Metal, Herb), each with a 4-step merge chain defined in recipes.json. Gem and Wood families have the family key reserved in data (`"gem"`, `"wood"`) but no items are defined yet.
+- 2 material families in MVP gameplay (Metal, Herb), each with a 4-step merge chain defined on the item definitions. Gem and Wood families have the family key reserved in data (`"gem"`, `"wood"`) but no items are defined yet.
 - 1 reagent in MVP (Fire Essence) creating variant items as merge options for final-stage merges
 - Shop mode: 10-customer sessions with order fulfillment
 - 3 customer tiers (Basic, Standard, Premium) gated by reputation
@@ -390,7 +390,7 @@ Transitions:
 
 ### Item Catalog (MVP)
 
-All items are `.tres` definitions in `resources/definitions/items/`, with merge chains in `recipes.json` and fire variants in `reagent_combos.json`. Three families, one role each in the dungeon: herbs heal, metal buffs, powder damages. Tier 1 is always a raw material; tiers 2 to 4 are dungeon-usable, and enemies drop only usable items. Effect values are starting points for playtesting.
+All items are `.tres` definitions in `resources/definitions/items/`; each item lists its merge results and fire variants. Three families, one role each in the dungeon: herbs heal, metal buffs, powder damages. Tier 1 is always a raw material; tiers 2 to 4 are dungeon-usable, and enemies drop only usable items. Effect values are starting points for playtesting.
 
 Effects in *italics* are defined but not applied yet: CombatEngine only runs `heal` and `buff_attack`, and only party members accept drops, so using such an item consumes it with no effect until the engine supports it.
 
@@ -484,7 +484,7 @@ Any board change — item placed, item removed, or item swapped. Also re-trigger
 
 **Inputs:**
 - Board grid state (which cells hold which items)
-- Recipe tree from recipes.json (item_id → list of possible results)
+- Recipe tree from the item definitions (each item's merge results and reagent variants)
 - Blueprint ownership from GameManager (which results are visible)
 - Reagent inventory from GameManager.reagent_inventory (for reagent variant options)
 
@@ -646,8 +646,8 @@ Player buys a blueprint in prep phase, or completes a dungeon that awards a blue
 
 **Inputs:**
 - Player's gold (from GameManager)
-- Blueprint definitions from blueprints.json
-- Recipe tree from recipes.json
+- Blueprint definitions from `resources/definitions/blueprints/`
+- Recipe tree from the item definitions
 
 **Outputs:**
 - Adds blueprint ID to GameManager.unlocked_blueprints
@@ -868,6 +868,7 @@ Combat tick (every 1 second):
 | 2026-09-27 | Every attack winds up; crits replace heavy attacks | Every attack now winds up (1 s) with a visible line, so every hit is readable before it lands. Heavy attacks are gone; instead each windup rolls a 15% crit (2x windup, 4x damage: 2x DPS with a longer warning), shown gold from the start. Multi-target attacks removed: missile now hits the weakest unit instead of splitting. Line width follows the hit's share of the target's current HP. Retune (sim medians): party ATK Fighter 11, Mage 14, Healer 4 (Mage > Fighter > Healer); Slime 3, Goblin 7, Archer 5. No items: wipe in encounter 3 (~89%); one potion: ~67% clear, usually with a KO; two potions: ~98% clear, no KOs; combat ~23-26 s. |
 | 2026-09-27 | Telegraph lines and HP ghost instead of labels | The "Smash: Fighter in 2" label and the hidden target marker resized the unit rows and pushed the board down. Replaced with a line from enemy to target whose fill is the countdown (red when lethal, width by damage) and a ghost chunk on the target's HP bar. Party cards widened (128 px sprites, 270 px HP bars, HP numbers, 32 px buff text); a fixed gap between the party and enemy rows gives the lines room; dead enemies keep their slot. |
 | 2026-09-28 | Dungeon item roles and usable-only drops | Herbs heal, metal buffs, powder (new family) damages. Tier 1 stays raw; tiers 2 to 4 are dungeon-usable, and enemy drop pools hold only usable items (Slime: herbs, Archer: powder, Goblin: plates and herbs). refined_potion renamed herbal_tonic (`SAVE_VERSION` 4). Fire essence now makes phoenix_draught from tonics instead of a Healing Potion from herb bundles, which skipped a tier and bp_healing_potion. absorb, crit_charges, revive, damage and enemy targets are defined but not implemented in CombatEngine yet. The old balance targets no longer hold (heals now drop directly); re-sim before tuning. |
+| 2026-09-28 | All content is `.tres`; `data/` is gone | Recipes, reagent variants, blueprints, crates, upgrades, reagents, customers and dungeons moved from JSON to typed definitions under `resources/definitions/`. Definitions reference each other directly, so a broken link shows up in the editor and in the integrity tests instead of as a silent id typo; references only point down the tiers because Godot can't load cyclic resources. Ids are unchanged, so saves still load (no `SAVE_VERSION` bump). Fire Essence costs 100 as specified; `reagents.json` had drifted to 75. Shop listings are ordered cheapest first. |
 
 ---
 

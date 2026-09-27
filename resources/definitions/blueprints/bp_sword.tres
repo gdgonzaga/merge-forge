@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="BlueprintDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/blueprint_definition.gd" id="1_445fj"]
+[ext_resource type="Resource" path="res://resources/definitions/blueprints/bp_iron_plate.tres" id="2_u1hyq"]
+
+[resource]
+script = ExtResource("1_445fj")
+id = "bp_sword"
+name = "Sword Blueprint"
+cost = 120
+dependencies = Array[ExtResource("1_445fj")]([ExtResource("2_u1hyq")])

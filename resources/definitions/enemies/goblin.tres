@@ -1,7 +1,25 @@
 [gd_resource type="Resource" script_class="EnemyDefinition" format=3]
 
+[ext_resource type="Script" path="res://resources/definitions/weighted_item.gd" id="1_wbv7a"]
+[ext_resource type="Resource" path="res://resources/definitions/items/iron_plate.tres" id="2_cgvpa"]
 [ext_resource type="Script" path="res://resources/definitions/enemy_definition.gd" id="2_ydbyd"]
+[ext_resource type="Resource" path="res://resources/definitions/items/herb_bundle.tres" id="3_brvmg"]
 [ext_resource type="Texture2D" path="res://resources/sprites/enemies/goblin.png" id="3_dxv5k"]
+[ext_resource type="Resource" path="res://resources/definitions/items/herbal_tonic.tres" id="4_k737f"]
+
+[sub_resource type="Resource" id="Resource_kp2lk"]
+script = ExtResource("1_wbv7a")
+item = ExtResource("2_cgvpa")
+weight = 2
+
+[sub_resource type="Resource" id="Resource_65xu4"]
+script = ExtResource("1_wbv7a")
+item = ExtResource("3_brvmg")
+weight = 2
+
+[sub_resource type="Resource" id="Resource_42gio"]
+script = ExtResource("1_wbv7a")
+item = ExtResource("4_k737f")
 
 [resource]
 script = ExtResource("2_ydbyd")
@@ -13,17 +31,6 @@ windup = 1
 crit_chance = 0.15
 crit_name = "Smash"
 sprite = ExtResource("3_dxv5k")
-drop_count = {
-"max": 4.0,
-"min": 3.0
-}
-drop_pool = Array[Dictionary]([{
-"item_id": "iron_plate",
-"weight": 2.0
-}, {
-"item_id": "herb_bundle",
-"weight": 2.0
-}, {
-"item_id": "herbal_tonic",
-"weight": 1.0
-}])
+min_drops = 3
+max_drops = 4
+drop_pool = Array[ExtResource("1_wbv7a")]([SubResource("Resource_kp2lk"), SubResource("Resource_65xu4"), SubResource("Resource_42gio")])

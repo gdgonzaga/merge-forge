@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="CustomerDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/order_definition.gd" id="1_gqysj"]
+[ext_resource type="Resource" path="res://resources/definitions/items/iron_ingot.tres" id="2_dh7jo"]
+[ext_resource type="Script" path="res://resources/definitions/customer_definition.gd" id="3_wm1ls"]
+[ext_resource type="Texture2D" path="res://resources/sprites/portraits/customer_01.png" id="4_x0dcj"]
+
+[sub_resource type="Resource" id="Resource_c5owt"]
+script = ExtResource("1_gqysj")
+item = ExtResource("2_dh7jo")
+quantity = 2
+gold_reward = 30
+
+[resource]
+script = ExtResource("3_wm1ls")
+id = "cust_01"
+name = "Brom"
+role = "Village Smith"
+sprite = ExtResource("4_x0dcj")
+orders = Array[ExtResource("1_gqysj")]([SubResource("Resource_c5owt")])

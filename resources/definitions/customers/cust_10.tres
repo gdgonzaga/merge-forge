@@ -1,0 +1,28 @@
+[gd_resource type="Resource" script_class="CustomerDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/order_definition.gd" id="1_lxxya"]
+[ext_resource type="Resource" path="res://resources/definitions/items/battle_elixir.tres" id="2_romnj"]
+[ext_resource type="Resource" path="res://resources/definitions/items/healing_potion.tres" id="3_xj0gj"]
+[ext_resource type="Script" path="res://resources/definitions/customer_definition.gd" id="4_svx80"]
+[ext_resource type="Texture2D" path="res://resources/sprites/portraits/customer_10.png" id="5_rbiqm"]
+
+[sub_resource type="Resource" id="Resource_q71bg"]
+script = ExtResource("1_lxxya")
+item = ExtResource("2_romnj")
+quantity = 2
+gold_reward = 100
+
+[sub_resource type="Resource" id="Resource_skvvs"]
+script = ExtResource("1_lxxya")
+item = ExtResource("3_xj0gj")
+quantity = 2
+gold_reward = 80
+
+[resource]
+script = ExtResource("4_svx80")
+id = "cust_10"
+name = "Veska"
+role = "Battle-Mage"
+sprite = ExtResource("5_rbiqm")
+queue_order = 9
+orders = Array[ExtResource("1_lxxya")]([SubResource("Resource_q71bg"), SubResource("Resource_skvvs")])

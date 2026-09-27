@@ -9,12 +9,12 @@ Last updated: 2026-06-11
 ```
 res://
 ├── autoloads/
-├── data/
 ├── board/
 ├── core/
 ├── shop/
 ├── dungeon/
 └── resources/
+    ├── definitions/   (content .tres files, one folder per catalog)
     ├── sprites/
     ├── audio/
     │   ├── music/
@@ -22,7 +22,7 @@ res://
     └── fonts/
 ```
 
-> **Convention:** All files for a subsystem live together in its folder (scenes, scripts, data schemas). Autoloads stay in `autoloads/`. Shared game data lives in `data/`. Shared assets live in `resources/`. See each subsystem's Files table for exact file placement. Scripts in one subsystem folder must not use `preload` or direct node paths into another subsystem's folder — use autoloads or EventBus for cross-subsystem access.
+> **Convention:** All files for a subsystem live together in its folder (scenes, scripts, data schemas). Autoloads stay in `autoloads/`. Game content lives in `resources/definitions/`. Shared assets live in `resources/`. See each subsystem's Files table for exact file placement. Scripts in one subsystem folder must not use `preload` or direct node paths into another subsystem's folder — use autoloads or EventBus for cross-subsystem access.
 
 ## Scene Tree Overview
 
@@ -44,8 +44,8 @@ Scene transitions are driven by `main.gd` listening to EventBus signals. Main fr
 | ----------------- | ----------------------- | ---------------------------------------------------------------------------------------------------------------- |
 | GameManager       | `game_manager.gd`       | Persistent state: gold, reputation, blueprints, reagent inventory, upgrades, shop board state, grid size         |
 | EventBus          | `event_bus.gd`          | Cross-scene signal relay (see registry below)                                                                    |
-| DefinitionLibrary | `definition_library.gd` | Loads and indexes all `.tres` definition resources (items, party, enemies, effects). Lists folders with `ResourceLoader.list_directory` (works in exports, where `.tres` files are remapped). Every definition needs an `id`; an empty items/party/enemies catalog is a hard error, since there is no fallback content. |
-| RecipeResolver    | `recipe_resolver.gd`    | Loads recipe/blueprint/reagent/crate/upgrade JSON data. Filters merge options by blueprint ownership and reagent availability. Provides crate and pricing data for shop/prep. |
+| DefinitionLibrary | `definition_library.gd` | Loads and indexes every content definition (see Content Definitions), one catalog per folder under `resources/definitions/`. Lists folders with `ResourceLoader.list_directory` (works in exports, where `.tres` files are remapped). Every definition needs a unique `id`; an empty catalog is a hard error, since there is no fallback content. |
+| RecipeResolver    | `recipe_resolver.gd`    | Rules over the definitions, holding no content itself: merge options filtered by blueprint ownership and reagent inventory, blueprint dependency checks, weighted pool rolls, and the dictionary a board cell holds (`make_item`). |
 | SaveManager       | `save_manager.gd`       | Auto-save/load to single JSON file at checkpoints                                                                |
 | AudioManager      | `audio_manager.gd`      | Music playback with crossfade, SFX one-shots                                                                     |
 
@@ -95,7 +95,7 @@ These are emitted directly on GameManager. Connect via `GameManager.gold_changed
 
 ## Key Conventions
 
-- Game data lives in `res://data/` as `.json` files — loaded at startup by the relevant autoload, never at runtime per-frame
+- All game content is `.tres` definitions under `res://resources/definitions/`, loaded once at startup by DefinitionLibrary, never at runtime per-frame. Definitions reference each other directly (a merge result points at its ItemDefinition), and those references only point down the tiers, since Godot can't load cyclic resource files.
 - Scene-specific UI lives inside its own scene. Only HUD (gold, reputation badge) is global via CanvasLayer.
 - No `get_node("../../")` path hacks — use signals, autoloads, or passed references
 - Signals describe events (`merge_completed`), not commands (`do_merge`)
@@ -134,14 +134,14 @@ These are emitted directly on GameManager. Connect via `GameManager.gold_changed
 
 ### Post-MVP (Deferred)
 
-- **Demand Forecast / Forecast tab:** The prep phase Forecast tab and CustomerGenerator's `forecast_bias` parameter are deferred to post-MVP. The tab should be removed from the PrepPhase TabContainer for v1.0, or hidden behind a feature flag. Do not build forecast UI or bias logic for MVP.
+- **Demand Forecast / Forecast tab:** The prep phase Forecast tab and a customer `forecast_bias` are deferred to post-MVP. The tab should be removed from the PrepPhase TabContainer for v1.0, or hidden behind a feature flag. Do not build forecast UI or bias logic for MVP.
 - **Equipment Durability / Repair mechanic:** Party equipment wears during dungeon raids. The player must maintain item durability during the raid by crafting repair items (usable item type: `repair`). This mechanic is deferred to post-MVP — do not implement `repair` as a usable item effect type for v1.0.
-- **Algorithmic Customer Generation:** CustomerGenerator should generate customers algorithmically based on reputation, with weighted item demands (e.g., by gold_value or merge depth). Premium customer tier also deferred. MVP uses a flat, hand-authored customer list.
+- **Algorithmic Customer Generation:** Customers should be generated algorithmically based on reputation, with weighted item demands (e.g., by gold_value or merge depth). Premium customer tier also deferred. MVP uses a flat, hand-authored customer list.
 - **Party Abilities / Healing:** All party members auto-attack only for MVP. No healer ability, no skills, no active party abilities. Usable-item buffs (buff_attack) remain in MVP. Post-MVP: add active abilities, healing, and party/enemy skill system.
 - **Dungeon Mid-Exit Penalty:** MVP wipes all partial progress on dungeon exit/fail. Post-MVP: impose a penalty for mid-dungeon exit and implement anti-scumming measures (e.g., gold cost, reputation penalty, cooldown timer).
 - **Additional dungeons:** Beyond the first dungeon (Goblin Cave).
 - **Gem and Wood material families:** Family keys reserved in data (`"gem"`, `"wood"`). Wood items defined for forward compatibility. Gem items not yet defined.
-- **Premium customer tier:** CustomerGenerator only produces Basic and Standard for MVP.
+- **Premium customer tier:** The shop only deals Basic and Standard customers for MVP.
 - **Additional reagent types:** Beyond Fire Essence (Ice, Shadow, Holy).
 - **Timed events or daily challenges.**
 - **Board themes / cosmetics.**
@@ -401,7 +401,7 @@ The GDD lists effect types (heal, buff_attack). Party stats are confirmed (see t
 | `remove_items_by_id(item_id: String, count: int)` | Removes N items matching item_id. Used by order fulfillment. |
 | `clear_board()` | Removes all items. Used for dungeon cleanup. |
 | `get_board_state() -> Array` | Serializes grid for save/load. Returns array of `{col, row, item_id}` dicts: ids only, since item data (and its sprite texture) can't round-trip through JSON. |
-| `load_board_state(state: Array)` | Restores grid from save data, rebuilding each item from `RecipeResolver.get_item_data(item_id)`. Ids missing from the catalog are skipped with an error. Updates BoardCell visuals. |
+| `load_board_state(state: Array)` | Restores grid from save data, rebuilding each item with `RecipeResolver.make_item(DefinitionLibrary.get_item(item_id))`. Ids missing from the catalog are skipped with an error. Updates BoardCell visuals. |
 
 #### MergeDetector
 
@@ -533,128 +533,114 @@ The GDD lists effect types (heal, buff_attack). Party stats are confirmed (see t
 
 ---
 
-## Subsystem: Recipe & Blueprint System
+## Subsystem: Content Definitions, Recipes & Blueprints
 
 ### Scenes & Scripts
 
 | File | Type | Responsibility |
 |------|------|----------------|
-| `autoloads/recipe_resolver.gd` | Autoload | Loads and caches recipe, blueprint, reagent combo, crate, upgrade, and reagent data. Provides synchronous lookups filtered by player progress. |
+| `autoloads/definition_library.gd` | Autoload | Loads every definition folder into a catalog keyed by id. Shop listings (blueprints, crates, upgrades, reagents) come back cheapest first, customers in `queue_order`, party members in `slot_order`. |
+| `autoloads/recipe_resolver.gd` | Autoload | Synchronous rules over the definitions, filtered by player progress. |
+| `resources/definitions/*.gd` | Resource scripts | One `class_name` per definition type (below). |
+
+### Content Definitions
+
+Each catalog is a folder of `.tres` files under `resources/definitions/`; the file name is the definition's `id`. Types without a folder are value objects that live inside another definition as sub-resources.
+
+| Folder | Type | Fields |
+|--------|------|--------|
+| `items/` | `ItemDefinition` | See below. |
+| `party/` | `PartyMemberDefinition` | See the Dungeon Run subsystem. |
+| `enemies/` | `EnemyDefinition` | See the Dungeon Run subsystem. |
+| `reagents/` | `ReagentDefinition` | `id`, `name`, `cost`, `description`, `sprite` |
+| `blueprints/` | `BlueprintDefinition` | `id`, `name`, `cost`, `dependencies: Array[BlueprintDefinition]` |
+| `crates/` | `CrateDefinition` | `id`, `name`, `cost`, `min_items`, `max_items`, `pool: Array[WeightedItem]` |
+| `upgrades/` | `UpgradeDefinition` | `id`, `name`, `cost`, `effect` (`grid_size`, `despawn_time` or `crate_discount`), `value` (seconds for despawn_time, price multiplier for crate_discount), `grid_cols` and `grid_rows` (grid_size) |
+| `customers/` | `CustomerDefinition` | `id`, `name`, `role`, `sprite` (portrait), `queue_order`, `orders: Array[OrderDefinition]` |
+| `dungeons/` | `DungeonDefinition` | See the Dungeon Run subsystem. |
+| (inline) | `EffectDefinition` | `type`, `value`, `duration` (ticks, 0 = instant). The `value` meaning per type is in `effect_definition.gd`. |
+| (inline) | `MergeResult` | `result: ItemDefinition`, `blueprint: BlueprintDefinition` (null = always available) |
+| (inline) | `ReagentVariant` | `result: ItemDefinition`, `reagent: ReagentDefinition`, `blueprint` (null = always available) |
+| (inline) | `WeightedItem` | `item: ItemDefinition`, `weight: int` (relative; 0 never rolls) |
+| (inline) | `OrderDefinition` | `item: ItemDefinition`, `quantity`, `gold_reward` |
+| (inline) | `EncounterDefinition`, `EnemySpawn` | `spawns: Array[EnemySpawn]`; `enemy: EnemyDefinition`, `count` |
+
+Saves store ids only, never resources, so an id is part of the save format: renaming one needs a `SAVE_VERSION` bump.
 
 ### Definition Schema: ItemDefinition (`resources/definitions/items/*.tres`)
-
-Items are `.tres` resources, not JSON. RecipeResolver turns each into a dictionary (`get_item_data` adds an `item_id` stamp) with these fields:
 
 | Field | Type | Description |
 |-------|------|-------------|
 | `id` | `String` | Unique identifier, required. e.g. "iron_ore", "sword" |
 | `name` | `String` | Display name |
-| `family` | `String` | Item family for grouping. e.g. "metal", "herb" |
+| `family` | `String` | Item family for grouping. e.g. "metal", "herb", "powder" |
 | `gold_value` | `int` | Base gold value (used for bonus gold calc and selling) |
 | `dungeon_usable` | `bool` | Whether this item can be used during dungeon runs |
-| `dungeon_use_target` | `String` | If dungeon_usable: `"party-individual"`, `"party-all"`, `"enemy-individual"`, or `"enemy-all"`. `""` if not. |
-| `effect` | `EffectDefinition` or null | `{type, value, duration}` (duration in ticks, 0 = instant); the item dictionary exposes it as `{type, power, duration}`. Null if not dungeon_usable. |
-| `sprite` | `Texture2D` | The item's image. Views read this texture directly; there is no path-string form. |
+| `dungeon_use_target` | `String` | If dungeon_usable: `"party-individual"`, `"enemy-individual"`, or `"enemy-all"`. `""` if not. |
+| `effect` | `EffectDefinition` or null | Null if not dungeon_usable. |
+| `sprite` | `Texture2D` | The item's image. |
+| `merge_results` | `Array[MergeResult]` | What three of this item merge into. More than one available result opens the choice popup. |
+| `reagent_variants` | `Array[ReagentVariant]` | Extra merge results that cost one reagent. |
 
-### Data Schema: recipes.json
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `item_id` | `String` | Source item_id (key). The item being merged. |
-| `results` | `Array[Dictionary]` | Array of possible outcomes. Each: `{result_id: String, blueprint_required: String or null}` |
-| `count_required` | `int` | Number of input items needed for this recipe (always 3 for MVP) |
-
-### Data Schema: blueprints.json
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `bp_id` | `String` | Unique blueprint identifier (key) |
-| `name` | `String` | Display name |
-| `cost` | `int` | Gold cost to purchase |
-| `dependencies` | `Array[String]` | Prerequisite bp_ids that must be unlocked first |
-| `unlocks_item` | `String` | item_id this blueprint makes available in merge results |
-
-### Data Schema: reagent_combos.json
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `base_item_id` | `String` | Item that this reagent combo applies to |
-| `reagent_id` | `String` | Reagent consumed to produce this variant |
-| `variant_item_id` | `String` | Resulting variant item |
-| `blueprint_required` | `String` or null | bp_id needed to unlock this combo, or null if always available |
+**Board item:** a board cell holds `RecipeResolver.make_item(def)`, a dictionary `{item_id, definition}`. `item_id` is what merge detection, order fulfillment and saves read; views read `definition.sprite`. Drag and drop copies it and adds transient `_source_pos` / `_source_screen` keys.
 
 ### Signals
 
-RecipeResolver has no signals — it is queried synchronously by MergeResolver, ShopSession, and PrepPhase.
+RecipeResolver has no signals — it is queried synchronously by MergeResolver, ShopSession, MergeBoard, DropManager and PrepPhase.
 
 ### Flow Trace: Resolve Merge Options
 
 **Trigger:** MergeResolver processes a merge group and needs available results.
 
 1. `merge_resolver.gd` calls `RecipeResolver.get_options(item_id)`
-2. `recipe_resolver.gd` looks up `item_id` in recipes data → gets raw result list
-3. For each result, checks blueprint gate:
-   - Blueprint required AND in `GameManager.unlocked_blueprints` → include
-   - Blueprint required AND NOT unlocked → exclude
-   - No blueprint required → always include
-4. Returns filtered options to caller
+2. `recipe_resolver.gd` reads the item's `merge_results`
+3. For each result, checks its blueprint gate: null → include; in `GameManager.unlocked_blueprints` → include; otherwise exclude
+4. Returns the available `MergeResult`s; MergeResolver turns them into popup options
 
 **End state:** Caller has the list of available options to display or auto-resolve.
 
 ### Flow Trace: Resolve Reagent Variants
 
-**Trigger:** MergeResolver resolves a merge and checks `reagent_combos.json` for the result item.
+**Trigger:** MergeResolver builds the options for a merge group.
 
-1. `merge_resolver.gd` calls `RecipeResolver.get_variant_options(base_item_id)`
-2. `recipe_resolver.gd` looks up `reagent_combos.json` for entries matching `base_item_id`
-3. For each combo:
-   - Check required blueprint is in `GameManager.unlocked_blueprints`
-   - Check `GameManager.reagent_inventory[reagent_id] >= 1`
-   - Both true → add variant to options
-4. Returns variant options (may be empty)
+1. `merge_resolver.gd` calls `RecipeResolver.get_variant_options(item_id)`
+2. `recipe_resolver.gd` reads the item's `reagent_variants`
+3. For each variant: blueprint gate passes (as above) and `GameManager.reagent_inventory[reagent.id] >= 1` → include
+4. Returns the available `ReagentVariant`s (may be empty)
 
 **End state:** Variant options (if any) added to the merge choice popup alongside base results.
 
 ### Class Reference
 
+#### DefinitionLibrary
+
+**Extends:** Node
+**Script:** `autoloads/definition_library.gd`
+
+| Function | Description |
+|----------|-------------|
+| `get_catalogs() -> Dictionary` | Folder name to catalog, for code that walks every catalog (the integrity tests). |
+| `get_item(id)`, `get_party_member(id)`, `get_enemy(id)`, `get_reagent(id)`, `get_blueprint(id)`, `get_crate(id)`, `get_upgrade(id)`, `get_dungeon(id)` | The definition, or null. |
+| `get_all_items() -> Dictionary`, `get_all_enemies() -> Dictionary` | The catalogs themselves (read-only). |
+| `get_all_party_members()` | Ordered by `slot_order`: index 0 is the front member. |
+| `get_all_blueprints()`, `get_all_crates()`, `get_all_upgrades()`, `get_all_reagents()` | Typed arrays, cheapest first (ties by id). |
+| `get_all_customers()` | Ordered by `queue_order`. |
+
 #### RecipeResolver
 
 **Extends:** Node
 **Script:** `autoloads/recipe_resolver.gd`
-**Description:** Read-only data cache for recipes, blueprints, reagent combos, and items. All filtering is done at query time based on current GameManager state.
-
-**Lifecycle:** `_ready()` builds `items`, `party` and `enemies` from DefinitionLibrary's `.tres` definitions (no JSON fallback), then loads `recipes.json`, `blueprints.json`, `reagent_combos.json`, `crates.json`, `upgrades.json`, `reagents.json` and `dungeons.json` from `res://data/` into Dictionary members.
-
-**Properties:**
-
-| Property | Type | Description |
-|----------|------|-------------|
-| `items: Dictionary` | Dictionary | item_id → item data |
-| `recipes: Dictionary` | Dictionary | item_id → recipe data (results array, count_required) |
-| `blueprints: Dictionary` | Dictionary | bp_id → blueprint data (cost, dependencies, unlocks_item) |
-| `reagent_combos: Dictionary` | Dictionary | base_item_id → array of variant combos |
-| `crates: Dictionary` | Dictionary | crate_id → crate data (name, cost, item_count, pool) |
-| `upgrades: Dictionary` | Dictionary | upgrade_id → upgrade data (name, cost, effect_type, effect_value) |
-| `reagents: Dictionary` | Dictionary | reagent_id → reagent data (name, cost, icon, description) |
-| `enemies: Dictionary` | Dictionary | enemy_id → enemy data (name, max_hp, attack, drop_count, drop_pool, sprite) |
-| `dungeons: Dictionary` | Dictionary | dungeon_id → dungeon data (name, walk_speed, encounter_points, encounters, gold_reward, blueprint_reward) |
-| `party: Dictionary` | Dictionary | `{party_members: Array}`, ordered front to back by `slot_order` |
-
-**Functions:**
+**Description:** Rules over DefinitionLibrary's content. All filtering happens at query time from current GameManager state.
 
 | Function | Description |
 |----------|-------------|
-| `get_options(item_id: String) -> Array[Dictionary]` | Returns available merge results, filtered by blueprint ownership. |
-| `get_variant_options(base_item_id: String) -> Array[Dictionary]` | Returns reagent variant options for the given item, filtered by blueprint + reagent inventory. Returns empty array if no combos exist for this item. |
-| `get_item_data(item_id: String) -> Dictionary` | Returns a copy of the item built from its ItemDefinition, stamped with `item_id`. |
-| `get_blueprint_cost(bp_id: String) -> int` | Returns gold cost of a blueprint. |
-| `get_blueprint_dependencies(bp_id: String) -> Array[String]` | Returns prerequisite blueprint IDs. |
+| `make_item(def: ItemDefinition) -> Dictionary` | The board item dictionary `{item_id, definition}`. |
+| `get_options(item_id: String) -> Array[MergeResult]` | Available merge results, filtered by blueprint ownership. Empty for an unknown id. |
+| `get_variant_options(item_id: String) -> Array[ReagentVariant]` | Available reagent variants, filtered by blueprint and reagent inventory. |
+| `is_unlocked(blueprint: BlueprintDefinition) -> bool` | True for null or an owned blueprint. |
 | `has_blueprint(bp_id: String) -> bool` | Checks `GameManager.unlocked_blueprints`. |
-| `get_crate_data(crate_id: String) -> Dictionary` | Returns crate definition (name, cost, item_count, pool). Used by ShopSession. |
-| `get_all_crate_ids() -> Array[String]` | Returns all crate IDs for populating CratePanel buttons. |
-| `get_upgrade_data(upgrade_id: String) -> Dictionary` | Returns upgrade definition. |
-| `get_reagent_data(reagent_id: String) -> Dictionary` | Returns reagent definition (name, cost, icon, description). |
-| `roll_weighted_pool(pool: Array, count: Dictionary) -> Array[Dictionary]` | Static method. Shared weighted random selection for crate and drop pools. |
+| `are_dependencies_met(blueprint: BlueprintDefinition) -> bool` | True when every dependency is owned. |
+| `roll_weighted_pool(pool: Array[WeightedItem], min_rolls: int, max_rolls: int) -> Array[ItemDefinition]` | Static. Rolls `randi_range(min_rolls, max_rolls)` independent picks, each weighted by `weight`. Shared by crates and enemy drops. |
 
 ---
 
@@ -664,36 +650,16 @@ RecipeResolver has no signals — it is queried synchronously by MergeResolver, 
 
 | File | Type | Responsibility |
 |------|------|----------------|
-| `shop/shop_session.tscn` | Scene | Top-level shop session. Layout: `HBoxContainer [CustomerDisplay | MergeBoard | CratePanel]`. CustomerDisplay and CratePanel are sub-components within this scene (no separate scene files). CratePanel is a VBoxContainer on the right with crate buy buttons populated dynamically from `crates.json` and a discard trash bin below. |
+| `shop/shop_session.tscn` | Scene | Top-level shop session. Layout: `HBoxContainer [CustomerDisplay | MergeBoard | CratePanel]`. CustomerDisplay and CratePanel are sub-components within this scene (no separate scene files). CratePanel is a VBoxContainer on the right with crate buy buttons populated dynamically from the crate definitions and a discard trash bin below. |
 | `shop/shop_session.gd` | Script | Orchestrates 10-customer session loop: customer display, order fulfillment, session end, crate purchasing. Does NOT own board logic or merge resolution. |
-| `shop/customer_generator.gd` | Script | Generates 10 customers at session start. For MVP, uses a flat, hand-authored customer list (same order every session). Loads from `data/customers.json`. Does NOT own customer display. |
 | `shop/order_card.tscn` | Scene | One order display: item icon, quantity, reward. Tappable to fulfill. |
 | `shop/session_summary.tscn` | Scene | End-of-session summary. Animated gold counter, items sold, fulfilled/rejected counts, customer portraits. |
 
-### Data Schema: customers.json
+### Customers and Crates
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `customers` | `Array[Dictionary]` | Ordered list of 10 customers. Each: `{id: String, portrait_id: String, orders: Array[Dictionary]}` |
-| `customers[].id` | `String` | Unique customer identifier |
-| `customers[].portrait_id` | `String` | Portrait resource reference |
-| `customers[].orders` | `Array[Dictionary]` | 1–3 possible orders. Each: `{item_id: String, quantity: int, gold_reward: int}` |
+Customers are `CustomerDefinition`s and crates `CrateDefinition`s (see Content Definitions). For MVP the customer list is static and hand-authored, dealt in `queue_order` every session; post-MVP, replace it with generation based on reputation tier. Each customer has 1 to 3 orders. Whatever crates are defined are rendered as buy buttons in the shop's CratePanel, cheapest first; crate cost is multiplied by the Crate Discount upgrade.
 
-For MVP, this file is a static, hand-authored list. Post-MVP: replace with algorithmic generation based on reputation tier.
-
-### Data Schema: crates.json
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `crate_id` | `String` | Unique identifier (key). e.g. "basic", "themed_metal", "tier2" |
-| `name` | `String` | Display name shown on the buy button |
-| `cost` | `int` | Gold price (modified by Crate Discount upgrade: ×0.8) |
-| `item_count` | `Dictionary` | `{min: int, max: int}` number of items generated per crate |
-| `pool` | `Array[Dictionary]` | Weighted item pool: `{item_id: String, weight: int or float}`. Weights are relative probabilities — any positive number, no need to sum to 100. |
-
-Crate definitions are fully data-driven. Whatever crates exist in this file are rendered as buy buttons in the shop's CratePanel. No hardcoded crate types. Adding or removing a crate only requires editing this file.
-
-**Crate generation algorithm:** For each item slot (rolled `item_count` times, independently):
+**Crate generation algorithm:** For each item slot (rolled `min_items` to `max_items` times, independently):
 1. Sum all weights in the pool
 2. Generate a random float in `[0, sum)`
 3. Iterate items, accumulating weights — the item whose cumulative range contains the random number is selected
@@ -714,9 +680,9 @@ Crate definitions are fully data-driven. Whatever crates exist in this file are 
 
 **Trigger:** Main instances `shop_session.tscn` (from prep phase or new game).
 
-1. `shop_session.gd._ready()` calls `customer_generator.generate_customers()` → generates 10 customers, each with 1–3 possible orders
+1. `shop_session.gd._ready()` takes `DefinitionLibrary.get_all_customers()`: 10 customers, each with 1–3 possible orders
 2. `shop_session.gd` displays first customer: portrait on left, 1–3 order cards stacked vertically on right, silhouette of remaining customers behind
-3. Player crafts items on the merge board (standard merge board flow) or buys crates from the CratePanel on the right (crate button → `shop_session.try_buy_crate(crate_id)` → picks random items from the crate's weighted pool, places on board via merge-safe placement, staging area as fallback). Available crates are loaded from `crates.json` — no hardcoded crate types.
+3. Player crafts items on the merge board (standard merge board flow) or buys crates from the CratePanel on the right (crate button → `shop_session.try_buy_crate(crate_id)` → picks random items from the crate's weighted pool, places on board via merge-safe placement, staging area as fallback). Available crates are the crate definitions — no hardcoded crate types.
 4. Player taps one of the displayed `order_card.gd` options → emits `order_tapped(index)` → `shop_session.gd.try_fulfill_order(index)`. Only one order can be fulfilled per customer — the chosen order is fulfilled, all other orders for that customer are discarded.
 5. If board has required items for the chosen order: remove items, add gold + reputation to GameManager, emit `customer_fulfilled` via EventBus, discard remaining orders, advance customer
 6. If board lacks items for the chosen order: flash order card red, no action, other orders remain available to tap
@@ -743,13 +709,13 @@ Crate definitions are fully data-driven. Whatever crates exist in this file are 
 
 **Extends:** Control
 **Script:** `shop/shop_session.gd`
-**Description:** Orchestrates the 10-customer shop session. Each customer presents 1–3 order options; the player picks one to fulfill (others are discarded). Manages customer queue state and delegates to CustomerGenerator, BoardGrid, and OrderCards.
+**Description:** Orchestrates the 10-customer shop session. Each customer presents 1–3 order options; the player picks one to fulfill (others are discarded). Manages customer queue state and delegates to BoardGrid and OrderCards.
 
 **Properties:**
 
 | Property | Type | Description |
 |----------|------|-------------|
-| `customers: Array[Dictionary]` | Array | Generated customer data for this session (10 entries) |
+| `customers: Array[CustomerDefinition]` | Array | This session's customers, in queue order |
 | `current_index: int` | int | Current customer index (0–9) |
 | `board: Control (MergeBoard instance)` | Control | Reference to instanced merge board |
 | `summary_data: Dictionary` | Dictionary | Accumulated stats: gold_earned, items_sold, fulfilled, rejected, portraits |
@@ -763,18 +729,6 @@ Crate definitions are fully data-driven. Whatever crates exist in this file are 
 | `reject_customer()` | Applies -2 reputation penalty, advances. |
 | `try_buy_crate(crate_id: String) -> bool` | Delegates to `board.buy_crate(crate_id)`. MergeBoard handles discount, pool rolling, and merge-safe placement internally. |
 
-#### CustomerGenerator
-
-**Extends:** RefCounted
-**Script:** `shop/customer_generator.gd`
-**Description:** Generates a list of 10 customers. For MVP, uses a flat, hand-authored customer list (same order every session). Each customer has 1–3 possible orders. Reputation-based scaling deferred to post-MVP.
-
-**Functions:**
-
-| Function | Description |
-|----------|-------------|
-| `generate_customers() -> Array[Dictionary]` | Returns 10 customer dicts. Each: `{id, portrait_id, orders: [{item_id, quantity, gold_reward}]}`. |
-
 #### OrderCard
 
 **Extends:** Control
@@ -785,7 +739,7 @@ Crate definitions are fully data-driven. Whatever crates exist in this file are 
 
 | Property | Type | Description |
 |----------|------|-------------|
-| `order_data: Dictionary` | Dictionary | `{item_id, quantity, gold_reward}` |
+| `order: OrderDefinition` | OrderDefinition | Set by `setup(order, index)` |
 
 **Signals:**
 
@@ -814,7 +768,7 @@ Crate definitions are fully data-driven. Whatever crates exist in this file are 
 | File | Type | Responsibility |
 |------|------|----------------|
 | `dungeon/dungeon_run.tscn` | Scene | Top-level dungeon scene. Owns party display, enemy display, merge board, combat area, encounter banner (simple label showing encounter number, shown/hidden by dungeon_controller). A fixed-height `Battlefield` spacer separates the party row from the enemy row so telegraph lines have room, and `EnemyContainer` keeps a fixed minimum height so the board doesn't move when an encounter starts or ends. Transient combat visuals (VFX, telegraphs) live on `AnimOverlay`, never inside the layout containers, so nothing in combat moves the board or the unit rows. |
-| `dungeon/dungeon_controller.gd` | Script | Orchestrates dungeon flow: walking → encounter → combat → walking → end. Reads dungeon/enemy/party data from RecipeResolver (loaded at startup). Does NOT own combat math. |
+| `dungeon/dungeon_controller.gd` | Script | Orchestrates dungeon flow: walking → encounter → combat → walking → end. Reads dungeon and party definitions from DefinitionLibrary. Does NOT own combat math. |
 | `dungeon/combat_engine.gd` | Script | 1-second combat ticks. Damage distribution, HP tracking, knockout detection, buff timers. Does NOT own dungeon flow. |
 | `dungeon/drop_manager.gd` | Script | Generates enemy drops, places on dungeon board via merge-safe placement. Does NOT own board logic. |
 | `dungeon/party_member.tscn` | Scene | Visual: 300 px wide card with a 128x128 sprite, a 270x24 HP bar, an HP number, an attack-type badge and buff text. Accepts drag-drops of usable items. |
@@ -828,37 +782,20 @@ Crate definitions are fully data-driven. Whatever crates exist in this file are 
 | `dungeon/dungeon_vfx.gd` | Script | VFX overlay attached to AnimOverlay in dungeon_run.tscn: floating combat text, slashes, impacts, heal/buff sparkles, screen shake. |
 | `dungeon/dungeon_summary.tscn` | Scene | End-of-dungeon results (cleared or failed). |
 
-### Data Schema: dungeons.json
+### Definition Schema: DungeonDefinition (`resources/definitions/dungeons/*.tres`)
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `dungeon_id` | `String` | Unique identifier (key) |
+| `id` | `String` | Unique identifier |
 | `name` | `String` | Display name |
-| `reputation_required` | `int` | Minimum reputation to unlock |
+| `reputation_required` | `int` | Minimum reputation to unlock (not read yet: `GameManager.is_dungeon_unlocked` uses 150) |
 | `walk_speed` | `float` | Progress per second while walking |
 | `encounter_points` | `Array[float]` | Progress thresholds triggering encounters (e.g. [0.2, 0.5, 0.8]) |
-| `encounters` | `Array[Array[Dictionary]]` | One enemy group per encounter point. Each enemy: `{enemy_id, count}` |
+| `encounters` | `Array[EncounterDefinition]` | One per encounter point. Each holds `spawns: Array[EnemySpawn]` (`enemy`, `count`). |
 | `gold_reward` | `int` | Gold awarded on clear |
-| `blueprint_reward` | `String` or null | bp_id awarded on clear, or null. Goblin Cave: null (no blueprint reward). |
+| `blueprint_reward` | `BlueprintDefinition` or null | Awarded on clear. Goblin Cave: null. |
 
-**Goblin Cave (MVP dungeon) encounter data:**
-
-```json
-{
-  "dungeon_id": "goblin_cave",
-  "name": "Goblin Cave",
-  "reputation_required": 150,
-  "walk_speed": 0.075,
-  "encounter_points": [0.2, 0.5, 0.8],
-  "encounters": [
-    [{"enemy_id": "slime", "count": 2}],
-    [{"enemy_id": "goblin_archer", "count": 1}, {"enemy_id": "goblin", "count": 1}],
-    [{"enemy_id": "goblin", "count": 2}]
-  ],
-  "gold_reward": 80,
-  "blueprint_reward": null
-}
-```
+Goblin Cave (MVP): walk speed 0.075, encounters at 0.2 / 0.5 / 0.8: two Slimes; a Goblin Archer and a Goblin; two Goblins. 80 gold, no blueprint.
 
 ### Definition Schema: EnemyDefinition (`resources/definitions/enemies/*.tres`)
 
@@ -872,11 +809,11 @@ Crate definitions are fully data-driven. Whatever crates exist in this file are 
 | `windup` | `int` | Ticks a normal attack winds up before it lands; required (0 fails CombatEngine's check). |
 | `crit_chance` | `float` | 0..1, rolled when each windup starts. A crit winds up `CRIT_WINDUP_MULT` (2) times longer and deals `CRIT_DAMAGE_MULT` (4) times the damage. |
 | `crit_name` | `String` | Pops up over the attacker when a crit lands. |
-| `drop_count` | `Dictionary` | `{min: int, max: int}` number of drops on death |
-| `drop_pool` | `Array[Dictionary]` | Weighted item pool: `{item_id: String, weight: int or float}`. Same structure and algorithm as crate pools. |
+| `min_drops`, `max_drops` | `int` | Number of drops on death |
+| `drop_pool` | `Array[WeightedItem]` | Weighted item pool, same as crate pools. Only dungeon-usable items. |
 | `sprite` | `Texture2D` | Enemy sprite |
 
-**Drop generation algorithm:** Same as crate generation — for each drop slot (rolled `drop_count` times, independently):
+**Drop generation algorithm:** Same as crate generation — for each drop slot (rolled `min_drops` to `max_drops` times, independently):
 1. Sum all weights in the pool
 2. Generate a random float in `[0, sum)`
 3. Iterate items, accumulating weights — the item whose cumulative range contains the random number is selected
@@ -886,7 +823,7 @@ Crate definitions are fully data-driven. Whatever crates exist in this file are 
 
 ### Definition Schema: PartyMemberDefinition (`resources/definitions/party/*.tres`)
 
-RecipeResolver exposes the party as `party["party_members"]`, an array ordered front to back by `slot_order`: the index is the member's slot, and slot 0 is the front member melee enemies hit.
+`DefinitionLibrary.get_all_party_members()` returns the party ordered front to back by `slot_order`: the index is the member's slot, and slot 0 is the front member melee enemies hit.
 
 | Field | Type | Description |
 |-------|------|-------------|
@@ -954,7 +891,7 @@ No special abilities for MVP — auto-attack only.
 1. BoardCell `_get_drag_data()` initiates drag with item Dictionary. Drag preview shown with ~50px upward offset.
 2. Player releases over a PartyMember → `_can_drop_data()` checks if item is a usable type (heal, buff_attack) → returns true
 3. PartyMember `_drop_data()` receives item → calls `dungeon_controller.apply_usable_item(member_index, item_data)`
-4. `dungeon_controller.gd` calls `board.remove_items([source_pos])`, then `combat_engine.apply_effect(member_index, effect_dict)`
+4. `dungeon_controller.gd` calls `board.discard_item(source_pos)`, then `combat_engine.apply_effect(member_index, item_data.definition.effect)`
 5. `combat_engine.gd` applies: heal restores HP, buff adds entry to `active_buffs` with duration
 6. Party member HP bar and buff indicators update
 
@@ -965,7 +902,7 @@ No special abilities for MVP — auto-attack only.
 **Trigger:** An enemy dies during combat.
 
 1. `combat_engine.gd` detects enemy HP ≤ 0 → emits `enemy_died(enemy_index)`
-2. `drop_manager.gd.spawn_drops(enemy_data)` → rolls drop count (1–2 or 2–3 from enemy definition), picks random items from enemy's drop pool
+2. `drop_manager.gd.spawn_drops(enemy_definition)` → rolls `min_drops` to `max_drops` items from the enemy's drop pool
 3. `drop_manager.gd` calls `board.place_drop(drop_data)` for each drop (MergeBoard handles merge-safe placement internally)
 4. For each drop: if a merge-safe cell exists, item appears directly on the board. If no safe cell, item goes to staging area with despawn timer.
 5. Enemy display removed from combat area
@@ -993,7 +930,7 @@ No special abilities for MVP — auto-attack only.
 | `combat_engine: CombatEngine` | Node | Reference to combat engine child |
 | `board: Control (MergeBoard instance)` | Control | Dungeon board instance |
 | `drop_mgr: Node (DropManager)` | Node | Reference to drop manager |
-| `party_data: Array[Dictionary]` | Array | 3 party member state dicts |
+| `party_defs: Array[PartyMemberDefinition]` | Array | The party, front to back |
 | `party_members: Array[PartyMember]` | Array | References to the 3 PartyMember nodes (for setup and HP/buff updates) |
 | `enemy_displays: Array[EnemyDisplay]` | Array | Currently spawned enemy display nodes (cleared after each encounter) |
 
@@ -1019,8 +956,8 @@ No special abilities for MVP — auto-attack only.
 
 | Property | Type | Description |
 |----------|------|-------------|
-| `party_members: Array[Dictionary]` | Array | Each: `{max_hp, current_hp, attack, active_buffs: [{effect, power, duration}]}` |
-| `enemies: Array[Dictionary]` | Array | Each: `{max_hp, current_hp, attack, alive: bool}` |
+| `party_members: Array[Dictionary]` | Array | Runtime state per member: `{name, max_hp, current_hp, attack, active_buffs: [{effect, value, duration}], ...}` |
+| `enemies: Array[Dictionary]` | Array | Runtime state per enemy: `{definition, name, max_hp, current_hp, sprite, attack, alive, ...}` |
 | `tick_timer: Timer` | Timer | 1-second combat tick |
 
 **Signals:**
@@ -1041,13 +978,14 @@ No special abilities for MVP — auto-attack only.
 
 | Function | Description |
 |----------|-------------|
-| `start_combat(enemy_definitions: Array[Dictionary])` | Initializes enemy array, starts tick timer. |
+| `init_party(members: Array[PartyMemberDefinition])` | Builds party state; array order is slot order. |
+| `start_combat(spawns: Array[EnemySpawn])` | Initializes enemy array, starts tick timer. |
 | `stop_combat()` | Stops tick timer. |
 | `tick()` | One combat tick: distribute damage, check deaths/KOs, tick buffs. Called by timer timeout. |
-| `apply_effect(member_index: int, effect: Variant)` | Applies heal (restore HP) or buff (add to active_buffs). Accepts `EffectDefinition` or `Dictionary`. |
+| `apply_effect(member_index: int, effect: EffectDefinition)` | Applies heal (restore HP up to max) or buff_attack (add to active_buffs). Other effect types do nothing yet. |
 | `get_active_member_count() -> int` | Returns count of non-KO members. |
 | `get_alive_enemy_count() -> int` | Returns count of alive enemies. |
-| `get_enemy_data(index: int) -> Dictionary` | Returns enemy definition at index. Used by DropManager after `enemy_died` signal. |
+| `get_enemy_data(index: int) -> Dictionary` | Returns the enemy's runtime state; its `definition` feeds DropManager after `enemy_died`. |
 | `is_combat_running() -> bool` | True while the tick timer runs. |
 | `is_winding_up(side: int, index: int) -> bool` | True while the unit is standing and winding up an attack. |
 | `get_pending_damage(side: int, index: int) -> int` | What the current windup will deal when it lands (buffs and crit included); 0 when idle. |
@@ -1066,7 +1004,7 @@ No special abilities for MVP — auto-attack only.
 
 | Function | Description |
 |----------|-------------|
-| `spawn_drops(enemy_data: Dictionary) -> Array[Dictionary]` | Rolls drop count and items from enemy's drop pool. |
+| `spawn_drops(enemy: EnemyDefinition) -> Array[Dictionary]` | Rolls the enemy's drop pool; returns board items (`RecipeResolver.make_item`). |
 | `add_drops_to_board(drops: Array[Dictionary], board: Node)` | Calls `board.place_drop(drop_data)` for each drop. MergeBoard handles merge-safe placement internally (board first, staging fallback). |
 
 #### CombatUnit
@@ -1114,7 +1052,7 @@ No special abilities for MVP — auto-attack only.
 
 | Function | Description |
 |----------|-------------|
-| `setup(data: Dictionary)` | Loads sprite texture from `data.sprite` path, stores member data. Called by DungeonController at encounter start. |
+| `setup(def: PartyMemberDefinition, index: int)` | Shows the member's sprite, HP and attack badge. Called by DungeonController in `_ready`. |
 | `update_hp(current: int, max_hp: int)` | Delegates to CombatUnit.update_hp() and updates the HP label. |
 | `set_incoming_damage(amount: int)` | Delegates to CombatUnit.set_incoming_damage(). |
 | `update_buffs(buffs: Array[Dictionary])` | Updates buff indicator text. |
@@ -1124,7 +1062,7 @@ No special abilities for MVP — auto-attack only.
 
 | Function | Description |
 |----------|-------------|
-| `_can_drop_data(at_position: Vector2, data: Variant) -> bool` | Returns true if data has `dungeon_usable == true` and `dungeon_use_target` contains `"party"` (party-individual or party-all). |
+| `_can_drop_data(at_position: Vector2, data: Variant) -> bool` | True for a board item whose definition is `dungeon_usable` with a `dungeon_use_target` containing `"party"`. |
 | `_drop_data(at_position: Vector2, data: Variant)` | Receives usable item, calls `dungeon_controller.apply_usable_item(member_index, data)`. |
 
 #### EnemyDisplay
@@ -1176,27 +1114,11 @@ No special abilities for MVP — auto-attack only.
 | `core/prep_phase.tscn` | Scene | Prep phase with TabContainer: Blueprints (buy blueprints), Upgrades (buy upgrades), Reagents (buy reagents). Crates are purchased during shop sessions, not here. Forecast tab deferred to post-MVP. |
 | `autoloads/game_manager.gd` | Autoload | Persistent state data store. No game logic — pure state with change signals. |
 
-### Data Schema: upgrades.json
+### Upgrades and Reagents
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `upgrade_id` | `String` | Unique identifier (key). e.g. "grid_expand", "slow_timer", "crate_discount" |
-| `name` | `String` | Display name |
-| `cost` | `int` | Gold cost to purchase |
-| `effect_type` | `String` | Effect to apply: "grid_size", "despawn_time", "crate_discount" |
-| `effect_value` | `Variant` | Type depends on effect_type. grid_size: `{cols: int, rows: int}`, despawn_time: `float`, crate_discount: `float` (multiplier, e.g. 0.8) |
+Upgrades are `UpgradeDefinition`s and reagents `ReagentDefinition`s (see Content Definitions). GameManager finds an upgrade's effect by its `effect` type among the purchased upgrades, never by upgrade id.
 
-### ❗ Data Schema: reagents.json
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `reagent_id` | `String` | Unique identifier (key). e.g. "fire_essence" |
-| `name` | `String` | Display name |
-| `cost` | `int` | Gold cost to purchase in prep phase |
-| `icon` | `String` | Resource path to icon texture |
-| `description` | `String` | Short description for UI |
-
-Reagents are bought in the prep phase and stored in `GameManager.reagent_inventory` as counts. They are never placed on the board. At merge time, if the merge result has entries in `reagent_combos.json`, available reagents create variant options (see Reagent Variants subsystem).
+Reagents are bought in the prep phase and stored in `GameManager.reagent_inventory` as counts. They are never placed on the board. At merge time, the merged item's `reagent_variants` whose reagent is in stock become extra options (see Resolve Reagent Variants).
 
 ### Signals
 
@@ -1219,7 +1141,7 @@ Reagents are bought in the prep phase and stored in `GameManager.reagent_invento
 **Trigger:** Player taps a buy button in the prep phase (Blueprints / Upgrades tab).
 
 1. Tab script calls `prep_phase.gd.try_purchase(type, id)`
-2. `prep_phase.gd` looks up price from data (via RecipeResolver for blueprints)
+2. `prep_phase.gd` looks up the definition in DefinitionLibrary for its price
 3. Check `GameManager.gold >= price` → if not, flash button red, stop
 4. `GameManager.deduct_gold(price)` → `gold_changed` signal updates HUD
 5. Route by type:
@@ -1274,7 +1196,7 @@ Reagents are bought in the prep phase and stored in `GameManager.reagent_invento
 | Function | Description |
 |----------|-------------|
 | `try_purchase(type: String, id: String) -> bool` | Validates and executes a purchase (blueprint, upgrade, or reagent). Returns true on success. |
-| `_debug_unlock_all()` | Debug: sets debug_mode, grants 2000g, 1000 rep, all blueprints, 5 fire_essence. |
+| `_debug_unlock_all()` | Debug: sets debug_mode, grants 2000g, 1000 rep, all blueprints, 5 of every reagent. |
 
 #### GameManager
 
@@ -1302,7 +1224,7 @@ Reagents are bought in the prep phase and stored in `GameManager.reagent_invento
 |--------|-------------|
 | `gold_changed(new_amount: int)` | Gold balance changed. HUD and buy buttons listen. |
 | `reputation_changed(new_points: int)` | Reputation points changed. HUD listens. |
-| `reputation_level_changed(level: String)` | Crossed threshold: "low", "mid", "high". CustomerGenerator and prep phase listen. |
+| `reputation_level_changed(level: String)` | Crossed threshold: "low", "mid", "high". |
 | `blueprint_added(bp_id: String)` | Blueprint unlocked. Prep phase blueprints tab, audio_manager (purchase SFX) listen. |
 | `upgrade_added(upgrade_id: String)` | Upgrade purchased. audio_manager (purchase SFX) listens. |
 | `reagent_count_changed(id: String, count: int)` | Reagent inventory changed. |
@@ -1321,8 +1243,8 @@ Reagents are bought in the prep phase and stored in `GameManager.reagent_invento
 | `add_upgrade(upgrade_id: String)` | Appends to purchased_upgrades, emits `upgrade_added`. Effect application is handled by the caller (e.g., prep_phase._buy_upgrade() applies grid_size changes). |
 | `get_reputation_level() -> String` | Returns "low" (0–99), "mid" (100–299), "high" (300+). |
 | `is_dungeon_unlocked() -> bool` | Returns `reputation_points >= 150`. |
-| `get_despawn_time() -> float` | 18.0 if slow timer upgrade purchased, else 12.0. |
-| `get_crate_discount() -> float` | 0.8 if discount upgrade purchased, else 1.0. |
+| `get_despawn_time() -> float` | `value` of a purchased `despawn_time` upgrade, else `DEFAULT_DESPAWN_TIME` (12.0). |
+| `get_crate_discount() -> float` | `value` of a purchased `crate_discount` upgrade, else 1.0. |
 | `serialize() -> Dictionary` | Returns all persistent state as a Dictionary for SaveManager. |
 | `deserialize(data: Dictionary)` | Restores all state from save data. |
 

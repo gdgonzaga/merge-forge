@@ -1,7 +1,14 @@
 [gd_resource type="Resource" script_class="ItemDefinition" format=3]
 
+[ext_resource type="Script" path="res://resources/definitions/merge_result.gd" id="1_7l6xm"]
 [ext_resource type="Script" path="res://resources/definitions/item_definition.gd" id="2_item"]
+[ext_resource type="Resource" path="res://resources/definitions/items/firecracker.tres" id="2_l0vng"]
+[ext_resource type="Script" path="res://resources/definitions/reagent_variant.gd" id="3_nvvqc"]
 [ext_resource type="Texture2D" path="res://resources/sprites/items/blast_powder.png" id="3_sprite"]
+
+[sub_resource type="Resource" id="Resource_ca2cv"]
+script = ExtResource("1_7l6xm")
+result = ExtResource("2_l0vng")
 
 [resource]
 script = ExtResource("2_item")
@@ -10,3 +17,4 @@ name = "Blast Powder"
 family = "powder"
 gold_value = 5
 sprite = ExtResource("3_sprite")
+merge_results = Array[ExtResource("1_7l6xm")]([SubResource("Resource_ca2cv")])

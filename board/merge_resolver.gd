@@ -106,27 +106,21 @@ func _resolve_result_position() -> Vector2i:
 
 func _build_options(item_id: String) -> Array[Dictionary]:
 	var all_options: Array[Dictionary] = []
-	for opt in RecipeResolver.get_options(item_id):
-		var result_id: String = opt.get("result_id", "")
-		var data: Dictionary = RecipeResolver.get_item_data(result_id)
+	for option in RecipeResolver.get_options(item_id):
 		all_options.append({
-			"item_id": result_id,
-			"display_name": data.get("name", result_id),
+			"item_id": option.result.id,
+			"display_name": option.result.name,
 			"is_variant": false,
 			"reagent_id": "",
 			"reagent_cost": 0,
 		})
-	for combo in RecipeResolver.get_variant_options(item_id):
-		var variant_id: String = combo.get("variant_item_id", "")
-		var vdata: Dictionary = RecipeResolver.get_item_data(variant_id)
-		var reagent_id: String = combo.get("reagent_id", "")
-		var rdata: Dictionary = RecipeResolver.get_reagent_data(reagent_id)
+	for variant in RecipeResolver.get_variant_options(item_id):
 		all_options.append({
-			"item_id": variant_id,
-			"display_name": vdata.get("name", variant_id),
+			"item_id": variant.result.id,
+			"display_name": variant.result.name,
 			"is_variant": true,
-			"reagent_id": reagent_id,
-			"reagent_cost": rdata.get("cost", 0),
+			"reagent_id": variant.reagent.id,
+			"reagent_cost": variant.reagent.cost,
 		})
 	return all_options
 
@@ -138,17 +132,16 @@ func _place_results(option: Dictionary) -> void:
 		var rid: String = option.get("reagent_id", "")
 		if rid != "":
 			GameManager.consume_reagent(rid)
-	var result_data: Dictionary = RecipeResolver.get_item_data(result_id)
+	var result_def := DefinitionLibrary.get_item(result_id)
 	var result_count := _last_group_count / 3
 	var refund_count := _last_group_count % 3
-	var source_data: Dictionary = RecipeResolver.get_item_data(_last_group_item_id)
-	var gold_value: int = result_data.get("gold_value", 0)
+	var gold_value: int = result_def.gold_value
 	var bonus: int = calculate_bonus_gold(_last_group_count, gold_value)
-	_dbg("_place_results: result_count=%d refund_count=%d bonus=%d result_data_empty=%s" % [result_count, refund_count, bonus, str(result_data.is_empty())])
+	_dbg("_place_results: result_count=%d refund_count=%d bonus=%d" % [result_count, refund_count, bonus])
 	if bonus > 0:
 		_spawn_bonus_coins(bonus)
-	_spawn_results(result_data, result_count)
-	_refund_source_items(source_data, refund_count)
+	_spawn_results(RecipeResolver.make_item(result_def), result_count)
+	_refund_source_items(RecipeResolver.make_item(DefinitionLibrary.get_item(_last_group_item_id)), refund_count)
 	if gold_value > 0 and _result_center.x >= 0:
 		_merge_board.show_gold_text(gold_value, _result_center)
 	EventBus.merge_completed.emit(result_id, bonus)
@@ -169,7 +162,7 @@ func _spawn_bonus_coins(total_bonus: int) -> void:
 
 
 func _spawn_results(result_data: Dictionary, count: int) -> void:
-	_dbg("_spawn_results: count=%d data_empty=%s" % [count, str(result_data.is_empty())])
+	_dbg("_spawn_results: count=%d" % count)
 	if count <= 0:
 		return
 	var center := _result_center
@@ -190,7 +183,7 @@ func _spawn_results(result_data: Dictionary, count: int) -> void:
 
 
 func _refund_source_items(source_data: Dictionary, count: int) -> void:
-	if count <= 0 or source_data.is_empty():
+	if count <= 0:
 		return
 	var spawned := 0
 	for pos in _last_group_positions:

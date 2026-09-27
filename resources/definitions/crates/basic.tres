@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="CrateDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/weighted_item.gd" id="1_mwoxu"]
+[ext_resource type="Resource" path="res://resources/definitions/items/iron_ore.tres" id="2_vwc10"]
+[ext_resource type="Resource" path="res://resources/definitions/items/herb_leaf.tres" id="3_bssxe"]
+[ext_resource type="Script" path="res://resources/definitions/crate_definition.gd" id="4_p4xv6"]
+
+[sub_resource type="Resource" id="Resource_vp5bw"]
+script = ExtResource("1_mwoxu")
+item = ExtResource("2_vwc10")
+weight = 3
+
+[sub_resource type="Resource" id="Resource_7k3y8"]
+script = ExtResource("1_mwoxu")
+item = ExtResource("3_bssxe")
+weight = 2
+
+[resource]
+script = ExtResource("4_p4xv6")
+id = "basic"
+name = "Basic Crate"
+cost = 10
+min_items = 3
+max_items = 5
+pool = Array[ExtResource("1_mwoxu")]([SubResource("Resource_vp5bw"), SubResource("Resource_7k3y8")])

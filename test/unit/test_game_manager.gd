@@ -160,17 +160,24 @@ func test_consume_reagent_at_zero_returns_false() -> void:
 # --- upgrade-driven getters ---
 
 func test_despawn_time_default_then_upgrade() -> void:
+	set_definition(DefinitionLibrary.upgrades, _upgrade("__test_patience", "despawn_time", 20.0))
 	assert_float(GameManager.get_despawn_time()).is_equal(GameManager.DEFAULT_DESPAWN_TIME)
-	GameManager.add_upgrade("slow_timer")
-	assert_float(GameManager.get_despawn_time()).is_equal(
-		RecipeResolver.get_upgrade_data("slow_timer").get("effect_value", GameManager.DEFAULT_DESPAWN_TIME))
+	GameManager.add_upgrade("__test_patience")
+	assert_float(GameManager.get_despawn_time()).is_equal(20.0)
 
 
 func test_crate_discount_default_then_upgrade() -> void:
+	set_definition(DefinitionLibrary.upgrades, _upgrade("__test_bulk", "crate_discount", 0.5))
 	assert_float(GameManager.get_crate_discount()).is_equal(GameManager.DEFAULT_CRATE_COST_MULTIPLIER)
-	GameManager.add_upgrade("crate_discount")
-	assert_float(GameManager.get_crate_discount()).is_equal(
-		RecipeResolver.get_upgrade_data("crate_discount").get("effect_value", GameManager.DEFAULT_CRATE_COST_MULTIPLIER))
+	GameManager.add_upgrade("__test_bulk")
+	assert_float(GameManager.get_crate_discount()).is_equal(0.5)
+
+
+# An upgrade with another effect leaves the value alone.
+func test_upgrade_value_only_comes_from_its_effect() -> void:
+	set_definition(DefinitionLibrary.upgrades, _upgrade("__test_bulk", "crate_discount", 0.5))
+	GameManager.add_upgrade("__test_bulk")
+	assert_float(GameManager.get_despawn_time()).is_equal(GameManager.DEFAULT_DESPAWN_TIME)
 
 
 # --- save/load round-trip ---
@@ -189,3 +196,11 @@ func test_serialize_deserialize_round_trip() -> void:
 
 	# Round-trip invariant: the deserialized state must re-serialize identically.
 	assert_dict(resaved).is_equal(saved)
+
+
+func _upgrade(id: String, effect: String, value: float) -> UpgradeDefinition:
+	var upgrade := UpgradeDefinition.new()
+	upgrade.id = id
+	upgrade.effect = effect
+	upgrade.value = value
+	return upgrade

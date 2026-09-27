@@ -1,7 +1,24 @@
 [gd_resource type="Resource" script_class="EnemyDefinition" format=3]
 
+[ext_resource type="Script" path="res://resources/definitions/weighted_item.gd" id="1_y4w3f"]
+[ext_resource type="Resource" path="res://resources/definitions/items/herb_bundle.tres" id="2_a20hv"]
 [ext_resource type="Script" path="res://resources/definitions/enemy_definition.gd" id="2_vwihb"]
 [ext_resource type="Texture2D" path="res://resources/sprites/enemies/slime.png" id="3_ew2m5"]
+[ext_resource type="Resource" path="res://resources/definitions/items/herbal_tonic.tres" id="3_gdkq6"]
+[ext_resource type="Resource" path="res://resources/definitions/items/firecracker.tres" id="4_kscoh"]
+
+[sub_resource type="Resource" id="Resource_ovjhe"]
+script = ExtResource("1_y4w3f")
+item = ExtResource("2_a20hv")
+weight = 3
+
+[sub_resource type="Resource" id="Resource_qvyhe"]
+script = ExtResource("1_y4w3f")
+item = ExtResource("3_gdkq6")
+
+[sub_resource type="Resource" id="Resource_eql0c"]
+script = ExtResource("1_y4w3f")
+item = ExtResource("4_kscoh")
 
 [resource]
 script = ExtResource("2_vwihb")
@@ -13,17 +30,6 @@ windup = 1
 crit_chance = 0.15
 crit_name = "Slam"
 sprite = ExtResource("3_ew2m5")
-drop_count = {
-"max": 3.0,
-"min": 2.0
-}
-drop_pool = Array[Dictionary]([{
-"item_id": "herb_bundle",
-"weight": 3.0
-}, {
-"item_id": "herbal_tonic",
-"weight": 1.0
-}, {
-"item_id": "firecracker",
-"weight": 1.0
-}])
+min_drops = 2
+max_drops = 3
+drop_pool = Array[ExtResource("1_y4w3f")]([SubResource("Resource_ovjhe"), SubResource("Resource_qvyhe"), SubResource("Resource_eql0c")])

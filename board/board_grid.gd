@@ -175,8 +175,8 @@ func clear_board() -> void:
 			_update_cell_visual(Vector2i(c, r))
 
 
-# Saves hold item ids only. Item data (including its sprite texture, which JSON
-# can't carry) is rebuilt from the catalog on load.
+# Saves hold item ids only. The definition (including its sprite texture, which
+# JSON can't carry) is looked up again on load.
 func get_board_state() -> Array:
 	var state: Array = []
 	for r in range(grid_rows):
@@ -193,11 +193,11 @@ func load_board_state(state: Array) -> void:
 		var r := int(entry["row"])
 		if c < 0 or c >= grid_cols or r < 0 or r >= grid_rows:
 			continue
-		var item := RecipeResolver.get_item_data(entry["item_id"])
-		if item.is_empty():
+		var def := DefinitionLibrary.get_item(entry["item_id"])
+		if def == null:
 			push_error("BoardGrid: saved item '%s' is not in the catalog" % entry["item_id"])
 			continue
-		grid[r][c] = item
+		grid[r][c] = RecipeResolver.make_item(def)
 		_update_cell_visual(Vector2i(c, r))
 
 

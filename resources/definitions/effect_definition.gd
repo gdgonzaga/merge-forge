@@ -10,6 +10,6 @@ class_name EffectDefinition
 #   crit_charges  number of next attacks that crit
 #   revive        percent of max HP a knocked-out member comes back with
 #   damage        damage dealt to each target
-@export var type: String = ""
+@export_enum("heal", "buff_attack", "absorb", "crit_charges", "revive", "damage") var type: String = ""
 @export var value: int = 0
 @export var duration: int = 0 # in ticks, 0 = instant

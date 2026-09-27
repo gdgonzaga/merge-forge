@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="BlueprintDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/blueprint_definition.gd" id="1_08lsq"]
+[ext_resource type="Resource" path="res://resources/definitions/blueprints/bp_bomb.tres" id="2_55kuq"]
+
+[resource]
+script = ExtResource("1_08lsq")
+id = "bp_cluster_bomb"
+name = "Cluster Bomb Blueprint"
+cost = 200
+dependencies = Array[ExtResource("1_08lsq")]([ExtResource("2_55kuq")])

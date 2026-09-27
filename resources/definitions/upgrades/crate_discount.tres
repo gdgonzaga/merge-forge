@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="UpgradeDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/upgrade_definition.gd" id="1_83b82"]
+
+[resource]
+script = ExtResource("1_83b82")
+id = "crate_discount"
+name = "Bulk Deal"
+cost = 150
+effect = "crate_discount"
+value = 0.8

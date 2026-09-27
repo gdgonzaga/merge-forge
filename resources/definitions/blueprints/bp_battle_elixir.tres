@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="BlueprintDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/blueprint_definition.gd" id="1_vrw0m"]
+
+[resource]
+script = ExtResource("1_vrw0m")
+id = "bp_battle_elixir"
+name = "Battle Elixir Blueprint"
+cost = 80

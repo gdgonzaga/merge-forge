@@ -25,7 +25,7 @@ func setup(data: Dictionary, time: float) -> void:
 func _apply_icon() -> void:
 	if _icon == null:
 		return
-	_icon.texture = item_data["sprite"]
+	_icon.texture = item_data["definition"].sprite
 	_icon.visible = true
 
 
@@ -54,7 +54,7 @@ func _get_drag_data(at_position: Vector2) -> Variant:
 	preview.size = Vector2(96, 96)
 	preview.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	preview.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	preview.texture = item_data["sprite"]
+	preview.texture = item_data["definition"].sprite
 	set_drag_preview(preview)
 	preview.position = Vector2(-14, -100)
 	var drag_info := item_data.duplicate()

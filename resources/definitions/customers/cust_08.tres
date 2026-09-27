@@ -1,0 +1,34 @@
+[gd_resource type="Resource" script_class="CustomerDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/order_definition.gd" id="1_krfx3"]
+[ext_resource type="Resource" path="res://resources/definitions/items/iron_ingot.tres" id="2_nnwhb"]
+[ext_resource type="Resource" path="res://resources/definitions/items/herb_bundle.tres" id="3_dltd3"]
+[ext_resource type="Resource" path="res://resources/definitions/items/iron_plate.tres" id="4_ixwu0"]
+[ext_resource type="Script" path="res://resources/definitions/customer_definition.gd" id="5_dv4uk"]
+[ext_resource type="Texture2D" path="res://resources/sprites/portraits/customer_08.png" id="6_1jk47"]
+
+[sub_resource type="Resource" id="Resource_dgiuk"]
+script = ExtResource("1_krfx3")
+item = ExtResource("2_nnwhb")
+quantity = 3
+gold_reward = 45
+
+[sub_resource type="Resource" id="Resource_qxouc"]
+script = ExtResource("1_krfx3")
+item = ExtResource("3_dltd3")
+quantity = 2
+gold_reward = 30
+
+[sub_resource type="Resource" id="Resource_hkal1"]
+script = ExtResource("1_krfx3")
+item = ExtResource("4_ixwu0")
+gold_reward = 40
+
+[resource]
+script = ExtResource("5_dv4uk")
+id = "cust_08"
+name = "Maelys"
+role = "Caravan Master"
+sprite = ExtResource("6_1jk47")
+queue_order = 7
+orders = Array[ExtResource("1_krfx3")]([SubResource("Resource_dgiuk"), SubResource("Resource_qxouc"), SubResource("Resource_hkal1")])

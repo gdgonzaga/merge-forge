@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="CrateDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/weighted_item.gd" id="1_vfy4x"]
+[ext_resource type="Resource" path="res://resources/definitions/items/iron_ore.tres" id="2_vucyt"]
+[ext_resource type="Resource" path="res://resources/definitions/items/iron_ingot.tres" id="3_1dahh"]
+[ext_resource type="Script" path="res://resources/definitions/crate_definition.gd" id="4_ab6ln"]
+
+[sub_resource type="Resource" id="Resource_rgade"]
+script = ExtResource("1_vfy4x")
+item = ExtResource("2_vucyt")
+weight = 4
+
+[sub_resource type="Resource" id="Resource_y53qj"]
+script = ExtResource("1_vfy4x")
+item = ExtResource("3_1dahh")
+
+[resource]
+script = ExtResource("4_ab6ln")
+id = "themed_metal"
+name = "Metal Crate"
+cost = 25
+min_items = 3
+max_items = 4
+pool = Array[ExtResource("1_vfy4x")]([SubResource("Resource_rgade"), SubResource("Resource_y53qj")])

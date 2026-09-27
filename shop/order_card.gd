@@ -2,7 +2,7 @@ extends PanelContainer
 
 signal order_tapped(order_index: int)
 
-var order_data: Dictionary = {}
+var order: OrderDefinition
 var order_index: int = -1
 
 @onready var _icon: TextureRect = $HBox/Icon
@@ -13,8 +13,8 @@ var _flash_tween: Tween
 var _pending_setup: bool = false
 
 
-func setup(data: Dictionary, index: int) -> void:
-	order_data = data
+func setup(order_def: OrderDefinition, index: int) -> void:
+	order = order_def
 	order_index = index
 	if _qty_label == null:
 		_pending_setup = true
@@ -29,11 +29,9 @@ func _ready() -> void:
 
 
 func _apply_data() -> void:
-	var item_id: String = order_data.get("item_id", "")
-	var item_info: Dictionary = RecipeResolver.get_item_data(item_id)
-	_icon.texture = item_info["sprite"]
-	_qty_label.text = "x%d" % order_data.get("quantity", 1)
-	_reward_label.text = "%dg" % order_data.get("gold_reward", 0)
+	_icon.texture = order.item.sprite
+	_qty_label.text = "x%d" % order.quantity
+	_reward_label.text = "%dg" % order.gold_reward
 
 
 func flash_red() -> void:

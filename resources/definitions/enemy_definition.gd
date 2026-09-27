@@ -13,5 +13,6 @@ class_name EnemyDefinition
 # Pops up when a crit lands.
 @export var crit_name: String = ""
 @export var sprite: Texture2D
-@export var drop_count: Dictionary = {"min": 0, "max": 0}
-@export var drop_pool: Array[Dictionary] = []
+@export var min_drops: int = 0
+@export var max_drops: int = 0
+@export var drop_pool: Array[WeightedItem] = []

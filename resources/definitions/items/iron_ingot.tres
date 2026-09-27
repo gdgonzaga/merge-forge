@@ -1,7 +1,16 @@
 [gd_resource type="Resource" script_class="ItemDefinition" format=3]
 
 [ext_resource type="Script" path="res://resources/definitions/item_definition.gd" id="1_4vgte"]
+[ext_resource type="Script" path="res://resources/definitions/merge_result.gd" id="1_q5irx"]
+[ext_resource type="Resource" path="res://resources/definitions/blueprints/bp_iron_plate.tres" id="2_lgxfh"]
 [ext_resource type="Texture2D" path="res://resources/sprites/items/iron_ingot.png" id="2_lnj24"]
+[ext_resource type="Resource" path="res://resources/definitions/items/iron_plate.tres" id="3_2vb8o"]
+[ext_resource type="Script" path="res://resources/definitions/reagent_variant.gd" id="4_mxity"]
+
+[sub_resource type="Resource" id="Resource_tvmtl"]
+script = ExtResource("1_q5irx")
+result = ExtResource("3_2vb8o")
+blueprint = ExtResource("2_lgxfh")
 
 [resource]
 script = ExtResource("1_4vgte")
@@ -10,3 +19,4 @@ name = "Iron Ingot"
 family = "metal"
 gold_value = 15
 sprite = ExtResource("2_lnj24")
+merge_results = Array[ExtResource("1_q5irx")]([SubResource("Resource_tvmtl")])

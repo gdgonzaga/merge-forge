@@ -2,12 +2,30 @@
 
 [ext_resource type="Script" path="res://resources/definitions/effect_definition.gd" id="1_effect"]
 [ext_resource type="Script" path="res://resources/definitions/item_definition.gd" id="2_item"]
+[ext_resource type="Script" path="res://resources/definitions/merge_result.gd" id="2_rjgty"]
+[ext_resource type="Resource" path="res://resources/definitions/blueprints/bp_cluster_bomb.tres" id="3_ghoy7"]
 [ext_resource type="Texture2D" path="res://resources/sprites/items/bomb.png" id="3_sprite"]
+[ext_resource type="Resource" path="res://resources/definitions/items/cluster_bomb.tres" id="4_mvr4o"]
+[ext_resource type="Script" path="res://resources/definitions/reagent_variant.gd" id="5_d6yjp"]
+[ext_resource type="Resource" path="res://resources/definitions/blueprints/bp_fire_bomb.tres" id="6_l2knf"]
+[ext_resource type="Resource" path="res://resources/definitions/reagents/fire_essence.tres" id="7_u0nco"]
+[ext_resource type="Resource" path="res://resources/definitions/items/fire_bomb.tres" id="8_p2wax"]
 
 [sub_resource type="Resource" id="Resource_effect"]
 script = ExtResource("1_effect")
 type = "damage"
 value = 45
+
+[sub_resource type="Resource" id="Resource_trvj2"]
+script = ExtResource("2_rjgty")
+result = ExtResource("4_mvr4o")
+blueprint = ExtResource("3_ghoy7")
+
+[sub_resource type="Resource" id="Resource_lfyur"]
+script = ExtResource("5_d6yjp")
+result = ExtResource("8_p2wax")
+reagent = ExtResource("7_u0nco")
+blueprint = ExtResource("6_l2knf")
 
 [resource]
 script = ExtResource("2_item")
@@ -19,3 +37,5 @@ dungeon_usable = true
 dungeon_use_target = "enemy-individual"
 effect = SubResource("Resource_effect")
 sprite = ExtResource("3_sprite")
+merge_results = Array[ExtResource("2_rjgty")]([SubResource("Resource_trvj2")])
+reagent_variants = Array[ExtResource("5_d6yjp")]([SubResource("Resource_lfyur")])

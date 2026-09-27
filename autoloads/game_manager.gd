@@ -91,15 +91,20 @@ func is_dungeon_unlocked() -> bool:
 
 
 func get_despawn_time() -> float:
-	if "slow_timer" not in purchased_upgrades:
-		return DEFAULT_DESPAWN_TIME
-	return RecipeResolver.get_upgrade_data("slow_timer").get("effect_value", DEFAULT_DESPAWN_TIME)
+	return _purchased_upgrade_value("despawn_time", DEFAULT_DESPAWN_TIME)
 
 
 func get_crate_discount() -> float:
-	if "crate_discount" not in purchased_upgrades:
-		return DEFAULT_CRATE_COST_MULTIPLIER
-	return RecipeResolver.get_upgrade_data("crate_discount").get("effect_value", DEFAULT_CRATE_COST_MULTIPLIER)
+	return _purchased_upgrade_value("crate_discount", DEFAULT_CRATE_COST_MULTIPLIER)
+
+
+# The value of the first purchased upgrade with this effect, else the default.
+func _purchased_upgrade_value(effect: String, default: float) -> float:
+	for upgrade_id in purchased_upgrades:
+		var upgrade := DefinitionLibrary.get_upgrade(upgrade_id)
+		if upgrade != null and upgrade.effect == effect:
+			return upgrade.value
+	return default
 
 
 func serialize() -> Dictionary:

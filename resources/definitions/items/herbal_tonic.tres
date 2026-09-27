@@ -2,12 +2,37 @@
 
 [ext_resource type="Script" path="res://resources/definitions/effect_definition.gd" id="1_effect"]
 [ext_resource type="Script" path="res://resources/definitions/item_definition.gd" id="2_item"]
+[ext_resource type="Script" path="res://resources/definitions/merge_result.gd" id="2_qs3oq"]
 [ext_resource type="Texture2D" path="res://resources/sprites/items/herbal_tonic.png" id="3_sprite"]
+[ext_resource type="Resource" path="res://resources/definitions/blueprints/bp_healing_potion.tres" id="3_uj63b"]
+[ext_resource type="Resource" path="res://resources/definitions/items/healing_potion.tres" id="4_um4um"]
+[ext_resource type="Resource" path="res://resources/definitions/blueprints/bp_battle_elixir.tres" id="5_gbvd6"]
+[ext_resource type="Resource" path="res://resources/definitions/items/battle_elixir.tres" id="6_377qv"]
+[ext_resource type="Script" path="res://resources/definitions/reagent_variant.gd" id="7_7vyvl"]
+[ext_resource type="Resource" path="res://resources/definitions/blueprints/bp_phoenix_draught.tres" id="8_8f6t6"]
+[ext_resource type="Resource" path="res://resources/definitions/reagents/fire_essence.tres" id="9_w60kj"]
+[ext_resource type="Resource" path="res://resources/definitions/items/phoenix_draught.tres" id="10_wpsqe"]
 
 [sub_resource type="Resource" id="Resource_effect"]
 script = ExtResource("1_effect")
 type = "heal"
 value = 30
+
+[sub_resource type="Resource" id="Resource_yycr2"]
+script = ExtResource("2_qs3oq")
+result = ExtResource("4_um4um")
+blueprint = ExtResource("3_uj63b")
+
+[sub_resource type="Resource" id="Resource_3ig5s"]
+script = ExtResource("2_qs3oq")
+result = ExtResource("6_377qv")
+blueprint = ExtResource("5_gbvd6")
+
+[sub_resource type="Resource" id="Resource_5q303"]
+script = ExtResource("7_7vyvl")
+result = ExtResource("10_wpsqe")
+reagent = ExtResource("9_w60kj")
+blueprint = ExtResource("8_8f6t6")
 
 [resource]
 script = ExtResource("2_item")
@@ -19,3 +44,5 @@ dungeon_usable = true
 dungeon_use_target = "party-individual"
 effect = SubResource("Resource_effect")
 sprite = ExtResource("3_sprite")
+merge_results = Array[ExtResource("2_qs3oq")]([SubResource("Resource_yycr2"), SubResource("Resource_3ig5s")])
+reagent_variants = Array[ExtResource("7_7vyvl")]([SubResource("Resource_5q303")])

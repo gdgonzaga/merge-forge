@@ -1,13 +1,38 @@
 [gd_resource type="Resource" script_class="ItemDefinition" format=3]
 
 [ext_resource type="Script" path="res://resources/definitions/effect_definition.gd" id="1_effect"]
+[ext_resource type="Script" path="res://resources/definitions/merge_result.gd" id="2_6o27b"]
 [ext_resource type="Script" path="res://resources/definitions/item_definition.gd" id="2_item"]
+[ext_resource type="Resource" path="res://resources/definitions/blueprints/bp_sword.tres" id="3_3pv6e"]
 [ext_resource type="Texture2D" path="res://resources/sprites/items/iron_plate.png" id="3_sprite"]
+[ext_resource type="Resource" path="res://resources/definitions/items/sword.tres" id="4_2hgdw"]
+[ext_resource type="Resource" path="res://resources/definitions/blueprints/bp_iron_shield.tres" id="5_iaeu4"]
+[ext_resource type="Resource" path="res://resources/definitions/items/iron_shield.tres" id="6_r8qbn"]
+[ext_resource type="Script" path="res://resources/definitions/reagent_variant.gd" id="7_2bqob"]
+[ext_resource type="Resource" path="res://resources/definitions/blueprints/bp_flame_sword.tres" id="8_iuuhy"]
+[ext_resource type="Resource" path="res://resources/definitions/reagents/fire_essence.tres" id="9_ckduu"]
+[ext_resource type="Resource" path="res://resources/definitions/items/flame_sword.tres" id="10_tdmy6"]
 
 [sub_resource type="Resource" id="Resource_effect"]
 script = ExtResource("1_effect")
 type = "absorb"
 value = 25
+
+[sub_resource type="Resource" id="Resource_b7t8e"]
+script = ExtResource("2_6o27b")
+result = ExtResource("4_2hgdw")
+blueprint = ExtResource("3_3pv6e")
+
+[sub_resource type="Resource" id="Resource_if6qg"]
+script = ExtResource("2_6o27b")
+result = ExtResource("6_r8qbn")
+blueprint = ExtResource("5_iaeu4")
+
+[sub_resource type="Resource" id="Resource_jwhu2"]
+script = ExtResource("7_2bqob")
+result = ExtResource("10_tdmy6")
+reagent = ExtResource("9_ckduu")
+blueprint = ExtResource("8_iuuhy")
 
 [resource]
 script = ExtResource("2_item")
@@ -19,3 +44,5 @@ dungeon_usable = true
 dungeon_use_target = "party-individual"
 effect = SubResource("Resource_effect")
 sprite = ExtResource("3_sprite")
+merge_results = Array[ExtResource("2_6o27b")]([SubResource("Resource_b7t8e"), SubResource("Resource_if6qg")])
+reagent_variants = Array[ExtResource("7_2bqob")]([SubResource("Resource_jwhu2")])

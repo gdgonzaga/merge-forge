@@ -4,11 +4,11 @@ MergeForge — a portrait mobile merge game for Android, built in Godot 4.7 with
 
 ## Hard rules
 
-1. **Content is data.** Gameplay content (items, party members, enemies, attacks, effects) lives in `res://resources/definitions/*.tres`, with configuration data (recipes, blueprints, customers, crates, upgrades, dungeons) in `res://data/*.json`. Definitions use dedicated `Resource` subclasses with a single `sprite: Texture2D` property used for visual representation. Scripts never hardcode content values or content ids.
+1. **Content is data.** All content (items, party members, enemies, effects, reagents, blueprints, crates, upgrades, customers, dungeons) lives in `res://resources/definitions/<catalog>/*.tres`, loaded by `DefinitionLibrary`. Definitions use dedicated `Resource` subclasses; anything with art has a single `sprite: Texture2D` property for its visual representation. Definitions reference each other directly, never by id string, and references only point down the tiers (Godot can't load cyclic resources). Scripts never hardcode content values or content ids.
 2. **No cross-subsystem coupling.** A subsystem folder never preloads from, or node-paths into, another subsystem's folder. No `get_node("../../")`. Talk across subsystems through autoloads or EventBus. The shared folders `ui/` and `resources/` are the only exceptions (see Project map).
 3. **`res://` is read-only at runtime.** Saves and every other runtime write go to `user://`.
 4. **Never commit, amend, or rewrite history unless explicitly asked.** "Work lands on main" describes where commits go once requested, not permission to make them.
-5. **No backward compatibility.** Don't write migration layers, legacy fallbacks, optional-field shims or compatibility parsers, and that includes save files: bump `GameManager.SAVE_VERSION` instead, and old saves are rejected as CORRUPT. When a schema changes, update the JSON and code directly. Always flag breaking changes to the user.
+5. **No backward compatibility.** Don't write migration layers, legacy fallbacks, optional-field shims or compatibility parsers, and that includes save files: bump `GameManager.SAVE_VERSION` instead, and old saves are rejected as CORRUPT. When a schema changes, update the definitions and code directly. Always flag breaking changes to the user.
 6. **Run only relevant tests, and only when needed.** Run the suites that cover the code you changed in this session. Don't run the full suite by default.
 7. **Scratch files go in `tmp/<task-name>/`.** Never in the repo root or subsystem folders. Never commit `tmp/`.
 8. **No LaTeX** (`$...$`, `\pm`, `\times`) in responses, docs, or comments. Write `+/- 3`, `2x2`, `5x5`.
@@ -17,14 +17,13 @@ MergeForge — a portrait mobile merge game for Android, built in Godot 4.7 with
 
 | Path | Contents |
 |---|---|
-| `autoloads/` | `EventBus` (signal relay), `GameManager` (all persistent state), `DefinitionLibrary` (loads `.tres` definitions), `RecipeResolver` (loads data JSON / definitions, merge options, prices), `SaveManager` (JSON save to `user://save_data.json`), `AudioManager` |
+| `autoloads/` | `EventBus` (signal relay), `GameManager` (all persistent state), `DefinitionLibrary` (loads every `.tres` definition), `RecipeResolver` (rules over definitions: merge options, blueprint gates, weighted rolls), `SaveManager` (JSON save to `user://save_data.json`), `AudioManager` |
 | `core/` | `main.tscn` (root; swaps screens in `SceneContainer` on EventBus signals), `main_menu`, `intro`, `prep_phase`, `hud` |
 | `board/` | Merge board shared by shop and dungeon: grid, cells, drag and drop, merge detection and resolution, merge-choice popup, bonus coins |
 | `shop/` | Shop session: customer queue, order and purchase cards, crates, session summary |
 | `dungeon/` | Dungeon run: combat engine and units, party, enemies, drops, summary |
 | `ui/` | **Shared**, subsystem-agnostic widgets (for example `confirm_dialog`). Any subsystem may preload from `ui/`, but `ui/` must never reference a subsystem. |
-| `resources/` | **Shared** assets: definitions (`.tres`), sprites, audio, fonts, themes |
-| `data/` | Content JSON: `recipes`, `blueprints`, `reagents`, `reagent_combos`, `crates`, `upgrades`, `customers`, `dungeons` |
+| `resources/` | **Shared** assets: definitions (`definitions/<catalog>/*.tres`, one folder per catalog, file name = id), sprites, audio, fonts, themes |
 | `test/unit/`, `test/helpers/` | gdUnit4 suites; `TestBase` is the base class for all suites |
 | `docs/` | Design docs (GDD, architecture, task list). `ARCHITECTURE.md` is the source of truth for the scene tree, the autoload list and the EventBus registry. |
 
@@ -42,8 +41,8 @@ Screen flow: MainMenu -> (New Game) Intro -> PrepPhase <-> ShopSession -> Sessio
 ## Data conventions
 
 - **Identity is the `id` string** (the dictionary key, or an `id` field in array-shaped files), never the display `name`. Ids are `snake_case`.
-- **Read content through its owning loader**, `RecipeResolver` for most files, and never mutate the loaded dictionaries. Getters return copies; if you need to modify something, call `duplicate()` first.
-- **Asset references** in JSON are `res://resources/...` paths.
+- **Read content through `DefinitionLibrary`** and never mutate a loaded definition: they are shared. `duplicate()` first if you need a modified copy.
+- **An id is part of the save format.** Saves store ids (blueprints, reagents, upgrades, board items), so renaming one needs a `SAVE_VERSION` bump.
 
 ## GDScript style
 
@@ -91,7 +90,7 @@ godot --headless -s res://addons/gdUnit4/bin/GdUnitCmdTool.gd --ignoreHeadlessMo
 ### Test rules
 
 - **Every suite extends `TestBase`.** Before each test it resets GameManager to a fresh game and redirects `SaveManager.save_path` to `TestBase.TEST_SAVE_DIR`. After each test it removes that folder and restores any catalog fixtures. Suites that override `before_test()` or `after_test()` must call `super`.
-- **Tests are content-agnostic.** Never assert on shipped ids, counts or values from `data/*.json` (for example `"iron_ore"`). Add test-only entries with `set_catalog_entry(RecipeResolver.<catalog>, id, entry)`; `TestBase` puts back exactly what was there before.
+- **Tests are content-agnostic.** Never assert on shipped ids, counts or values from the definitions (for example `"iron_ore"`). Build fixture definitions in code (`ItemDefinition.new()`, ...) and pass them directly, or register them with `set_definition(DefinitionLibrary.<catalog>, def)`; `TestBase` puts back exactly what was there before.
 - **Never touch the developer's real save.** Use `SaveManager.save_path`, never a hardcoded `user://save_data.json`. Any other `user://` fixture folder must be removed in `after_test()`, which runs even when an assertion fails.
 - **Restore only what you touched.** Snapshot the ids and fields a test changes and put back exactly those; a blanket clear can hide a leak.
 - **No wall-clock waits:** no `create_timer`, `OS.delay_msec` or busy loops. Await `process_frame` in a bounded loop tied to the real condition, or await the component's completion signal.

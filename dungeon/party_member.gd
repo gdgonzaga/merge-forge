@@ -9,11 +9,11 @@ var _max_hp: int = 50
 @onready var _badge: TextureRect = %AttackBadge
 
 
-func setup(data: Dictionary) -> void:
-	member_index = data.get("member_index", -1)
-	_max_hp = data.get("max_hp", 50)
-	_unit.sprite.texture = data["sprite"]
-	_badge.set_attack_type(data["attack_type"])
+func setup(def: PartyMemberDefinition, index: int) -> void:
+	member_index = index
+	_max_hp = def.max_hp
+	_unit.sprite.texture = def.sprite
+	_badge.set_attack_type(def.attack_type)
 	update_hp(_max_hp, _max_hp)
 
 
@@ -72,10 +72,10 @@ func play_victory() -> void:
 
 
 func _can_drop_data(_at_position: Vector2, data: Variant) -> bool:
-	if data is Dictionary:
-		if data.get("dungeon_usable", false) and "party" in str(data.get("dungeon_use_target", "")):
-			return true
-	return false
+	if not (data is Dictionary and data.has("definition")):
+		return false
+	var def: ItemDefinition = data["definition"]
+	return def.dungeon_usable and "party" in def.dungeon_use_target
 
 
 func _drop_data(_at_position: Vector2, data: Variant) -> void:

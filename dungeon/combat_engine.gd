@@ -48,13 +48,11 @@ func _ready() -> void:
 	add_child(tick_timer)
 
 
-func start_combat(enemy_definitions: Array) -> void:
+func start_combat(spawns: Array[EnemySpawn]) -> void:
 	enemies.clear()
-	for edef in enemy_definitions:
-		var enemy_id: String = edef.get("enemy_id", "")
-		var count: int = edef.get("count", 1)
-		for _i in range(count):
-			enemies.append(_make_enemy(enemy_id))
+	for spawn in spawns:
+		for _i in range(spawn.count):
+			enemies.append(_make_enemy(spawn.enemy))
 	_dbg("start_combat: %d enemies" % enemies.size())
 	_start_windups()
 	tick_timer.start()
@@ -64,14 +62,15 @@ func stop_combat() -> void:
 	tick_timer.stop()
 
 
-func init_party(party_data: Array[Dictionary]) -> void:
+# Array order is slot order: index 0 is the front member melee enemies hit.
+func init_party(members: Array[PartyMemberDefinition]) -> void:
 	party_members.clear()
-	for data in party_data:
-		var member := _attack_state(data, data.get("name", "?"))
+	for def in members:
+		var member := _attack_state(def)
 		member.merge({
-			"name": data.get("name", ""),
-			"max_hp": data.get("max_hp", 50),
-			"current_hp": data.get("max_hp", 50),
+			"name": def.name,
+			"max_hp": def.max_hp,
+			"current_hp": def.max_hp,
 			"active_buffs": [],
 			"is_ko": false,
 		})
@@ -144,34 +143,22 @@ func tick() -> void:
 	tick_resolved.emit()
 
 
-func apply_effect(member_index: int, effect: Variant) -> void:
+func apply_effect(member_index: int, effect: EffectDefinition) -> void:
 	if member_index < 0 or member_index >= party_members.size():
 		return
 	var member: Dictionary = party_members[member_index]
 	if member.get("is_ko", false):
 		return
-	var etype: String = ""
-	var power: int = 0
-	var duration: int = 0
-	if effect is EffectDefinition:
-		etype = effect.type
-		power = effect.value
-		duration = effect.duration
-	elif effect is Dictionary:
-		etype = effect.get("type", "")
-		power = int(effect.get("power", effect.get("value", 0)))
-		duration = int(effect.get("duration", 10 if etype == "buff_attack" else 0))
-
-	if etype == "heal":
-		member["current_hp"] = mini(member.get("current_hp", 0) + power, member.get("max_hp", 50))
-		effect_applied.emit(member_index, "heal", power)
-	elif etype == "buff_attack":
+	if effect.type == "heal":
+		member["current_hp"] = mini(member.get("current_hp", 0) + effect.value, member.get("max_hp", 50))
+		effect_applied.emit(member_index, "heal", effect.value)
+	elif effect.type == "buff_attack":
 		member.get("active_buffs").append({
 			"effect": "buff_attack",
-			"power": power,
-			"duration": duration,
+			"value": effect.value,
+			"duration": effect.duration,
 		})
-		effect_applied.emit(member_index, "buff_attack", power)
+		effect_applied.emit(member_index, "buff_attack", effect.value)
 
 
 func get_active_member_count() -> int:
@@ -220,7 +207,7 @@ func get_pending_damage(side: int, index: int) -> int:
 	var damage: int = unit["attack"]
 	for buff in unit.get("active_buffs", []):
 		if buff.get("effect", "") == "buff_attack":
-			damage += int(buff.get("power", 0))
+			damage += int(buff.get("value", 0))
 	if unit["is_crit"]:
 		damage *= CRIT_DAMAGE_MULT
 	return damage
@@ -358,17 +345,19 @@ func _other(side: int) -> int:
 
 
 # The attack fields both sides share, plus the state of the current windup.
-func _attack_state(data: Dictionary, label: String) -> Dictionary:
-	var attack_type: String = data["attack_type"]
-	assert(attack_type in [ATTACK_MELEE, ATTACK_MISSILE], "%s: unknown attack_type '%s'" % [label, attack_type])
-	var windup: int = data["windup"]
-	assert(windup >= 1, "%s: windup must be at least 1 tick" % label)
+# `def` is a PartyMemberDefinition or an EnemyDefinition; both carry these
+# fields.
+func _attack_state(def: Resource) -> Dictionary:
+	var attack_type: String = def.attack_type
+	assert(attack_type in [ATTACK_MELEE, ATTACK_MISSILE], "%s: unknown attack_type '%s'" % [def.id, attack_type])
+	var windup: int = def.windup
+	assert(windup >= 1, "%s: windup must be at least 1 tick" % def.id)
 	return {
 		"attack_type": attack_type,
-		"attack": int(data["attack"]),
+		"attack": def.attack,
 		"windup": windup,
-		"crit_chance": float(data["crit_chance"]),
-		"crit_name": data["crit_name"],
+		"crit_chance": def.crit_chance,
+		"crit_name": def.crit_name,
 		"target": -1,
 		"ticks_left": 0,
 		"windup_ticks": 0,
@@ -376,17 +365,14 @@ func _attack_state(data: Dictionary, label: String) -> Dictionary:
 	}
 
 
-func _make_enemy(enemy_id: String) -> Dictionary:
-	var base: Dictionary = RecipeResolver.enemies.get(enemy_id, {})
-	var enemy := _attack_state(base, enemy_id)
+func _make_enemy(def: EnemyDefinition) -> Dictionary:
+	var enemy := _attack_state(def)
 	enemy.merge({
-		"enemy_id": enemy_id,
-		"name": base.get("name", enemy_id),
-		"max_hp": base.get("max_hp", 30),
-		"current_hp": base.get("max_hp", 30),
-		"sprite": base["sprite"],
-		"drop_count": base.get("drop_count", {"min": 1, "max": 1}),
-		"drop_pool": base.get("drop_pool", []),
+		"definition": def,
+		"name": def.name,
+		"max_hp": def.max_hp,
+		"current_hp": def.max_hp,
+		"sprite": def.sprite,
 		"alive": true,
 	})
 	return enemy

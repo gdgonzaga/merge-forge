@@ -57,16 +57,14 @@ func try_purchase(type: String, id: String) -> bool:
 
 
 func _buy_blueprint(bp_id: String) -> bool:
-	if bp_id in GameManager.unlocked_blueprints:
+	if RecipeResolver.has_blueprint(bp_id):
 		return false
-	var cost: int = RecipeResolver.get_blueprint_cost(bp_id)
-	if cost <= 0:
+	var blueprint := DefinitionLibrary.get_blueprint(bp_id)
+	if blueprint == null or blueprint.cost <= 0:
 		return false
-	var deps: Array[String] = RecipeResolver.get_blueprint_dependencies(bp_id)
-	for dep in deps:
-		if not dep in GameManager.unlocked_blueprints:
-			return false
-	if not GameManager.deduct_gold(cost):
+	if not RecipeResolver.are_dependencies_met(blueprint):
+		return false
+	if not GameManager.deduct_gold(blueprint.cost):
 		return false
 	GameManager.add_blueprint(bp_id)
 	EventBus.save_requested.emit()
@@ -76,17 +74,14 @@ func _buy_blueprint(bp_id: String) -> bool:
 func _buy_upgrade(upgrade_id: String) -> bool:
 	if upgrade_id in GameManager.purchased_upgrades:
 		return false
-	var data: Dictionary = RecipeResolver.get_upgrade_data(upgrade_id)
-	if data.is_empty():
+	var upgrade := DefinitionLibrary.get_upgrade(upgrade_id)
+	if upgrade == null:
 		return false
-	var cost: int = data.get("cost", 0)
-	if not GameManager.deduct_gold(cost):
+	if not GameManager.deduct_gold(upgrade.cost):
 		return false
-	var effect_type: String = data.get("effect_type", "")
-	var effect_value = data.get("effect_value")
-	if effect_type == "grid_size" and effect_value is Dictionary:
-		GameManager.grid_cols += effect_value.get("cols", 0)
-		GameManager.grid_rows += effect_value.get("rows", 0)
+	if upgrade.effect == "grid_size":
+		GameManager.grid_cols += upgrade.grid_cols
+		GameManager.grid_rows += upgrade.grid_rows
 		GameManager.grid_size_changed.emit(GameManager.grid_cols, GameManager.grid_rows)
 	GameManager.add_upgrade(upgrade_id)
 	EventBus.save_requested.emit()
@@ -94,11 +89,10 @@ func _buy_upgrade(upgrade_id: String) -> bool:
 
 
 func _buy_reagent(reagent_id: String) -> bool:
-	var data: Dictionary = RecipeResolver.get_reagent_data(reagent_id)
-	if data.is_empty():
+	var reagent := DefinitionLibrary.get_reagent(reagent_id)
+	if reagent == null:
 		return false
-	var cost: int = data.get("cost", 0)
-	if not GameManager.deduct_gold(cost):
+	if not GameManager.deduct_gold(reagent.cost):
 		return false
 	GameManager.add_reagent(reagent_id, 1)
 	EventBus.save_requested.emit()
@@ -114,22 +108,19 @@ func _refresh_all() -> void:
 func _refresh_blueprints() -> void:
 	for child in _bp_scroll.get_children():
 		child.queue_free()
-	var bp_keys: Array = RecipeResolver.blueprints.keys()
 	var card_scene: PackedScene = load("res://shop/purchase_card.tscn")
-	for bp_id in bp_keys:
-		var data: Dictionary = RecipeResolver.blueprints[bp_id]
-		var owned: bool = bp_id in GameManager.unlocked_blueprints
-		var deps: Array[String] = RecipeResolver.get_blueprint_dependencies(bp_id)
-		var deps_met := true
-		for dep in deps:
-			if not dep in GameManager.unlocked_blueprints:
-				deps_met = false
-				break
-		var cost: int = data.get("cost", 0)
+	for blueprint in DefinitionLibrary.get_all_blueprints():
+		var bp_id := blueprint.id
+		var owned := RecipeResolver.has_blueprint(bp_id)
+		var deps_met := RecipeResolver.are_dependencies_met(blueprint)
+		var cost := blueprint.cost
 		var desc: String = ""
 		var desc_color := Color(0.7, 0.7, 0.7)
 		if not deps_met:
-			desc = "Requires: %s" % ", ".join(deps)
+			var dep_names: Array[String] = []
+			for dep in blueprint.dependencies:
+				dep_names.append(dep.name)
+			desc = "Requires: %s" % ", ".join(dep_names)
 			desc_color = Color(0.7, 0.5, 0.5)
 		var btn_text := "%dg" % cost
 		var disabled := not deps_met or GameManager.gold < cost
@@ -140,52 +131,44 @@ func _refresh_blueprints() -> void:
 			name_mod = Color(0.5, 0.5, 0.5)
 		var card: PanelContainer = card_scene.instantiate()
 		_bp_scroll.add_child(card)
-		card.setup(data.get("name", bp_id), desc, desc_color, "Owned" if owned else btn_text, owned or disabled, Callable() if owned else try_purchase.bind("blueprint", bp_id))
+		card.setup(blueprint.name, desc, desc_color, "Owned" if owned else btn_text, owned or disabled, Callable() if owned else try_purchase.bind("blueprint", bp_id))
 		card.name_label.modulate = name_mod
 
 
 func _refresh_upgrades() -> void:
 	for child in _upgrade_scroll.get_children():
 		child.queue_free()
-	var upgrade_keys: Array = RecipeResolver.upgrades.keys()
 	var card_scene: PackedScene = load("res://shop/purchase_card.tscn")
-	for uid in upgrade_keys:
-		var data: Dictionary = RecipeResolver.upgrades[uid]
-		var owned: bool = uid in GameManager.purchased_upgrades
-		var cost: int = data.get("cost", 0)
-		var desc := _describe_upgrade(data.get("effect_type", ""), data.get("effect_value"))
+	for upgrade in DefinitionLibrary.get_all_upgrades():
+		var owned: bool = upgrade.id in GameManager.purchased_upgrades
+		var cost := upgrade.cost
 		var name_mod := Color(0.5, 1, 0.5) if owned else Color.WHITE
 		var card: PanelContainer = card_scene.instantiate()
 		_upgrade_scroll.add_child(card)
-		card.setup(data.get("name", uid), desc, Color(0.7, 0.7, 0.7), "Owned" if owned else "%dg" % cost, owned or GameManager.gold < cost, Callable() if owned else try_purchase.bind("upgrade", uid))
+		card.setup(upgrade.name, _describe_upgrade(upgrade), Color(0.7, 0.7, 0.7), "Owned" if owned else "%dg" % cost, owned or GameManager.gold < cost, Callable() if owned else try_purchase.bind("upgrade", upgrade.id))
 		card.name_label.modulate = name_mod
 
 
 func _refresh_reagents() -> void:
 	for child in _reagent_scroll.get_children():
 		child.queue_free()
-	var reagent_keys: Array = RecipeResolver.reagents.keys()
 	var card_scene: PackedScene = load("res://shop/purchase_card.tscn")
-	for rid in reagent_keys:
-		var data: Dictionary = RecipeResolver.reagents[rid]
-		var cost: int = data.get("cost", 0)
-		var owned_count: int = GameManager.reagent_inventory.get(rid, 0)
-		var desc: String = data.get("description", "")
+	for reagent in DefinitionLibrary.get_all_reagents():
+		var owned_count: int = GameManager.reagent_inventory.get(reagent.id, 0)
 		var card: PanelContainer = card_scene.instantiate()
 		_reagent_scroll.add_child(card)
-		card.setup("%s (x%d)" % [data.get("name", rid), owned_count], desc, Color(0.7, 0.7, 0.7), "%dg" % cost, GameManager.gold < cost, try_purchase.bind("reagent", rid), 72)
+		card.setup("%s (x%d)" % [reagent.name, owned_count], reagent.description, Color(0.7, 0.7, 0.7), "%dg" % reagent.cost, GameManager.gold < reagent.cost, try_purchase.bind("reagent", reagent.id), 72)
 
 
-func _describe_upgrade(effect_type: String, value) -> String:
-	match effect_type:
+func _describe_upgrade(upgrade: UpgradeDefinition) -> String:
+	match upgrade.effect:
 		"grid_size":
-			if value is Dictionary:
-				return "+%d cols, +%d rows" % [value.get("cols", 0), value.get("rows", 0)]
+			return "+%d cols, +%d rows" % [upgrade.grid_cols, upgrade.grid_rows]
 		"despawn_time":
-			return "Despawn time: %.0fs" % float(value)
+			return "Despawn time: %.0fs" % upgrade.value
 		"crate_discount":
-			return "Crate prices x%.0f%%" % (float(value) * 100)
-	return effect_type
+			return "Crate prices x%.0f%%" % (upgrade.value * 100)
+	return upgrade.effect
 
 
 func _debug_unlock_all() -> void:
@@ -193,8 +176,7 @@ func _debug_unlock_all() -> void:
 	GameManager.gold = 2000
 	GameManager.gold_changed.emit(2000)
 	GameManager.add_reputation(1000)
-	var bp_ids: Array = RecipeResolver.blueprints.keys()
-	for bp_id in bp_ids:
-		if not bp_id in GameManager.unlocked_blueprints:
-			GameManager.add_blueprint(bp_id)
-	GameManager.add_reagent("fire_essence", 5)
+	for blueprint in DefinitionLibrary.get_all_blueprints():
+		GameManager.add_blueprint(blueprint.id)
+	for reagent in DefinitionLibrary.get_all_reagents():
+		GameManager.add_reagent(reagent.id, 5)

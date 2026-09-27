@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="CustomerDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/order_definition.gd" id="1_83834"]
+[ext_resource type="Resource" path="res://resources/definitions/items/sword.tres" id="2_hfuwe"]
+[ext_resource type="Resource" path="res://resources/definitions/items/flame_sword.tres" id="3_shv8s"]
+[ext_resource type="Script" path="res://resources/definitions/customer_definition.gd" id="4_a33sb"]
+[ext_resource type="Texture2D" path="res://resources/sprites/portraits/customer_09.png" id="5_0cf4c"]
+
+[sub_resource type="Resource" id="Resource_urdnx"]
+script = ExtResource("1_83834")
+item = ExtResource("2_hfuwe")
+gold_reward = 100
+
+[sub_resource type="Resource" id="Resource_nvp2p"]
+script = ExtResource("1_83834")
+item = ExtResource("3_shv8s")
+gold_reward = 200
+
+[resource]
+script = ExtResource("4_a33sb")
+id = "cust_09"
+name = "Ser Kaelen"
+role = "Knight-Captain"
+sprite = ExtResource("5_0cf4c")
+queue_order = 8
+orders = Array[ExtResource("1_83834")]([SubResource("Resource_urdnx"), SubResource("Resource_nvp2p")])

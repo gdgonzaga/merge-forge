@@ -1,15 +1,10 @@
 extends Node
 
 
-func spawn_drops(enemy_data: Dictionary) -> Array[Dictionary]:
-	var pool: Array = enemy_data.get("drop_pool", [])
-	var drop_count: Dictionary = enemy_data.get("drop_count", {"min": 1, "max": 1})
+func spawn_drops(enemy: EnemyDefinition) -> Array[Dictionary]:
 	var results: Array[Dictionary] = []
-	for entry in RecipeResolver.roll_weighted_pool(pool, drop_count):
-		var id: String = entry.get("item_id", "")
-		var data: Dictionary = RecipeResolver.get_item_data(id)
-		if not data.is_empty():
-			results.append(data)
+	for item in RecipeResolver.roll_weighted_pool(enemy.drop_pool, enemy.min_drops, enemy.max_drops):
+		results.append(RecipeResolver.make_item(item))
 	return results
 
 

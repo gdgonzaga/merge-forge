@@ -1,7 +1,24 @@
 [gd_resource type="Resource" script_class="EnemyDefinition" format=3]
 
+[ext_resource type="Script" path="res://resources/definitions/weighted_item.gd" id="1_jt5v2"]
+[ext_resource type="Resource" path="res://resources/definitions/items/firecracker.tres" id="2_ke4nd"]
 [ext_resource type="Script" path="res://resources/definitions/enemy_definition.gd" id="2_w2asp"]
+[ext_resource type="Resource" path="res://resources/definitions/items/bomb.tres" id="3_1v204"]
 [ext_resource type="Texture2D" path="res://resources/sprites/enemies/goblin.png" id="3_8ia7f"]
+[ext_resource type="Resource" path="res://resources/definitions/items/herb_bundle.tres" id="4_xxrus"]
+
+[sub_resource type="Resource" id="Resource_v2ae0"]
+script = ExtResource("1_jt5v2")
+item = ExtResource("2_ke4nd")
+weight = 3
+
+[sub_resource type="Resource" id="Resource_d4mg5"]
+script = ExtResource("1_jt5v2")
+item = ExtResource("3_1v204")
+
+[sub_resource type="Resource" id="Resource_gq3p0"]
+script = ExtResource("1_jt5v2")
+item = ExtResource("4_xxrus")
 
 [resource]
 script = ExtResource("2_w2asp")
@@ -14,17 +31,6 @@ windup = 1
 crit_chance = 0.15
 crit_name = "Arrow"
 sprite = ExtResource("3_8ia7f")
-drop_count = {
-"max": 3.0,
-"min": 2.0
-}
-drop_pool = Array[Dictionary]([{
-"item_id": "firecracker",
-"weight": 3.0
-}, {
-"item_id": "bomb",
-"weight": 1.0
-}, {
-"item_id": "herb_bundle",
-"weight": 1.0
-}])
+min_drops = 2
+max_drops = 3
+drop_pool = Array[ExtResource("1_jt5v2")]([SubResource("Resource_v2ae0"), SubResource("Resource_d4mg5"), SubResource("Resource_gq3p0")])

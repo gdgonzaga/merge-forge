@@ -1,7 +1,14 @@
 [gd_resource type="Resource" script_class="ItemDefinition" format=3]
 
 [ext_resource type="Script" path="res://resources/definitions/item_definition.gd" id="1_7t6hw"]
+[ext_resource type="Script" path="res://resources/definitions/merge_result.gd" id="1_478w5"]
 [ext_resource type="Texture2D" path="res://resources/sprites/items/herb_leaf.png" id="2_bqaub"]
+[ext_resource type="Resource" path="res://resources/definitions/items/herb_bundle.tres" id="2_ms7hd"]
+[ext_resource type="Script" path="res://resources/definitions/reagent_variant.gd" id="3_6oq6h"]
+
+[sub_resource type="Resource" id="Resource_x7bqt"]
+script = ExtResource("1_478w5")
+result = ExtResource("2_ms7hd")
 
 [resource]
 script = ExtResource("1_7t6hw")
@@ -10,3 +17,4 @@ name = "Herb Leaf"
 family = "herb"
 gold_value = 5
 sprite = ExtResource("2_bqaub")
+merge_results = Array[ExtResource("1_478w5")]([SubResource("Resource_x7bqt")])

@@ -40,13 +40,14 @@ func reset_game_state() -> void:
 	GameManager.debug_mode = false
 
 
-# Put a fixture entry into a RecipeResolver catalog (e.g. RecipeResolver.items)
-# for the current test only. after_test restores the previous entry, or erases
-# the id if it did not exist, so shipped content is never relied on or leaked.
-func set_catalog_entry(catalog: Dictionary, id: String, entry: Dictionary) -> void:
-	var had_entry := catalog.has(id)
-	_catalog_snapshots.append([catalog, id, had_entry, catalog.get(id)])
-	catalog[id] = entry
+# Put a fixture definition into a DefinitionLibrary catalog (e.g.
+# DefinitionLibrary.items) under its id, for the current test only. after_test
+# restores the previous entry, or erases the id if it did not exist, so shipped
+# content is never relied on or leaked.
+func set_definition(catalog: Dictionary, def: Resource) -> void:
+	var id: String = def.id
+	_catalog_snapshots.append([catalog, id, catalog.has(id), catalog.get(id)])
+	catalog[id] = def
 
 
 func _redirect_saves() -> void:

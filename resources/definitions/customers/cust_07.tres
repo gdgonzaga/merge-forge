@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="CustomerDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/order_definition.gd" id="1_hifc5"]
+[ext_resource type="Resource" path="res://resources/definitions/items/healing_potion.tres" id="2_054ga"]
+[ext_resource type="Resource" path="res://resources/definitions/items/battle_elixir.tres" id="3_82mps"]
+[ext_resource type="Script" path="res://resources/definitions/customer_definition.gd" id="4_woa1g"]
+[ext_resource type="Texture2D" path="res://resources/sprites/portraits/customer_07.png" id="5_dkwok"]
+
+[sub_resource type="Resource" id="Resource_7feh4"]
+script = ExtResource("1_hifc5")
+item = ExtResource("2_054ga")
+gold_reward = 40
+
+[sub_resource type="Resource" id="Resource_fy1ki"]
+script = ExtResource("1_hifc5")
+item = ExtResource("3_82mps")
+gold_reward = 50
+
+[resource]
+script = ExtResource("4_woa1g")
+id = "cust_07"
+name = "Caelum"
+role = "Adventurer"
+sprite = ExtResource("5_dkwok")
+queue_order = 6
+orders = Array[ExtResource("1_hifc5")]([SubResource("Resource_7feh4"), SubResource("Resource_fy1ki")])

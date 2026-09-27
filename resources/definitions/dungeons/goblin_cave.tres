@@ -1,0 +1,48 @@
+[gd_resource type="Resource" script_class="DungeonDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/encounter_definition.gd" id="1_5lyl5"]
+[ext_resource type="Script" path="res://resources/definitions/enemy_spawn.gd" id="2_at71i"]
+[ext_resource type="Resource" path="res://resources/definitions/enemies/slime.tres" id="3_vahml"]
+[ext_resource type="Resource" path="res://resources/definitions/enemies/goblin_archer.tres" id="4_3posp"]
+[ext_resource type="Resource" path="res://resources/definitions/enemies/goblin.tres" id="5_bhjox"]
+[ext_resource type="Script" path="res://resources/definitions/dungeon_definition.gd" id="6_3xp5g"]
+
+[sub_resource type="Resource" id="Resource_blhq5"]
+script = ExtResource("2_at71i")
+enemy = ExtResource("3_vahml")
+count = 2
+
+[sub_resource type="Resource" id="Resource_supk0"]
+script = ExtResource("1_5lyl5")
+spawns = Array[ExtResource("2_at71i")]([SubResource("Resource_blhq5")])
+
+[sub_resource type="Resource" id="Resource_5dgni"]
+script = ExtResource("2_at71i")
+enemy = ExtResource("4_3posp")
+
+[sub_resource type="Resource" id="Resource_g3xvt"]
+script = ExtResource("2_at71i")
+enemy = ExtResource("5_bhjox")
+
+[sub_resource type="Resource" id="Resource_0nrh2"]
+script = ExtResource("1_5lyl5")
+spawns = Array[ExtResource("2_at71i")]([SubResource("Resource_5dgni"), SubResource("Resource_g3xvt")])
+
+[sub_resource type="Resource" id="Resource_gls51"]
+script = ExtResource("2_at71i")
+enemy = ExtResource("5_bhjox")
+count = 2
+
+[sub_resource type="Resource" id="Resource_kryoi"]
+script = ExtResource("1_5lyl5")
+spawns = Array[ExtResource("2_at71i")]([SubResource("Resource_gls51")])
+
+[resource]
+script = ExtResource("6_3xp5g")
+id = "goblin_cave"
+name = "Goblin Cave"
+reputation_required = 150
+walk_speed = 0.075
+encounter_points = Array[float]([0.2, 0.5, 0.8])
+encounters = Array[ExtResource("1_5lyl5")]([SubResource("Resource_supk0"), SubResource("Resource_0nrh2"), SubResource("Resource_kryoi")])
+gold_reward = 80

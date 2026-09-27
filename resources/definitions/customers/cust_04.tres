@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="CustomerDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/order_definition.gd" id="1_nipu1"]
+[ext_resource type="Resource" path="res://resources/definitions/items/herbal_tonic.tres" id="2_nxpye"]
+[ext_resource type="Resource" path="res://resources/definitions/items/iron_plate.tres" id="3_nfjq8"]
+[ext_resource type="Script" path="res://resources/definitions/customer_definition.gd" id="4_7f42v"]
+[ext_resource type="Texture2D" path="res://resources/sprites/portraits/customer_04.png" id="5_o2w2s"]
+
+[sub_resource type="Resource" id="Resource_47mc4"]
+script = ExtResource("1_nipu1")
+item = ExtResource("2_nxpye")
+quantity = 2
+gold_reward = 80
+
+[sub_resource type="Resource" id="Resource_558h8"]
+script = ExtResource("1_nipu1")
+item = ExtResource("3_nfjq8")
+gold_reward = 40
+
+[resource]
+script = ExtResource("4_7f42v")
+id = "cust_04"
+name = "Ysolde"
+role = "Alchemist"
+sprite = ExtResource("5_o2w2s")
+queue_order = 3
+orders = Array[ExtResource("1_nipu1")]([SubResource("Resource_47mc4"), SubResource("Resource_558h8")])

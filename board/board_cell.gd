@@ -41,7 +41,7 @@ func flash() -> void:
 
 
 func _apply_icon() -> void:
-	_icon.texture = item["sprite"]
+	_icon.texture = item["definition"].sprite
 	_icon.visible = true
 
 
@@ -52,7 +52,7 @@ func _get_drag_data(at_position: Vector2) -> Variant:
 	preview.size = Vector2(96, 96)
 	preview.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	preview.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	preview.texture = item["sprite"]
+	preview.texture = item["definition"].sprite
 	set_drag_preview(preview)
 	preview.position = Vector2(-14, -100)
 	cell_drag_started.emit(grid_pos, item)

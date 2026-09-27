@@ -1,97 +1,109 @@
 extends TestBase
 
-# C4 — catalog getters must return copies, not the cached entries, so the shared
-# load-once catalogs are never mutated by callers. Uses injected fixture entries,
-# never shipped content from res://data/.
+# Merge options gated by blueprints and reagents, weighted rolls, and the board
+# item dictionary. Uses fixture definitions only, never shipped content.
 
-const FIXTURE_ID := "__test_item"
+var _source: ItemDefinition
+var _plain: ItemDefinition
+var _gated: ItemDefinition
+var _variant: ItemDefinition
+var _blueprint: BlueprintDefinition
+var _reagent: ReagentDefinition
 
 
 func before_test() -> void:
 	super.before_test()
-	set_catalog_entry(RecipeResolver.items, FIXTURE_ID, {
-		"name": "Test Item",
-		"family": "test_family",
-		"effect": {"kind": "test_effect"},
-	})
+	_plain = _item("__test_plain")
+	_gated = _item("__test_gated")
+	_variant = _item("__test_variant")
+	_blueprint = BlueprintDefinition.new()
+	_blueprint.id = "__test_bp"
+	_reagent = ReagentDefinition.new()
+	_reagent.id = "__test_reagent"
+	_source = _item("__test_source")
+	_source.merge_results.append(_merge_result(_plain, null))
+	_source.merge_results.append(_merge_result(_gated, _blueprint))
+	var rv := ReagentVariant.new()
+	rv.result = _variant
+	rv.reagent = _reagent
+	rv.blueprint = _blueprint
+	_source.reagent_variants.append(rv)
+	set_definition(DefinitionLibrary.items, _source)
 
 
-func test_get_item_data_returns_copy_with_id_stamp() -> void:
-	var data := RecipeResolver.get_item_data(FIXTURE_ID)
-	assert_str(str(data.get("item_id", ""))).is_equal(FIXTURE_ID)
-	# Catalog fields are still present on the copy.
-	assert_str(str(data.get("family", ""))).is_equal("test_family")
+func test_make_item_carries_id_and_definition() -> void:
+	var item := RecipeResolver.make_item(_plain)
+	assert_str(item["item_id"]).is_equal("__test_plain")
+	assert_object(item["definition"]).is_same(_plain)
 
 
-func test_get_item_data_does_not_mutate_cache() -> void:
-	# The cached entry must not gain an item_id key as a side effect of lookup.
-	var _ignored := RecipeResolver.get_item_data(FIXTURE_ID)
-	var cached: Dictionary = RecipeResolver.items[FIXTURE_ID]
-	assert_bool(cached.has("item_id")).is_false()
-	assert_int(cached.size()).is_equal(3)
+func test_blueprint_gated_result_needs_its_blueprint() -> void:
+	assert_array(_results(RecipeResolver.get_options("__test_source"))).is_equal([_plain])
+	GameManager.add_blueprint("__test_bp")
+	assert_array(_results(RecipeResolver.get_options("__test_source"))).is_equal([_plain, _gated])
 
 
-func test_mutating_returned_item_nested_data_leaves_cache_intact() -> void:
-	# Deep copy: editing a nested dictionary on the result must not reach the catalog.
-	var data := RecipeResolver.get_item_data(FIXTURE_ID)
-	data["effect"]["kind"] = "changed"
-	var cached: Dictionary = RecipeResolver.items[FIXTURE_ID]
-	assert_str(str(cached["effect"]["kind"])).is_equal("test_effect")
+func test_variant_needs_its_blueprint_and_a_reagent() -> void:
+	GameManager.add_reagent("__test_reagent", 1)
+	assert_array(RecipeResolver.get_variant_options("__test_source")).is_empty()
+	GameManager.add_blueprint("__test_bp")
+	assert_array(_results(RecipeResolver.get_variant_options("__test_source"))).is_equal([_variant])
+	GameManager.consume_reagent("__test_reagent")
+	assert_array(RecipeResolver.get_variant_options("__test_source")).is_empty()
 
 
-func test_mutating_returned_catalog_data_leaves_cache_intact() -> void:
-	set_catalog_entry(RecipeResolver.crates, "__test_crate", {"cost": 10, "pool": [{"item_id": "a", "weight": 1}]})
-	set_catalog_entry(RecipeResolver.upgrades, "__test_upgrade", {"effect_value": 2.0})
-	set_catalog_entry(RecipeResolver.reagents, "__test_reagent", {"cost": 7})
-
-	var crate := RecipeResolver.get_crate_data("__test_crate")
-	crate["cost"] = 999
-	crate["pool"][0]["weight"] = 999
-	RecipeResolver.get_upgrade_data("__test_upgrade")["effect_value"] = 999.0
-	RecipeResolver.get_reagent_data("__test_reagent")["cost"] = 999
-
-	assert_int(int(RecipeResolver.crates["__test_crate"]["cost"])).is_equal(10)
-	assert_int(int(RecipeResolver.crates["__test_crate"]["pool"][0]["weight"])).is_equal(1)
-	assert_float(float(RecipeResolver.upgrades["__test_upgrade"]["effect_value"])).is_equal(2.0)
-	assert_int(int(RecipeResolver.reagents["__test_reagent"]["cost"])).is_equal(7)
+func test_unknown_item_has_no_options() -> void:
+	assert_array(RecipeResolver.get_options("__test_missing")).is_empty()
+	assert_array(RecipeResolver.get_variant_options("__test_missing")).is_empty()
 
 
-func test_mutating_returned_merge_option_leaves_cache_intact() -> void:
-	set_catalog_entry(RecipeResolver.recipes, FIXTURE_ID, {"results": [{"result_id": "__test_result"}]})
-	var options := RecipeResolver.get_options(FIXTURE_ID)
-	options[0]["result_id"] = "changed"
-	var cached: Dictionary = RecipeResolver.recipes[FIXTURE_ID]
-	assert_str(str(cached["results"][0]["result_id"])).is_equal("__test_result")
+func test_dependencies_met_once_all_are_unlocked() -> void:
+	var dep_a := BlueprintDefinition.new()
+	dep_a.id = "__test_dep_a"
+	var dep_b := BlueprintDefinition.new()
+	dep_b.id = "__test_dep_b"
+	_blueprint.dependencies.append(dep_a)
+	_blueprint.dependencies.append(dep_b)
+	GameManager.add_blueprint("__test_dep_a")
+	assert_bool(RecipeResolver.are_dependencies_met(_blueprint)).is_false()
+	GameManager.add_blueprint("__test_dep_b")
+	assert_bool(RecipeResolver.are_dependencies_met(_blueprint)).is_true()
 
 
-func test_get_item_data_missing_returns_empty() -> void:
-	var data := RecipeResolver.get_item_data("__does_not_exist")
-	assert_dict(data).is_empty()
+func test_weighted_roll_skips_zero_weight_and_respects_count() -> void:
+	var pool: Array[WeightedItem] = [_weighted(_plain, 0), _weighted(_gated, 2)]
+	var rolled := RecipeResolver.roll_weighted_pool(pool, 4, 4)
+	assert_array(rolled).is_equal([_gated, _gated, _gated, _gated])
 
 
-# Catches a renamed or removed item still named by recipes or reagent combos.
-func test_recipes_and_combos_reference_defined_items_and_blueprints() -> void:
-	for source_id: String in RecipeResolver.recipes:
-		_assert_item_defined(source_id, "recipe source")
-		for result: Dictionary in RecipeResolver.recipes[source_id].get("results", []):
-			_assert_item_defined(result.get("result_id", ""), "result of %s" % source_id)
-			_assert_blueprint_defined(result.get("blueprint_required", ""), source_id)
-	for base_id: String in RecipeResolver.reagent_combos:
-		_assert_item_defined(base_id, "combo base")
-		for combo: Dictionary in RecipeResolver.reagent_combos[base_id]:
-			_assert_item_defined(combo.get("variant_item_id", ""), "variant of %s" % base_id)
-			_assert_blueprint_defined(combo.get("blueprint_required", ""), base_id)
-			assert_bool(RecipeResolver.reagents.has(combo.get("reagent_id", ""))) \
-				.override_failure_message("%s combo names unknown reagent" % base_id).is_true()
+func test_weighted_roll_of_an_empty_pool_is_empty() -> void:
+	var pool: Array[WeightedItem] = []
+	assert_array(RecipeResolver.roll_weighted_pool(pool, 2, 2)).is_empty()
 
 
-func _assert_item_defined(item_id: String, role: String) -> void:
-	assert_bool(RecipeResolver.items.has(item_id)) \
-		.override_failure_message("%s '%s' is not a defined item" % [role, item_id]).is_true()
+func _results(options: Array) -> Array[ItemDefinition]:
+	var results: Array[ItemDefinition] = []
+	for option: Resource in options:
+		results.append(option.result)
+	return results
 
 
-func _assert_blueprint_defined(bp_id: String, source_id: String) -> void:
-	if bp_id == "":
-		return
-	assert_bool(RecipeResolver.blueprints.has(bp_id)) \
-		.override_failure_message("%s needs unknown blueprint '%s'" % [source_id, bp_id]).is_true()
+func _item(id: String) -> ItemDefinition:
+	var item := ItemDefinition.new()
+	item.id = id
+	item.name = id
+	return item
+
+
+func _merge_result(result: ItemDefinition, blueprint: BlueprintDefinition) -> MergeResult:
+	var option := MergeResult.new()
+	option.result = result
+	option.blueprint = blueprint
+	return option
+
+
+func _weighted(item: ItemDefinition, weight: int) -> WeightedItem:
+	var entry := WeightedItem.new()
+	entry.item = item
+	entry.weight = weight
+	return entry
