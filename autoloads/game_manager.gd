@@ -86,8 +86,8 @@ func get_reputation_level() -> String:
 	return "low"
 
 
-func is_dungeon_unlocked() -> bool:
-	return reputation_points >= 150
+func is_dungeon_unlocked(dungeon: DungeonDefinition) -> bool:
+	return reputation_points >= dungeon.reputation_required
 
 
 func get_despawn_time() -> float:

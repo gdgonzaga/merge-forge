@@ -61,7 +61,7 @@ No autoload uses `class_name` — globally accessible by registration name only 
 | `session_ended(summary: Dictionary)` | `shop_session.gd` | `main.gd` | 10th customer done, transition to summary |
 | `session_summary_dismissed()` | `session_summary.gd` | `main.gd` | Player taps Continue, go to prep |
 | `prep_start_session()` | `prep_phase.gd` | `main.gd` | Player starts next shop session |
-| `prep_enter_dungeon()` | `prep_phase.gd` | `main.gd` | Player enters dungeon (if unlocked) |
+| `prep_enter_dungeon(dungeon_id: String)` | `prep_phase.gd` | `main.gd` | Player enters that dungeon (if unlocked) |
 | `dungeon_cleared(rewards: Dictionary)` | `dungeon_controller.gd` | `main.gd`, `save_manager.gd` | Dungeon completed. Rewards: `{cleared: true, gold_reward: int, blueprint_reward: String or null, reputation_change: 25}` |
 | `dungeon_failed(summary: Dictionary)` | `dungeon_controller.gd` | `main.gd`, `save_manager.gd` | Dungeon failed. Summary: `{cleared: false, gold_reward: 0, blueprint_reward: null, reputation_change: -20}` |
 | `dungeon_summary_dismissed()` | `dungeon_summary.gd` | `main.gd` | Player taps Continue, return to prep |
@@ -239,7 +239,8 @@ The GDD lists effect types (heal, buff_attack). Party stats are confirmed (see t
 
 | Function | Description |
 |----------|-------------|
-| `_transition_to(scene_path: String)` | Frees current scene, instances new scene from path, adds to SceneContainer. |
+| `_transition_to(scene_path: String, configure: Callable = Callable())` | Frees current scene, instances new scene from path, passes it to `configure` (when valid) before adding it to SceneContainer. |
+| `_on_prep_enter_dungeon(dungeon_id: String)` | Transitions to DungeonRun, setting its `dungeon_id` before `_ready` runs. |
 | `_on_new_game()` | Deletes save, resets GameManager, transitions to PrepPhase. |
 | `_on_continue_game()` | Loads save into GameManager, transitions to PrepPhase. |
 
@@ -625,6 +626,7 @@ RecipeResolver has no signals — it is queried synchronously by MergeResolver, 
 | `get_all_party_members()` | Ordered by `slot_order`: index 0 is the front member. |
 | `get_all_blueprints()`, `get_all_crates()`, `get_all_upgrades()`, `get_all_reagents()` | Typed arrays, cheapest first (ties by id). |
 | `get_all_customers()` | Ordered by `queue_order`. |
+| `get_all_dungeons()` | Ordered by `reputation_required` (unlock order), ties by id. PrepPhase's Enter Dungeon button targets the first. |
 
 #### RecipeResolver
 
@@ -788,7 +790,7 @@ Customers are `CustomerDefinition`s and crates `CrateDefinition`s (see Content D
 |-------|------|-------------|
 | `id` | `String` | Unique identifier |
 | `name` | `String` | Display name |
-| `reputation_required` | `int` | Minimum reputation to unlock (not read yet: `GameManager.is_dungeon_unlocked` uses 150) |
+| `reputation_required` | `int` | Minimum reputation to unlock (`GameManager.is_dungeon_unlocked`); also sets the order of `DefinitionLibrary.get_all_dungeons()` |
 | `walk_speed` | `float` | Progress per second while walking |
 | `encounter_points` | `Array[float]` | Progress thresholds triggering encounters (e.g. [0.2, 0.5, 0.8]) |
 | `encounters` | `Array[EncounterDefinition]` | One per encounter point. Each holds `spawns: Array[EnemySpawn]` (`enemy`, `count`). |
@@ -923,6 +925,7 @@ No special abilities for MVP — auto-attack only.
 
 | Property | Type | Description |
 |----------|------|-------------|
+| `dungeon_id: String` | String | Which DungeonDefinition to run. Set by Main before the scene enters the tree; an unknown id is an error (no fallback). |
 | `progress: float` | float | 0.0 to 1.0 dungeon progress |
 | `walk_speed: float` | float | Progress gained per second while walking (from dungeon definition) |
 | `encounter_points: Array[float]` | Array | Progress thresholds where encounters trigger (e.g. [0.2, 0.5, 0.8], from dungeon definition) |
@@ -1126,7 +1129,7 @@ Reagents are bought in the prep phase and stored in `GameManager.reagent_invento
 | Signal | Emitted by | Listeners | Via EventBus? | Flows |
 |--------|-----------|-----------|---------------|-------|
 | `prep_start_session()` | `prep_phase.gd` | `main.gd` | Yes | Start Session |
-| `prep_enter_dungeon()` | `prep_phase.gd` | `main.gd` | Yes | Enter Dungeon |
+| `prep_enter_dungeon(dungeon_id: String)` | `prep_phase.gd` | `main.gd` | Yes | Enter Dungeon |
 | `prep_quit_to_menu()` | `prep_phase.gd` | `main.gd` | Yes | Quit to Menu |
 | `save_requested()` | multiple | `save_manager.gd` | Yes | After Purchase/Session/Dungeon |
 | `gold_changed(new_amount: int)` | `game_manager.gd` | HUD, prep tabs | No (GameManager direct) | Any gold change |
@@ -1192,6 +1195,7 @@ Reagents are bought in the prep phase and stored in `GameManager.reagent_invento
 | `_upgrade_scroll: VBoxContainer` | `@onready $VBox/TabContainer/Upgrades/UpgradeContent` | Upgrade tab content container |
 | `_reagent_scroll: VBoxContainer` | `@onready $VBox/TabContainer/Reagents/ReagentContent` | Reagent tab content container |
 | `_dungeon_btn: Button` | `@onready %DungeonBtn` | Enter Dungeon button; its disabled state follows `GameManager.reputation_changed` |
+| `_dungeon: DungeonDefinition` | DungeonDefinition | The button's target: `DefinitionLibrary.get_all_dungeons()[0]`, the first dungeon to unlock. Sets the tooltip and the unlock check. |
 | `_purchases: RefCounted` | `core/purchases.gd` | Purchase rules; `try_purchase` delegates to it |
 
 **Functions:**
@@ -1245,7 +1249,7 @@ Reagents are bought in the prep phase and stored in `GameManager.reagent_invento
 | `consume_reagent(reagent_id: String) -> bool` | Deducts 1 if count > 0. Returns false if none. |
 | `add_upgrade(upgrade_id: String)` | Appends to purchased_upgrades, emits `upgrade_added`. Effect application is handled by the caller (e.g., prep_phase._buy_upgrade() applies grid_size changes). |
 | `get_reputation_level() -> String` | Returns "low" (0–99), "mid" (100–299), "high" (300+). |
-| `is_dungeon_unlocked() -> bool` | Returns `reputation_points >= 150`. |
+| `is_dungeon_unlocked(dungeon: DungeonDefinition) -> bool` | Returns `reputation_points >= dungeon.reputation_required`. |
 | `get_despawn_time() -> float` | `value` of a purchased `despawn_time` upgrade, else `DEFAULT_DESPAWN_TIME` (12.0). |
 | `get_crate_discount() -> float` | `value` of a purchased `crate_discount` upgrade, else 1.0. |
 | `serialize() -> Dictionary` | Returns all persistent state as a Dictionary for SaveManager. |

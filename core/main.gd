@@ -30,7 +30,7 @@ func _ready() -> void:
 	EventBus.session_ended.connect(_on_session_ended)
 	EventBus.session_summary_dismissed.connect(_go_to.bind("session_summary_dismissed"))
 	EventBus.prep_start_session.connect(_go_to.bind("prep_start_session"))
-	EventBus.prep_enter_dungeon.connect(_go_to.bind("prep_enter_dungeon"))
+	EventBus.prep_enter_dungeon.connect(_on_prep_enter_dungeon)
 	EventBus.dungeon_cleared.connect(_on_dungeon_cleared)
 	EventBus.dungeon_failed.connect(_on_dungeon_failed)
 	EventBus.dungeon_summary_dismissed.connect(_go_to.bind("dungeon_summary_dismissed"))
@@ -55,6 +55,11 @@ func _on_dungeon_cleared(rewards: Dictionary) -> void:
 func _on_dungeon_failed(summary: Dictionary) -> void:
 	pending_dungeon_summary = summary
 	_go_to(null, "dungeon_failed")
+
+
+func _on_prep_enter_dungeon(dungeon_id: String) -> void:
+	# Set before add_child so DungeonRun's _ready can read it.
+	_transition_to(scene_map["prep_enter_dungeon"], func(run: Node) -> void: run.dungeon_id = dungeon_id)
 
 
 func _on_new_game() -> void:
@@ -84,14 +89,18 @@ func _on_continue_game() -> void:
 		push_warning("[Main] continue aborted: save status %d" % status)
 
 
-func _transition_to(scene_path: String) -> void:
+# configure, when valid, gets the new scene before it enters the tree.
+func _transition_to(scene_path: String, configure: Callable = Callable()) -> void:
 	if scene_path == "":
 		return
 	for child in scene_container.get_children():
 		child.queue_free()
 	var scene: PackedScene = load(scene_path)
 	if scene:
-		scene_container.add_child(scene.instantiate())
+		var instance := scene.instantiate()
+		if configure.is_valid():
+			configure.call(instance)
+		scene_container.add_child(instance)
 	else:
 		push_error("[Main] FAILED to load scene: " + scene_path)
 	_play_scene_music(scene_path)

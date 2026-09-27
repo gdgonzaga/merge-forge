@@ -112,10 +112,27 @@ func test_party_members_come_back_in_slot_order() -> void:
 	assert_str(members.back().id).is_equal("__test_back")
 
 
+func test_dungeons_come_back_in_unlock_order() -> void:
+	set_definition(DefinitionLibrary.dungeons, _dungeon("__test_late", 9001))
+	set_definition(DefinitionLibrary.dungeons, _dungeon("__test_tie_b", -9001))
+	set_definition(DefinitionLibrary.dungeons, _dungeon("__test_tie_a", -9001))
+	var dungeons := DefinitionLibrary.get_all_dungeons()
+	assert_str(dungeons[0].id).is_equal("__test_tie_a")
+	assert_str(dungeons[1].id).is_equal("__test_tie_b")
+	assert_str(dungeons.back().id).is_equal("__test_late")
+
+
 func test_definition_library_missing_returns_null() -> void:
 	assert_object(DefinitionLibrary.get_item("__nonexistent__")).is_null()
 	assert_object(DefinitionLibrary.get_party_member("__nonexistent__")).is_null()
 	assert_object(DefinitionLibrary.get_enemy("__nonexistent__")).is_null()
+
+
+func _dungeon(id: String, reputation_required: int) -> DungeonDefinition:
+	var dungeon := DungeonDefinition.new()
+	dungeon.id = id
+	dungeon.reputation_required = reputation_required
+	return dungeon
 
 
 # Party members and enemies share the combat stat fields CombatEngine reads.

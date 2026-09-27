@@ -151,6 +151,18 @@ func get_dungeon(id: String) -> DungeonDefinition:
 	return dungeons.get(id, null)
 
 
+# In unlock order: lowest reputation_required first, ties by id.
+func get_all_dungeons() -> Array[DungeonDefinition]:
+	var result: Array[DungeonDefinition] = []
+	result.assign(dungeons.values())
+	result.sort_custom(func(a: DungeonDefinition, b: DungeonDefinition) -> bool:
+		if a.reputation_required != b.reputation_required:
+			return a.reputation_required < b.reputation_required
+		return a.id < b.id
+	)
+	return result
+
+
 # Shop listings run cheapest first; ties by id so the order is stable.
 static func _by_cost(catalog: Dictionary) -> Array:
 	var result := catalog.values()

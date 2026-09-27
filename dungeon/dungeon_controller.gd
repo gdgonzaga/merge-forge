@@ -1,5 +1,7 @@
 extends Control
 
+# Set by Main before the scene enters the tree.
+var dungeon_id: String = ""
 var progress: float = 0.0
 var walk_speed: float = 0.02
 var encounter_points: Array[float] = []
@@ -32,8 +34,11 @@ var _walk_phase: float = 0.0
 
 
 func _ready() -> void:
-	var dungeon_id := "goblin_cave"
 	_dungeon = DefinitionLibrary.get_dungeon(dungeon_id)
+	if _dungeon == null:
+		push_error("DungeonRun: unknown dungeon '%s'" % dungeon_id)
+		assert(false, "DungeonRun: unknown dungeon '%s'" % dungeon_id)
+		return
 	walk_speed = _dungeon.walk_speed
 	encounter_points = _dungeon.encounter_points
 	encounters_data = _dungeon.encounters

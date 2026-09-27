@@ -9,6 +9,8 @@ const PURCHASES := preload("res://core/purchases.gd")
 @onready var _dungeon_btn: Button = %DungeonBtn
 
 var _purchases: RefCounted = PURCHASES.new()
+# Today's single Enter Dungeon button targets the first dungeon to unlock.
+var _dungeon: DungeonDefinition
 
 
 func _ready() -> void:
@@ -19,11 +21,12 @@ func _ready() -> void:
 	for child in _reagent_scroll.get_children():
 		child.queue_free()
 
-	_dungeon_btn.disabled = not GameManager.is_dungeon_unlocked()
-	_dungeon_btn.tooltip_text = "Requires 150 reputation"
+	_dungeon = DefinitionLibrary.get_all_dungeons()[0]
+	_dungeon_btn.disabled = not GameManager.is_dungeon_unlocked(_dungeon)
+	_dungeon_btn.tooltip_text = "Requires %d reputation" % _dungeon.reputation_required
 	$VBox/BtnBox/QuitBtn.pressed.connect(_on_quit_pressed)
 	$VBox/BtnBox/SessionBtn.pressed.connect(EventBus.prep_start_session.emit)
-	_dungeon_btn.pressed.connect(EventBus.prep_enter_dungeon.emit)
+	_dungeon_btn.pressed.connect(EventBus.prep_enter_dungeon.emit.bind(_dungeon.id))
 	$VBox/DebugBtn.pressed.connect(_debug_unlock_all)
 	# Bound methods, not lambdas: Godot drops a connection when the callable's
 	# object is freed, and a lambda that never touches self has no object, so
@@ -64,8 +67,8 @@ func _on_reagent_count_changed(_id: String, _count: int) -> void:
 	_refresh_reagents()
 
 
-func _on_reputation_changed(points: int) -> void:
-	_dungeon_btn.disabled = points < 150
+func _on_reputation_changed(_points: int) -> void:
+	_dungeon_btn.disabled = not GameManager.is_dungeon_unlocked(_dungeon)
 
 
 func try_purchase(type: String, id: String) -> bool:

@@ -103,11 +103,14 @@ func test_reputation_level_thresholds() -> void:
 
 # --- is_dungeon_unlocked (boundary) ---
 
-func test_dungeon_unlock_boundary_at_150() -> void:
-	GameManager.reputation_points = 149
-	assert_bool(GameManager.is_dungeon_unlocked()).is_false()
-	GameManager.reputation_points = 150
-	assert_bool(GameManager.is_dungeon_unlocked()).is_true()
+func test_dungeon_unlocks_at_its_reputation_required() -> void:
+	var dungeon := DungeonDefinition.new()
+	dungeon.id = "__test_dungeon"
+	dungeon.reputation_required = 40
+	GameManager.reputation_points = 39
+	assert_bool(GameManager.is_dungeon_unlocked(dungeon)).is_false()
+	GameManager.reputation_points = 40
+	assert_bool(GameManager.is_dungeon_unlocked(dungeon)).is_true()
 
 
 # --- blueprints (idempotent add) ---
