@@ -3,3 +3,5 @@
 - Implement a dungeon license feature - players need to buy a license to raid dungeons. Possible monetization.
 - Think of a reason why the player needs to raid dungeons. Maybe for reagents, blueprints
 - Expand reward types for dungeon runs
+- Dungeon buff stacks: dragging boost items onto party members adds to a buff count (crit charges, absorb shield, regen ticks) instead of a one-off effect. See `tmp/buff-stacks/proposal.md`.
+- Attack priority for units: let each party member / enemy define whom it targets (for example front, weakest, highest attack, healer first) instead of the fixed melee-front / missile-weakest rule.
