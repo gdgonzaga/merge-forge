@@ -125,6 +125,7 @@ theme_override_styles/disabled = ExtResource("7_qgtw2")
 text = "Start Session"
 
 [node name="DungeonBtn" type="Button" parent="VBox/BtnBox" unique_id=504126692]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(250, 70)
 layout_mode = 2
 theme_override_fonts/font = ExtResource("9_font")

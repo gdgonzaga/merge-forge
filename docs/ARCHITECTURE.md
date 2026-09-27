@@ -1190,6 +1190,7 @@ Reagents are bought in the prep phase and stored in `GameManager.reagent_invento
 | `_bp_scroll: VBoxContainer` | `@onready $VBox/TabContainer/Blueprints/BpContent` | Blueprint tab content container |
 | `_upgrade_scroll: VBoxContainer` | `@onready $VBox/TabContainer/Upgrades/UpgradeContent` | Upgrade tab content container |
 | `_reagent_scroll: VBoxContainer` | `@onready $VBox/TabContainer/Reagents/ReagentContent` | Reagent tab content container |
+| `_dungeon_btn: Button` | `@onready %DungeonBtn` | Enter Dungeon button; its disabled state follows `GameManager.reputation_changed` |
 
 **Functions:**
 

@@ -5,6 +5,7 @@ const CONFIRM_DIALOG := preload("res://ui/confirm_dialog.tscn")
 @onready var _bp_scroll: VBoxContainer = $VBox/TabContainer/Blueprints/BpContent
 @onready var _upgrade_scroll: VBoxContainer = $VBox/TabContainer/Upgrades/UpgradeContent
 @onready var _reagent_scroll: VBoxContainer = $VBox/TabContainer/Reagents/ReagentContent
+@onready var _dungeon_btn: Button = %DungeonBtn
 
 
 func _ready() -> void:
@@ -15,21 +16,20 @@ func _ready() -> void:
 	for child in _reagent_scroll.get_children():
 		child.queue_free()
 
-	var dungeon_btn: Button = $VBox/BtnBox/DungeonBtn
-	dungeon_btn.disabled = not GameManager.is_dungeon_unlocked()
-	dungeon_btn.tooltip_text = "Requires 150 reputation"
+	_dungeon_btn.disabled = not GameManager.is_dungeon_unlocked()
+	_dungeon_btn.tooltip_text = "Requires 150 reputation"
 	$VBox/BtnBox/QuitBtn.pressed.connect(_on_quit_pressed)
 	$VBox/BtnBox/SessionBtn.pressed.connect(EventBus.prep_start_session.emit)
-	dungeon_btn.pressed.connect(EventBus.prep_enter_dungeon.emit)
+	_dungeon_btn.pressed.connect(EventBus.prep_enter_dungeon.emit)
 	$VBox/DebugBtn.pressed.connect(_debug_unlock_all)
-	GameManager.gold_changed.connect(func(_v): if is_instance_valid(self): _refresh_all())
-	GameManager.blueprint_added.connect(func(_v): if is_instance_valid(self): _refresh_blueprints())
-	GameManager.upgrade_added.connect(func(_v): if is_instance_valid(self): _refresh_upgrades())
-	GameManager.reagent_count_changed.connect(func(_v, _c): if is_instance_valid(self): _refresh_reagents())
-	GameManager.reputation_changed.connect(func(v):
-		if is_instance_valid(dungeon_btn):
-			dungeon_btn.disabled = v < 150
-	)
+	# Bound methods, not lambdas: Godot drops a connection when the callable's
+	# object is freed, and a lambda that never touches self has no object, so
+	# its connection would outlive the screen.
+	GameManager.gold_changed.connect(_on_gold_changed)
+	GameManager.blueprint_added.connect(_on_blueprint_added)
+	GameManager.upgrade_added.connect(_on_upgrade_added)
+	GameManager.reagent_count_changed.connect(_on_reagent_count_changed)
+	GameManager.reputation_changed.connect(_on_reputation_changed)
 	_refresh_all()
 
 
@@ -43,6 +43,26 @@ func _on_quit_pressed() -> void:
 		Callable(),
 		"Quit",
 	)
+
+
+func _on_gold_changed(_value: int) -> void:
+	_refresh_all()
+
+
+func _on_blueprint_added(_id: String) -> void:
+	_refresh_blueprints()
+
+
+func _on_upgrade_added(_id: String) -> void:
+	_refresh_upgrades()
+
+
+func _on_reagent_count_changed(_id: String, _count: int) -> void:
+	_refresh_reagents()
+
+
+func _on_reputation_changed(points: int) -> void:
+	_dungeon_btn.disabled = points < 150
 
 
 func try_purchase(type: String, id: String) -> bool:
