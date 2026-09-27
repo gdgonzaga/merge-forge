@@ -43,16 +43,19 @@ func test_ghost_span_is_empty_without_incoming_damage() -> void:
 	assert_float(span.x).is_equal(span.y)
 
 
-func test_line_width_grows_with_share_of_target_hp() -> void:
-	# 4 px for nothing, 18 px for a hit that takes all the HP left.
-	assert_float(LINES.line_width(0, 100)).is_equal_approx(4.0, 0.001)
-	assert_float(LINES.line_width(50, 100)).is_equal_approx(11.0, 0.001)
-	assert_float(LINES.line_width(100, 100)).is_equal_approx(18.0, 0.001)
+func test_line_thickness_steps_one_block_per_quarter_of_target_hp() -> void:
+	assert_int(LINES.line_thickness(0, 100)).is_equal(1)
+	assert_int(LINES.line_thickness(24, 100)).is_equal(1)
+	assert_int(LINES.line_thickness(25, 100)).is_equal(2)
+	assert_int(LINES.line_thickness(50, 100)).is_equal(3)
+	assert_int(LINES.line_thickness(74, 100)).is_equal(3)
+	assert_int(LINES.line_thickness(75, 100)).is_equal(4)
+	assert_int(LINES.line_thickness(100, 100)).is_equal(4)
 
 
-func test_line_width_is_clamped_for_overkill_and_zero_hp() -> void:
-	assert_float(LINES.line_width(150, 100)).is_equal_approx(18.0, 0.001)
-	assert_float(LINES.line_width(5, 0)).is_equal_approx(18.0, 0.001)
+func test_line_thickness_is_clamped_for_overkill_and_zero_hp() -> void:
+	assert_int(LINES.line_thickness(150, 100)).is_equal(4)
+	assert_int(LINES.line_thickness(5, 0)).is_equal(4)
 
 
 func test_windup_progress_stretches_to_the_landing_delay() -> void:
