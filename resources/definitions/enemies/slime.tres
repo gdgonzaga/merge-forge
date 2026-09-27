@@ -18,12 +18,12 @@ drop_count = {
 "min": 2.0
 }
 drop_pool = Array[Dictionary]([{
-"item_id": "iron_ore",
-"weight": 2.0
-}, {
 "item_id": "herb_bundle",
-"weight": 2.0
+"weight": 3.0
 }, {
-"item_id": "refined_potion",
-"weight": 2.0
+"item_id": "herbal_tonic",
+"weight": 1.0
+}, {
+"item_id": "firecracker",
+"weight": 1.0
 }])

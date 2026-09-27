@@ -166,7 +166,7 @@ Transitions:
 | Attack type | Melee |
 | Attack damage | 3 per 1s windup |
 | Crit | 15%, "Slam": 12 damage after a 2s windup |
-| Drop pool | `[{item_id: "iron_ore", weight: 2}, {item_id: "herb_bundle", weight: 2}, {item_id: "refined_potion", weight: 2}]` |
+| Drop pool | `[{item_id: "herb_bundle", weight: 3}, {item_id: "herbal_tonic", weight: 1}, {item_id: "firecracker", weight: 1}]` |
 | Drop count | 2–3 |
 
 **Cannot do:** Cannot move, cannot buff itself.
@@ -189,7 +189,7 @@ Transitions:
 | Attack type | Melee |
 | Attack damage | 7 per 1s windup |
 | Crit | 15%, "Smash": 28 damage after a 2s windup |
-| Drop pool | `[{item_id: "iron_ore", weight: 1}, {item_id: "iron_ingot", weight: 2}, {item_id: "herb_bundle", weight: 1}, {item_id: "refined_potion", weight: 2}]` |
+| Drop pool | `[{item_id: "iron_plate", weight: 2}, {item_id: "herb_bundle", weight: 2}, {item_id: "herbal_tonic", weight: 1}]` |
 | Drop count | 3–4 |
 
 **Cannot do:** Cannot move, cannot buff itself.
@@ -213,7 +213,7 @@ Transitions:
 | Attack type | Missile |
 | Attack damage | 5 per 1s windup, to the weakest member |
 | Crit | 15%, "Arrow": 20 damage after a 2s windup |
-| Drop pool | `[{item_id: "iron_ore", weight: 2}, {item_id: "herb_bundle", weight: 1}, {item_id: "refined_potion", weight: 2}]` |
+| Drop pool | `[{item_id: "firecracker", weight: 3}, {item_id: "bomb", weight: 1}, {item_id: "herb_bundle", weight: 1}]` |
 | Drop count | 2–3 |
 
 **Cannot do:** Cannot move, cannot buff itself.
@@ -390,32 +390,41 @@ Transitions:
 
 ### Item Catalog (MVP)
 
-All items are `.tres` definitions in `resources/definitions/items/`. 2 families with merge chains defined in `recipes.json`: 7 base items, plus 2 usable items, 1 variant item, and 1 reagent (11 MVP items total).
+All items are `.tres` definitions in `resources/definitions/items/`, with merge chains in `recipes.json` and fire variants in `reagent_combos.json`. Three families, one role each in the dungeon: herbs heal, metal buffs, powder damages. Tier 1 is always a raw material; tiers 2 to 4 are dungeon-usable, and enemies drop only usable items. Effect values are starting points for playtesting.
 
-**Metal family:**
+Effects in *italics* are defined but not applied yet: CombatEngine only runs `heal` and `buff_attack`, and only party members accept drops, so using such an item consumes it with no effect until the engine supports it.
 
-| item_id | Name | Gold Value | Notes |
-|---------|------|------------|-------|
-| iron_ore | Iron Ore | 5 | Base material. Crates and enemy drops. |
-| iron_ingot | Iron Ingot | 15 | 3× iron_ore merge. |
-| iron_plate | Iron Plate | 40 | 3× iron_ingot merge. Blueprint-gated (bp_iron_plate). |
-| sword | Sword | 100 | 3× iron_plate merge. Blueprint-gated (bp_sword). |
+**Herb family (healing):**
 
-**Herb family:**
+| item_id | Name | Gold | Source | Dungeon effect (party-individual) |
+|---------|------|------|--------|------------------|
+| herb_leaf | Herb Leaf | 5 | Crates | Raw |
+| herb_bundle | Herb Bundle | 15 | 3x herb_leaf; drops | Heal 10 |
+| herbal_tonic | Herbal Tonic | 40 | 3x herb_bundle; drops | Heal 30 |
+| healing_potion | Healing Potion | 40 | 3x herbal_tonic (bp_healing_potion) | Heal 90 |
+| battle_elixir | Battle Elixir | 50 | 3x herbal_tonic (bp_battle_elixir) | *Next 3 attacks crit* |
+| phoenix_draught | Phoenix Draught | 200 | 3x herbal_tonic + fire_essence (bp_phoenix_draught) | *Revive a KO'd member at 50% HP* |
 
-| item_id | Name | Gold Value | Usable | Notes |
-|---------|------|------------|--------|-------|
-| herb_leaf | Herb Leaf | 5 | No | Base material. Crates and enemy drops. |
-| herb_bundle | Herb Bundle | 15 | No | 3× herb_leaf merge. |
-| refined_potion | Refined Potion | 40 | No | 3× herb_bundle merge. |
-| healing_potion | Healing Potion | 40 | Yes | 3× refined_potion merge. Blueprint-gated (bp_healing_potion). Effect: heal 40 HP. |
-| battle_elixir | Battle Elixir | 50 | Yes | 3× refined_potion merge. Blueprint-gated (bp_battle_elixir). Effect: +5 ATK for 10s. |
+**Metal family (buffs):**
 
-**Variant items (reagent combos):**
+| item_id | Name | Gold | Source | Dungeon effect (party-individual) |
+|---------|------|------|--------|------------------|
+| iron_ore | Iron Ore | 5 | Crates | Raw |
+| iron_ingot | Iron Ingot | 15 | 3x iron_ore | Raw |
+| iron_plate | Iron Plate | 40 | 3x iron_ingot (bp_iron_plate); drops | *25 HP absorb shield* |
+| sword | Sword | 100 | 3x iron_plate (bp_sword) | +4 ATK for 20s |
+| iron_shield | Iron Shield | 100 | 3x iron_plate (bp_iron_shield) | *60 HP absorb shield* |
+| flame_sword | Flame Sword | 200 | 3x iron_plate + fire_essence (bp_flame_sword) | +8 ATK for 20s |
 
-| item_id | Name | Gold Value | Base Item | Reagent | Blueprint |
-|---------|------|------------|-----------|---------|-----------|
-| flame_sword | Flame Sword | 200 | iron_plate | fire_essence | bp_flame_sword |
+**Powder family (damage):**
+
+| item_id | Name | Gold | Source | Dungeon effect |
+|---------|------|------|--------|------------------|
+| blast_powder | Blast Powder | 5 | None yet (planned crate) | Raw |
+| firecracker | Firecracker | 15 | 3x blast_powder; drops | *15 damage to one enemy* |
+| bomb | Bomb | 40 | 3x firecracker (bp_bomb); drops | *45 damage to one enemy* |
+| cluster_bomb | Cluster Bomb | 100 | 3x bomb (bp_cluster_bomb) | *30 damage to every enemy* |
+| fire_bomb | Fire Bomb | 200 | 3x bomb + fire_essence (bp_fire_bomb) | *40 damage to every enemy* |
 
 **Reagent:**
 
@@ -673,8 +682,13 @@ For reagent variants (items with entries in reagent_combos.json), see Reagent Va
 | Iron Plate | 30g | Recipe | iron_ingot → iron_plate |
 | Sword | 50g | Recipe | iron_plate → sword |
 | Staff | 30g | Recipe | wood_shaft → staff *(deferred — Wood family)* |
-| Healing Potion | 30g | Recipe | refined_potion → healing_potion |
-| Battle Elixir | 30g | Recipe | refined_potion → battle_elixir |
+| Healing Potion | 30g | Recipe | herbal_tonic → healing_potion |
+| Battle Elixir | 30g | Recipe | herbal_tonic → battle_elixir |
+| Iron Shield | 150g | Recipe | iron_plate → iron_shield |
+| Bomb | 100g | Recipe | firecracker → bomb |
+| Cluster Bomb | 200g | Recipe | bomb → cluster_bomb |
+| Phoenix Draught | 200g | Variant | herbal_tonic + fire_essence → phoenix_draught |
+| Fire Bomb | 250g | Variant | bomb + fire_essence → fire_bomb |
 | Wand | 50g | Recipe | magic_focus → wand *(deferred — Wood family)* |
 | Flame Sword | 100g | Variant | iron_plate + fire_essence → flame_sword |
 | Flame Staff | 100g | Variant | staff + fire_essence → flame_staff *(deferred — Wood family)* |
@@ -853,6 +867,7 @@ Combat tick (every 1 second):
 | 2026-09-27 | Content lives only in `.tres` definitions | The `data/items.json`, `party.json` and `enemies.json` fallback copies are gone. The Android export listed files by hand and shipped no definitions, so phones silently ran on the JSON copies; it now exports all resources minus tmp/test/docs/tools. Board saves store item ids only (a sprite texture can't go through JSON, so reloaded boards had lost their icons); `SAVE_VERSION` 3. |
 | 2026-09-27 | Every attack winds up; crits replace heavy attacks | Every attack now winds up (1 s) with a visible line, so every hit is readable before it lands. Heavy attacks are gone; instead each windup rolls a 15% crit (2x windup, 4x damage: 2x DPS with a longer warning), shown gold from the start. Multi-target attacks removed: missile now hits the weakest unit instead of splitting. Line width follows the hit's share of the target's current HP. Retune (sim medians): party ATK Fighter 11, Mage 14, Healer 4 (Mage > Fighter > Healer); Slime 3, Goblin 7, Archer 5. No items: wipe in encounter 3 (~89%); one potion: ~67% clear, usually with a KO; two potions: ~98% clear, no KOs; combat ~23-26 s. |
 | 2026-09-27 | Telegraph lines and HP ghost instead of labels | The "Smash: Fighter in 2" label and the hidden target marker resized the unit rows and pushed the board down. Replaced with a line from enemy to target whose fill is the countdown (red when lethal, width by damage) and a ghost chunk on the target's HP bar. Party cards widened (128 px sprites, 270 px HP bars, HP numbers, 32 px buff text); a fixed gap between the party and enemy rows gives the lines room; dead enemies keep their slot. |
+| 2026-09-28 | Dungeon item roles and usable-only drops | Herbs heal, metal buffs, powder (new family) damages. Tier 1 stays raw; tiers 2 to 4 are dungeon-usable, and enemy drop pools hold only usable items (Slime: herbs, Archer: powder, Goblin: plates and herbs). refined_potion renamed herbal_tonic (`SAVE_VERSION` 4). Fire essence now makes phoenix_draught from tonics instead of a Healing Potion from herb bundles, which skipped a tier and bp_healing_potion. absorb, crit_charges, revive, damage and enemy targets are defined but not implemented in CombatEngine yet. The old balance targets no longer hold (heals now drop directly); re-sim before tuning. |
 
 ---
 

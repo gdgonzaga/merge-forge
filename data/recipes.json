@@ -13,7 +13,8 @@
 	},
 	"iron_plate": {
 		"results": [
-			{ "result_id": "sword", "blueprint_required": "bp_sword" }
+			{ "result_id": "sword", "blueprint_required": "bp_sword" },
+			{ "result_id": "iron_shield", "blueprint_required": "bp_iron_shield" }
 		],
 		"count_required": 3
 	},
@@ -25,14 +26,32 @@
 	},
 	"herb_bundle": {
 		"results": [
-			{ "result_id": "refined_potion", "blueprint_required": "" }
+			{ "result_id": "herbal_tonic", "blueprint_required": "" }
 		],
 		"count_required": 3
 	},
-	"refined_potion": {
+	"herbal_tonic": {
 		"results": [
 			{ "result_id": "healing_potion", "blueprint_required": "bp_healing_potion" },
 			{ "result_id": "battle_elixir", "blueprint_required": "bp_battle_elixir" }
+		],
+		"count_required": 3
+	},
+	"blast_powder": {
+		"results": [
+			{ "result_id": "firecracker", "blueprint_required": "" }
+		],
+		"count_required": 3
+	},
+	"firecracker": {
+		"results": [
+			{ "result_id": "bomb", "blueprint_required": "bp_bomb" }
+		],
+		"count_required": 3
+	},
+	"bomb": {
+		"results": [
+			{ "result_id": "cluster_bomb", "blueprint_required": "bp_cluster_bomb" }
 		],
 		"count_required": 3
 	}

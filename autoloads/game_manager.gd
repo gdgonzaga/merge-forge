@@ -9,7 +9,7 @@ signal reagent_count_changed(id: String, count: int)
 signal grid_size_changed(cols: int, rows: int)
 
 const DEFAULT_GOLD := 50
-const SAVE_VERSION := 3
+const SAVE_VERSION := 4
 const DEFAULT_DESPAWN_TIME := 12.0
 const DEFAULT_CRATE_COST_MULTIPLIER := 1.0
 

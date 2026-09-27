@@ -2,21 +2,20 @@
 
 [ext_resource type="Script" path="res://resources/definitions/effect_definition.gd" id="1_effect"]
 [ext_resource type="Script" path="res://resources/definitions/item_definition.gd" id="2_item"]
-[ext_resource type="Texture2D" path="res://resources/sprites/items/sword.png" id="3_sprite"]
+[ext_resource type="Texture2D" path="res://resources/sprites/items/cluster_bomb.png" id="3_sprite"]
 
 [sub_resource type="Resource" id="Resource_effect"]
 script = ExtResource("1_effect")
-type = "buff_attack"
-value = 4
-duration = 20
+type = "damage"
+value = 30
 
 [resource]
 script = ExtResource("2_item")
-id = "sword"
-name = "Sword"
-family = "metal"
+id = "cluster_bomb"
+name = "Cluster Bomb"
+family = "powder"
 gold_value = 100
 dungeon_usable = true
-dungeon_use_target = "party-individual"
+dungeon_use_target = "enemy-all"
 effect = SubResource("Resource_effect")
 sprite = ExtResource("3_sprite")

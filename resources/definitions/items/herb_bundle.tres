@@ -1,12 +1,21 @@
 [gd_resource type="Resource" script_class="ItemDefinition" format=3]
 
-[ext_resource type="Script" path="res://resources/definitions/item_definition.gd" id="1_t28pw"]
-[ext_resource type="Texture2D" path="res://resources/sprites/items/herb_bundle.png" id="2_wc54p"]
+[ext_resource type="Script" path="res://resources/definitions/effect_definition.gd" id="1_effect"]
+[ext_resource type="Script" path="res://resources/definitions/item_definition.gd" id="2_item"]
+[ext_resource type="Texture2D" path="res://resources/sprites/items/herb_bundle.png" id="3_sprite"]
+
+[sub_resource type="Resource" id="Resource_effect"]
+script = ExtResource("1_effect")
+type = "heal"
+value = 10
 
 [resource]
-script = ExtResource("1_t28pw")
+script = ExtResource("2_item")
 id = "herb_bundle"
 name = "Herb Bundle"
 family = "herb"
 gold_value = 15
-sprite = ExtResource("2_wc54p")
+dungeon_usable = true
+dungeon_use_target = "party-individual"
+effect = SubResource("Resource_effect")
+sprite = ExtResource("3_sprite")

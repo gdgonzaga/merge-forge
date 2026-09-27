@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bshvdbc04m6sv"
-path="res://.godot/imported/refined_potion.png-8462b6adfebb14ced61286d861ce6e18.ctex"
+uid="uid://dmlvh0j366off"
+path="res://.godot/imported/phoenix_draught.png-986c352d7f78cced3c8739461823517a.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://resources/sprites/items/refined_potion.png"
-dest_files=["res://.godot/imported/refined_potion.png-8462b6adfebb14ced61286d861ce6e18.ctex"]
+source_file="res://resources/sprites/items/phoenix_draught.png"
+dest_files=["res://.godot/imported/phoenix_draught.png-986c352d7f78cced3c8739461823517a.ctex"]
 
 [params]
 

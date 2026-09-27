@@ -67,3 +67,31 @@ func test_mutating_returned_merge_option_leaves_cache_intact() -> void:
 func test_get_item_data_missing_returns_empty() -> void:
 	var data := RecipeResolver.get_item_data("__does_not_exist")
 	assert_dict(data).is_empty()
+
+
+# Catches a renamed or removed item still named by recipes or reagent combos.
+func test_recipes_and_combos_reference_defined_items_and_blueprints() -> void:
+	for source_id: String in RecipeResolver.recipes:
+		_assert_item_defined(source_id, "recipe source")
+		for result: Dictionary in RecipeResolver.recipes[source_id].get("results", []):
+			_assert_item_defined(result.get("result_id", ""), "result of %s" % source_id)
+			_assert_blueprint_defined(result.get("blueprint_required", ""), source_id)
+	for base_id: String in RecipeResolver.reagent_combos:
+		_assert_item_defined(base_id, "combo base")
+		for combo: Dictionary in RecipeResolver.reagent_combos[base_id]:
+			_assert_item_defined(combo.get("variant_item_id", ""), "variant of %s" % base_id)
+			_assert_blueprint_defined(combo.get("blueprint_required", ""), base_id)
+			assert_bool(RecipeResolver.reagents.has(combo.get("reagent_id", ""))) \
+				.override_failure_message("%s combo names unknown reagent" % base_id).is_true()
+
+
+func _assert_item_defined(item_id: String, role: String) -> void:
+	assert_bool(RecipeResolver.items.has(item_id)) \
+		.override_failure_message("%s '%s' is not a defined item" % [role, item_id]).is_true()
+
+
+func _assert_blueprint_defined(bp_id: String, source_id: String) -> void:
+	if bp_id == "":
+		return
+	assert_bool(RecipeResolver.blueprints.has(bp_id)) \
+		.override_failure_message("%s needs unknown blueprint '%s'" % [source_id, bp_id]).is_true()

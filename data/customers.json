@@ -34,7 +34,7 @@
 			"role": "Alchemist",
 			"portrait_id": "res://resources/sprites/portraits/customer_04.png",
 			"orders": [
-				{ "item_id": "refined_potion", "quantity": 2, "gold_reward": 80 },
+				{ "item_id": "herbal_tonic", "quantity": 2, "gold_reward": 80 },
 				{ "item_id": "iron_plate", "quantity": 1, "gold_reward": 40 }
 			]
 		},

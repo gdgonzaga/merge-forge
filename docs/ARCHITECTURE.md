@@ -155,8 +155,9 @@ These are emitted directly on GameManager. Connect via `GameManager.gold_changed
 
 The GDD lists effect types (heal, buff_attack). Party stats are confirmed (see the PartyMemberDefinition schema in the Dungeon Run subsystem). These are **consumable items** the player crafts and uses during dungeon runs — separate from party abilities (deferred). Usable items are `ItemDefinition` resources with `dungeon_usable = true`, a `dungeon_use_target`, and an `EffectDefinition`:
 
-- `healing_potion.tres`: target `party-individual`, effect `{type: "heal", value: 40}`
-- `battle_elixir.tres`: target `party-individual`, effect `{type: "buff_attack", value: 5, duration: 10}`
+- Targets: `party-individual`, `enemy-individual`, `enemy-all`. Only party members accept drops so far.
+- Effect types (`value` meaning in `effect_definition.gd`): `heal`, `buff_attack` (applied by CombatEngine); `absorb`, `crit_charges`, `revive`, `damage` (defined on items, not applied yet).
+- Tier 1 items are raw materials; tiers 2 to 4 are usable. Enemy drop pools hold only usable items. The per-item values are in the GDD Item Catalog.
 
 ---
 

@@ -1,9 +1,9 @@
 {
-	"herb_bundle": [
+	"herbal_tonic": [
 		{
-			"variant_item_id": "healing_potion",
+			"variant_item_id": "phoenix_draught",
 			"reagent_id": "fire_essence",
-			"blueprint_required": ""
+			"blueprint_required": "bp_phoenix_draught"
 		}
 	],
 	"iron_plate": [
@@ -11,6 +11,13 @@
 			"variant_item_id": "flame_sword",
 			"reagent_id": "fire_essence",
 			"blueprint_required": "bp_flame_sword"
+		}
+	],
+	"bomb": [
+		{
+			"variant_item_id": "fire_bomb",
+			"reagent_id": "fire_essence",
+			"blueprint_required": "bp_fire_bomb"
 		}
 	]
 }

@@ -5,17 +5,38 @@ extends TestBase
 # as valid Resource instances with Texture2D sprites.
 
 
+const USE_TARGETS: Array[String] = ["party-individual", "enemy-individual", "enemy-all"]
+
+
 func test_definition_library_loads_items() -> void:
-	var item_def: ItemDefinition = DefinitionLibrary.get_item("healing_potion")
-	assert_object(item_def).is_not_null()
-	assert_str(item_def.id).is_equal("healing_potion")
-	assert_str(item_def.name).is_equal("Healing Potion")
-	assert_bool(item_def.dungeon_usable).is_true()
-	assert_object(item_def.effect).is_not_null()
-	assert_str(item_def.effect.type).is_equal("heal")
-	assert_int(item_def.effect.value).is_equal(40)
-	assert_object(item_def.sprite).is_not_null()
-	assert_bool(item_def.sprite is Texture2D).is_true()
+	var items: Dictionary = DefinitionLibrary.get_all_items()
+	assert_bool(items.is_empty()).is_false()
+	for item_id: String in items:
+		var item_def: ItemDefinition = items[item_id]
+		assert_str(item_def.id).is_equal(item_id)
+		assert_str(item_def.name).is_not_empty()
+		assert_bool(item_def.sprite is Texture2D).override_failure_message("%s has no sprite" % item_id).is_true()
+
+
+func test_usable_items_have_an_effect_and_a_known_target() -> void:
+	for item_def: ItemDefinition in DefinitionLibrary.get_all_items().values():
+		if not item_def.dungeon_usable:
+			continue
+		assert_object(item_def.effect).override_failure_message("%s has no effect" % item_def.id).is_not_null()
+		assert_str(item_def.effect.type).is_not_empty()
+		assert_bool(item_def.dungeon_use_target in USE_TARGETS) \
+			.override_failure_message("%s has target '%s'" % [item_def.id, item_def.dungeon_use_target]).is_true()
+
+
+# Dungeon drops are ready to use: raw materials never drop.
+func test_enemy_drops_are_defined_dungeon_usable_items() -> void:
+	for enemy_def: EnemyDefinition in DefinitionLibrary.get_all_enemies().values():
+		for entry: Dictionary in enemy_def.drop_pool:
+			var drop_id: String = entry.get("item_id", "")
+			var item_def: ItemDefinition = DefinitionLibrary.get_item(drop_id)
+			assert_object(item_def).override_failure_message("%s drops unknown '%s'" % [enemy_def.id, drop_id]).is_not_null()
+			assert_bool(item_def.dungeon_usable) \
+				.override_failure_message("%s drops non-usable '%s'" % [enemy_def.id, drop_id]).is_true()
 
 
 func test_definition_library_loads_party_members() -> void:
