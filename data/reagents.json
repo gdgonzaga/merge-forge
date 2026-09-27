@@ -1,8 +1,0 @@
-{
-	"fire_essence": {
-		"name": "Fire Essence",
-		"cost": 75,
-		"icon": "res://resources/sprites/items/fire_essence.png",
-		"description": "A crackling ember used to forge flame-infused weapons."
-	}
-}
