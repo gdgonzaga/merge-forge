@@ -59,8 +59,8 @@ func play_cast() -> void:
 	_unit.play_cast()
 
 
-func play_hit(is_heavy: bool) -> void:
-	_unit.play_hit(is_heavy)
+func play_hit(is_crit: bool) -> void:
+	_unit.play_hit(is_crit)
 
 
 func play_walk(offset_y: float) -> void:

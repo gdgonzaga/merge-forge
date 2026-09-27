@@ -1,8 +1,8 @@
 extends TestBase
 
-# The pure maths behind combat lines: the windup countdown that drives a heavy
-# line's fill, the HP ghost span, line width steps, attack lanes (A to B and B
-# to A must never share a lane) and tracer comets.
+# The pure maths behind combat lines: the windup countdown that drives a line's
+# fill, the HP ghost span, line width, and attack lanes (A to B and B to A must
+# never share a lane).
 
 const ENGINE := preload("res://dungeon/combat_engine.gd")
 const HP_GHOST := preload("res://dungeon/hp_ghost.gd")
@@ -11,7 +11,7 @@ const LANE := preload("res://dungeon/combat_lane.gd")
 
 
 func test_windup_progress_across_a_two_tick_windup() -> void:
-	# Windup starts: heavy_in 2, the timer just restarted.
+	# Windup starts: 2 ticks left, the timer just restarted.
 	assert_float(ENGINE.windup_progress(2, 2, 1.0, 1.0, 0.0)).is_equal_approx(0.0, 0.001)
 	assert_float(ENGINE.windup_progress(2, 2, 0.5, 1.0, 0.0)).is_equal_approx(0.25, 0.001)
 	assert_float(ENGINE.windup_progress(1, 2, 1.0, 1.0, 0.0)).is_equal_approx(0.5, 0.001)
@@ -43,12 +43,16 @@ func test_ghost_span_is_empty_without_incoming_damage() -> void:
 	assert_float(span.x).is_equal(span.y)
 
 
-func test_line_width_steps_by_share_of_target_max_hp() -> void:
-	assert_float(LINES.line_width(10, 100)).is_equal(8.0)
-	assert_float(LINES.line_width(20, 100)).is_equal(14.0)
-	assert_float(LINES.line_width(39, 100)).is_equal(14.0)
-	assert_float(LINES.line_width(40, 100)).is_equal(20.0)
-	assert_float(LINES.line_width(12, 30)).is_equal(20.0)
+func test_line_width_grows_with_share_of_target_hp() -> void:
+	# 4 px for nothing, 18 px for a hit that takes all the HP left.
+	assert_float(LINES.line_width(0, 100)).is_equal_approx(4.0, 0.001)
+	assert_float(LINES.line_width(50, 100)).is_equal_approx(11.0, 0.001)
+	assert_float(LINES.line_width(100, 100)).is_equal_approx(18.0, 0.001)
+
+
+func test_line_width_is_clamped_for_overkill_and_zero_hp() -> void:
+	assert_float(LINES.line_width(150, 100)).is_equal_approx(18.0, 0.001)
+	assert_float(LINES.line_width(5, 0)).is_equal_approx(18.0, 0.001)
 
 
 func test_windup_progress_stretches_to_the_landing_delay() -> void:
@@ -80,10 +84,3 @@ func test_lane_bow_is_clamped() -> void:
 	assert_vector(LANE.control(Vector2(0, 100), Vector2.ZERO)).is_equal(Vector2(40, 50))
 	assert_vector(LANE.control(Vector2(0, 1000), Vector2.ZERO)).is_equal(Vector2(86, 500))
 
-
-func test_tracer_span_runs_from_attacker_into_target() -> void:
-	assert_vector(LANE.tracer_span(0.0, 0.2, 0.2)).is_equal(Vector2(0, 0))
-	# u 0.5 eases to 0.75; head 0.75 * 1.2 = 0.9, tail 0.2 behind.
-	assert_vector(LANE.tracer_span(0.1, 0.2, 0.2)).is_equal_approx(Vector2(0.7, 0.9), Vector2(0.001, 0.001))
-	assert_vector(LANE.tracer_span(0.2, 0.2, 0.2)).is_equal(Vector2(1, 1))
-	assert_vector(LANE.tracer_span(0.5, 0.2, 0.2)).is_equal(Vector2(1, 1))

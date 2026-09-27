@@ -14,6 +14,10 @@ func update_hp(current: int, max_hp: int) -> void:
 	_unit.update_hp(current, max_hp)
 
 
+func get_displayed_hp() -> int:
+	return _unit.get_displayed_hp()
+
+
 func get_unit() -> Control:
 	return _unit
 
@@ -30,8 +34,8 @@ func play_cast() -> void:
 	_unit.play_cast()
 
 
-func play_hit(is_heavy: bool) -> void:
-	_unit.play_hit(is_heavy)
+func play_hit(is_crit: bool) -> void:
+	_unit.play_hit(is_crit)
 
 
 # Fades out but keeps its slot, so the surviving enemies don't slide over; the

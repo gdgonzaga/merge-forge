@@ -3,7 +3,6 @@ extends Node
 var items: Dictionary = {}
 var party: Dictionary = {}
 var enemies: Dictionary = {}
-var attacks: Dictionary = {}
 var effects: Dictionary = {}
 
 
@@ -15,13 +14,11 @@ func load_all_definitions() -> void:
 	items.clear()
 	party.clear()
 	enemies.clear()
-	attacks.clear()
 	effects.clear()
 
 	_load_directory("res://resources/definitions/items", items)
 	_load_directory("res://resources/definitions/party", party)
 	_load_directory("res://resources/definitions/enemies", enemies)
-	_load_directory("res://resources/definitions/attacks", attacks)
 	_load_directory("res://resources/definitions/effects", effects)
 	_check_required_loaded()
 
@@ -80,7 +77,3 @@ func get_enemy(id: String) -> EnemyDefinition:
 
 func get_all_enemies() -> Dictionary:
 	return enemies
-
-
-func get_attack(id: String) -> AttackDefinition:
-	return attacks.get(id, null)

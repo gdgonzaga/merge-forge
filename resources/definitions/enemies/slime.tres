@@ -1,23 +1,17 @@
 [gd_resource type="Resource" script_class="EnemyDefinition" format=3]
 
-[ext_resource type="Script" path="res://resources/definitions/attack_definition.gd" id="1_o43g7"]
 [ext_resource type="Script" path="res://resources/definitions/enemy_definition.gd" id="2_vwihb"]
 [ext_resource type="Texture2D" path="res://resources/sprites/enemies/slime.png" id="3_ew2m5"]
-
-[sub_resource type="Resource" id="Resource_y4w3f"]
-script = ExtResource("1_o43g7")
-name = "Slam"
-interval = 5
-windup = 3
-damage = 12
 
 [resource]
 script = ExtResource("2_vwihb")
 id = "slime"
 name = "Slime"
 max_hp = 90
-attack = 2
-heavy_attack = SubResource("Resource_y4w3f")
+attack = 3
+windup = 1
+crit_chance = 0.15
+crit_name = "Slam"
 sprite = ExtResource("3_ew2m5")
 drop_count = {
 "max": 3.0,

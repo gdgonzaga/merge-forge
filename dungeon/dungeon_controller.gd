@@ -13,7 +13,7 @@ var party_data: Array[Dictionary] = []
 var party_members: Array = []
 var enemy_displays: Array = []
 
-# Pause after an encounter is won or lost, so the final volley's tracers,
+# Pause after an encounter is won or lost, so the final volley's hits,
 # numbers and death fades play out before the scene moves on.
 const END_BEAT := 0.8
 
@@ -91,6 +91,9 @@ func _load_party() -> void:
 			"max_hp": data.get("max_hp", 50),
 			"attack": data.get("attack", 10),
 			"attack_type": data["attack_type"],
+			"windup": data["windup"],
+			"crit_chance": data["crit_chance"],
+			"crit_name": data["crit_name"],
 			"member_index": idx,
 		})
 

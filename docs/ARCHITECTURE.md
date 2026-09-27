@@ -44,7 +44,7 @@ Scene transitions are driven by `main.gd` listening to EventBus signals. Main fr
 | ----------------- | ----------------------- | ---------------------------------------------------------------------------------------------------------------- |
 | GameManager       | `game_manager.gd`       | Persistent state: gold, reputation, blueprints, reagent inventory, upgrades, shop board state, grid size         |
 | EventBus          | `event_bus.gd`          | Cross-scene signal relay (see registry below)                                                                    |
-| DefinitionLibrary | `definition_library.gd` | Loads and indexes all `.tres` definition resources (items, party, enemies, attacks, effects). Lists folders with `ResourceLoader.list_directory` (works in exports, where `.tres` files are remapped). Every definition needs an `id`; an empty items/party/enemies catalog is a hard error, since there is no fallback content. |
+| DefinitionLibrary | `definition_library.gd` | Loads and indexes all `.tres` definition resources (items, party, enemies, effects). Lists folders with `ResourceLoader.list_directory` (works in exports, where `.tres` files are remapped). Every definition needs an `id`; an empty items/party/enemies catalog is a hard error, since there is no fallback content. |
 | RecipeResolver    | `recipe_resolver.gd`    | Loads recipe/blueprint/reagent/crate/upgrade JSON data. Filters merge options by blueprint ownership and reagent availability. Provides crate and pricing data for shop/prep. |
 | SaveManager       | `save_manager.gd`       | Auto-save/load to single JSON file at checkpoints                                                                |
 | AudioManager      | `audio_manager.gd`      | Music playback with crossfade, SFX one-shots                                                                     |
@@ -818,12 +818,12 @@ Crate definitions are fully data-driven. Whatever crates exist in this file are 
 | `dungeon/drop_manager.gd` | Script | Generates enemy drops, places on dungeon board via merge-safe placement. Does NOT own board logic. |
 | `dungeon/party_member.tscn` | Scene | Visual: 300 px wide card with a 128x128 sprite, a 270x24 HP bar, an HP number, an attack-type badge and buff text. Accepts drag-drops of usable items. |
 | `dungeon/enemy_display.tscn` | Scene | Visual: enemy sprite + HP bar + attack-type badge (100x140). No interaction. Fades on death but keeps its slot until the encounter ends. |
-| `dungeon/combat_unit.tscn` | Scene | Reusable unit node with sprite, HP bar (with HP ghost overlay), and animation helpers (directional lunge, cast, hit, walk, death). Sprite and bar sizes are exported so PartyMember can enlarge them. Tracks the HP it displays, which trails the engine until a hit's tracer arrives. |
+| `dungeon/combat_unit.tscn` | Scene | Reusable unit node with sprite, HP bar (with HP ghost overlay), and animation helpers (directional lunge, cast, hit, walk, death). Sprite and bar sizes are exported so PartyMember can enlarge them. Tracks the HP it displays, which trails the engine until a hit plays. Pulses gold while its unit winds up a crit (`play_crit_charge`). |
 | `dungeon/attack_badge.tscn` | Scene | 40x40 sword (melee) or bow (missile) badge. Textures are exports (placeholders: `vfx/slash.png`, `vfx/arrow.png`). |
-| `dungeon/combat_presenter.gd` | Script | Child node created by dungeon_controller. Plays combat from CombatEngine's signals: attacker motions (melee lunges toward the target, missile pulses in place), a tracer per hit, impacts and floating numbers (offset by attacker slot), HP/KO/death visuals. Party volley on the tick, enemy volley `ENEMY_VOLLEY_DELAY` (0.3 s) later. HP bars change when a hit's tracer arrives, not when the engine resolves it. |
-| `dungeon/combat_lane.gd` | Script | Pure lane geometry (RefCounted, static only). Every attack line is shifted and bowed toward the attacker's right, so A-to-B and B-to-A attacks use separate lanes. Also the tracer comet span. |
-| `dungeon/hp_ghost.gd` | Script | On CombatUnit's `HPGhost` node, drawn over the HP bar: the pulsing chunk a telegraphed heavy attack will take (faster pulse when lethal) and the pale trail of HP just lost draining away. |
-| `dungeon/combat_lines.gd` | Script | On `AnimOverlay/CombatLines` in dungeon_run.tscn; draws every attack line on its lane. Heavy telegraphs: each frame, reads CombatEngine state and draws a line from every enemy winding up a heavy attack to its target, filling from the enemy; the hit plays when the fill arrives, `landing_delay` after its tick (a landed line is held at full until then). Red if the telegraphed damage would KO the target (against its displayed HP), orange otherwise; width steps by damage relative to the target's max HP. Tracers: a fixed pool of 24 comets, one per basic hit (`spawn_tracer(side, from, to, missile, on_arrive)`); melee comets are short, fast and solid with a slash head, missile comets longer, slower and dotted with an arrow head; party comets cool, enemy comets warm. Also pushes each party member's incoming heavy damage to its HP ghost. |
+| `dungeon/combat_presenter.gd` | Script | Child node created by dungeon_controller. Plays combat from CombatEngine's signals: attacker motions (melee lunges toward the target, missile pulses in place), impacts and floating numbers (offset by attacker slot), HP/KO/death visuals. Crits add the attacker's `crit_name` popup, gold numbers, a bigger impact and a screen shake; `windup_changed` toggles the attacker's crit charge pulse. Party hits play on the tick, enemy hits `ENEMY_VOLLEY_DELAY` (0.3 s) later. HP bars change when a hit plays, not when the engine resolves it. |
+| `dungeon/combat_lane.gd` | Script | Pure lane geometry (RefCounted, static only). Every attack line is shifted and bowed toward the attacker's right, so A-to-B and B-to-A attacks use separate lanes. |
+| `dungeon/hp_ghost.gd` | Script | On CombatUnit's `HPGhost` node, drawn over the HP bar: the pulsing chunk the attacks winding up at the member will take (faster pulse when lethal) and the pale trail of HP just lost draining away. |
+| `dungeon/combat_lines.gd` | Script | On `AnimOverlay/CombatLines` in dungeon_run.tscn; draws every attack line on its lane. Each frame it reads CombatEngine state and draws a line from every unit winding up an attack (both sides) to its target, filling from the attacker; the hit plays when the fill arrives. Enemy lines stretch to the `landing_delay` beat and a landed one is held at full until its hit plays (`hold(...)`). Width grows from 4 to 18 px with the hit's share of the target's displayed HP (`line_width`). Normal lines are thin and translucent (party cool, enemy warm); crit lines are gold, outlined, shimmer while filling, pulse before landing, ring the target end and put a "!" on the attacker. A hit that would finish the target (counting everything aimed at it) gets a larger ring, and enemy lines turn red. Melee fills are solid with a slash head, missile fills dashed with an arrow head. Also pushes each party member's incoming damage to its HP ghost. |
 | `dungeon/dungeon_vfx.gd` | Script | VFX overlay attached to AnimOverlay in dungeon_run.tscn: floating combat text, slashes, impacts, heal/buff sparkles, screen shake. |
 | `dungeon/dungeon_summary.tscn` | Scene | End-of-dungeon results (cleared or failed). |
 
@@ -866,9 +866,11 @@ Crate definitions are fully data-driven. Whatever crates exist in this file are 
 | `id` | `String` | Unique identifier, required |
 | `name` | `String` | Display name |
 | `max_hp` | `int` | Base HP |
-| `attack_type` | `String` | `"melee"` or `"missile"`; required. Sets who both attacks can reach. Melee reaches only the front member (the lowest party slot still standing, so the next slot takes over when the front falls); missile reaches the whole party. |
-| `attack` | `int` | Basic damage per tick. Melee: all of it to the front member. Missile: `floor(attack / standing_count)` to each standing member, min 1. |
-| `heavy_attack` | `AttackDefinition` | Telegraphed single-target hit: `{name: String, interval: int, windup: int, damage: int}` (a sub-resource; RecipeResolver exposes it as a dictionary). Lands every `interval` ticks; for the last `windup` ticks the target (locked when the windup starts: the front member for melee, the weakest standing member for missile) is shown as a telegraph line from the enemy to that member, plus an HP ghost on the member's bar. Enemies in one encounter are staggered by `HEAVY_STAGGER_TICKS` per spawn slot. |
+| `attack_type` | `String` | `"melee"` or `"missile"`; required. Sets whom each attack hits (always one target). Melee hits the front member (the lowest party slot still standing, so the next slot takes over when the front falls); missile hits the weakest standing member (lowest current HP). |
+| `attack` | `int` | Damage of one normal hit. |
+| `windup` | `int` | Ticks a normal attack winds up before it lands; required (0 fails CombatEngine's check). |
+| `crit_chance` | `float` | 0..1, rolled when each windup starts. A crit winds up `CRIT_WINDUP_MULT` (2) times longer and deals `CRIT_DAMAGE_MULT` (4) times the damage. |
+| `crit_name` | `String` | Pops up over the attacker when a crit lands. |
 | `drop_count` | `Dictionary` | `{min: int, max: int}` number of drops on death |
 | `drop_pool` | `Array[Dictionary]` | Weighted item pool: `{item_id: String, weight: int or float}`. Same structure and algorithm as crate pools. |
 | `sprite` | `Texture2D` | Enemy sprite |
@@ -879,7 +881,7 @@ Crate definitions are fully data-driven. Whatever crates exist in this file are 
 3. Iterate items, accumulating weights — the item whose cumulative range contains the random number is selected
 4. Each roll is independent (same item can drop multiple times from one enemy)
 
-**Example values (as RecipeResolver exposes them):** Goblin is melee, 170 HP, attack 4, Smash `{interval 5, windup 3, damage 30}`; Goblin Archer is missile, 60 HP, attack 3, Arrow `{interval 3, windup 2, damage 12}`. See the `.tres` files for drop pools.
+**Example values:** Goblin is melee, 160 HP, attack 7, windup 1, 15% crit "Smash" (28 after a 2-tick windup); Goblin Archer is missile, 60 HP, attack 5, windup 1, 15% crit "Arrow". See the `.tres` files for drop pools.
 
 ### Definition Schema: PartyMemberDefinition (`resources/definitions/party/*.tres`)
 
@@ -891,11 +893,12 @@ RecipeResolver exposes the party as `party["party_members"]`, an array ordered f
 | `name` | `String` | Display name |
 | `sprite` | `Texture2D` | Chibi sprite |
 | `max_hp` | `int` | Base HP |
-| `attack` | `int` | Damage dealt per tick |
-| `attack_type` | `String` | `"melee"` or `"missile"`; required (the empty default fails CombatEngine's check). Same rule as enemies: melee deals the full attack to the front enemy (lowest alive slot); missile splits it over every alive enemy, min 1. |
+| `attack` | `int` | Damage of one normal hit (plus attack buffs) |
+| `attack_type` | `String` | `"melee"` or `"missile"`; required (the empty default fails CombatEngine's check). Same rule as enemies: melee hits the front enemy (lowest alive slot); missile hits the weakest alive enemy. |
+| `windup`, `crit_chance`, `crit_name` | `int`, `float`, `String` | Same as on enemies; `windup` is required. |
 | `slot_order` | `int` | Party order, front (0) to back |
 
-MVP party: Fighter (slot 0, 120 HP, 14 ATK, melee), Mage (slot 1, 50 HP, 18 ATK, missile), Healer (slot 2, 60 HP, 5 ATK, melee).
+MVP party: Fighter (slot 0, 120 HP, 11 ATK, melee, crit "Cleave"), Mage (slot 1, 50 HP, 14 ATK, missile, crit "Fireball"), Healer (slot 2, 60 HP, 4 ATK, melee, crit "Smite"); all windup 1, 15% crit.
 
 No special abilities for MVP — auto-attack only.
 
@@ -908,11 +911,11 @@ No special abilities for MVP — auto-attack only.
 | `dungeon_summary_dismissed()` | `dungeon_summary.gd` | `main.gd` | Yes | Summary → Prep |
 | `encounter_ended()` | `combat_engine.gd` | `dungeon_controller.gd` | No | Combat End |
 | `enemy_died(enemy_index: int)` | `combat_engine.gd` | `drop_manager.gd` | No | Enemy Death |
-| `member_ko(member_index: int)` | `combat_engine.gd` | (none; the KO greying is shown when the killing hit's tracer arrives) | No | Party KO |
+| `member_ko(member_index: int)` | `combat_engine.gd` | (none; the KO greying is shown when the killing hit plays) | No | Party KO |
 | `party_wiped()` | `combat_engine.gd` | `dungeon_controller.gd` | No | Dungeon Fail |
-| `party_attacked(member_index: int, target_indices: Array[int], damage_per_target: int)` | `combat_engine.gd` | `combat_presenter.gd` | No | Combat Animation |
-| `enemy_attacked(enemy_index: int, attack_type: String, is_heavy: bool, target_indices: Array[int], damage: int)` | `combat_engine.gd` | `combat_presenter.gd` (played `ENEMY_VOLLEY_DELAY` later) | No | Combat Animation |
-| `telegraph_changed(enemy_index: int, target_index: int, turns_remaining: int)` | `combat_engine.gd` | `combat_presenter.gd` (enemy charge pulse only; lines and ghosts are drawn by `combat_lines.gd` from engine state) | No | Combat Telegraph |
+| `party_attacked(member_index: int, target_index: int, damage: int, is_crit: bool)` | `combat_engine.gd` | `combat_presenter.gd` | No | Combat Animation |
+| `enemy_attacked(enemy_index: int, target_index: int, damage: int, is_crit: bool)` | `combat_engine.gd` | `combat_presenter.gd` (played `ENEMY_VOLLEY_DELAY` later) | No | Combat Animation |
+| `windup_changed(side: int, attacker_index: int, target_index: int, is_crit: bool)` | `combat_engine.gd` | `combat_presenter.gd` (crit charge pulse only; lines and ghosts are drawn by `combat_lines.gd` from engine state) | No | Combat Windup |
 | `tick_resolved()` | `combat_engine.gd` | `combat_presenter.gd` (buff timers) | No | Combat |
 | `effect_applied(member_index: int, effect_type: String, amount: int)` | `combat_engine.gd` | `combat_presenter.gd` | No | Item Use |
 
@@ -925,14 +928,15 @@ No special abilities for MVP — auto-attack only.
 3. Progress reaches encounter threshold (e.g. 0.2) → walk timer **stops** → `dungeon_controller.start_encounter(encounter_data[0])`
 4. Dungeon controller spawns enemy display nodes (calling `EnemyDisplay.setup(enemy_data)` on each to load sprites), then calls `combat_engine.start_combat(enemies)` → initializes enemy array, starts 1-second tick timer
 5. **Combat tick** (every 1 second):
-   a. Each active party member attacks by its `attack_type`, using the same `reach` rule as enemies: melee deals its full attack (plus buffs) to the front enemy (lowest alive slot); missile splits it over every enemy still above 0 HP, `floor(attack / count)`, min 1. Enemies die one at a time, front first.
-   b. Each alive enemy counts down its heavy attack. At 0 it deals `heavy_attack.damage` to its locked target (retargeting if that one fell) and resets to `interval`; otherwise it lands its basic attack. Targets follow `attack_type` via `reach`: melee hits the front member (lowest standing slot) with the full `attack`; missile splits `attack` over every standing member and locks heavies onto the weakest one. After every enemy has acted, each one whose countdown is within `windup` locks a target if it has none.
-   c. Check enemy deaths → emit `enemy_died(index)` → dungeon_controller looks up enemy_data from combat_engine → `drop_manager.spawn_drops(enemy_data)` returns drops array → `drop_manager.add_drops_to_board(drops, board)` creates FloatingItems
-   d. Check member KO (HP ≤ 0) → emit `member_ko(index)` (the card greys when the killing hit's tracer arrives)
+   a. Each standing party member counts down its windup. When it ends, the hit lands on the locked target (re-picked if that one fell): `attack` plus buffs, times `CRIT_DAMAGE_MULT` for a crit. Melee targets the front enemy (lowest alive slot), missile the weakest (lowest current HP); every attack hits one target.
+   b. Enemy deaths are marked, then each alive enemy does the same against the party.
+   c. For each death → emit `enemy_died(index)` → dungeon_controller looks up enemy_data from combat_engine → `drop_manager.spawn_drops(enemy_data)` returns drops array → `drop_manager.add_drops_to_board(drops, board)` creates FloatingItems
+   d. Check member KO (HP ≤ 0) → emit `member_ko(index)` (the card greys when the killing hit plays)
    e. If all enemies dead → emit `encounter_ended()` → resume walking
    f. If all members KO → emit `party_wiped()` → go to step 9 (fail)
    g. Tick all buffs: reduce duration, remove expired
-   h. Emit `tick_resolved()` → combat_presenter refreshes buff indicators. HP bars aren't refreshed here: each unit's bar updates when the tracer of a hit on it arrives (party volley on the tick, enemy volley 0.3 s later). Telegraph lines and HP ghosts read engine state every frame (`combat_lines.gd`).
+   h. Every standing unit without a windup starts one (rolling its crit and locking a target); a winding unit whose target fell retargets. This runs after all hits, so nothing locks onto a unit dropped this tick. `start_combat` does the same for the first windups.
+   i. Emit `tick_resolved()` → combat_presenter refreshes buff indicators. HP bars aren't refreshed here: each unit's bar updates when a hit on it plays (party hits on the tick, enemy hits 0.3 s later). Attack lines and HP ghosts read engine state every frame (`combat_lines.gd`).
 6. During combat, player merges on the dungeon board (standard merge flow, combat continues)
 7. During combat, player drags usable items to party member portraits → `dungeon_controller.apply_usable_item(index, item)` → `combat_engine.apply_effect(index, effect)`
 8. All enemies dead → `encounter_ended()` → walk timer **resumes** → encounters at next threshold (0.5, 0.8) → repeat steps 3–7
@@ -1026,10 +1030,10 @@ No special abilities for MVP — auto-attack only.
 | `member_ko(member_index: int)` | Party member HP reached 0. dungeon_controller and portrait UI listen. |
 | `party_wiped()` | All 3 members KO. dungeon_controller listens. |
 | `encounter_ended()` | All enemies dead. dungeon_controller listens. |
-| `tick_resolved()` | Fired once a tick's damage has landed, so views can refresh HP and telegraphs. |
-| `party_attacked(member_index: int, target_indices: Array[int], damage_per_target: int)` | Fired when a party member attacks alive enemies each tick. |
-| `enemy_attacked(enemy_index: int, attack_type: String, is_heavy: bool, target_indices: Array[int], damage: int)` | Fired when an enemy attacks party member(s). |
-| `telegraph_changed(enemy_index: int, target_index: int, turns_remaining: int)` | Fired when an enemy locks, counts down, or clears a heavy attack target. |
+| `tick_resolved()` | Fired once a tick's damage has landed, so views can refresh HP and buffs. |
+| `party_attacked(member_index: int, target_index: int, damage: int, is_crit: bool)` | Fired when a party member's windup ends and its hit lands. |
+| `enemy_attacked(enemy_index: int, target_index: int, damage: int, is_crit: bool)` | Fired when an enemy's windup ends and its hit lands. |
+| `windup_changed(side: int, attacker_index: int, target_index: int, is_crit: bool)` | Fired when a windup starts or retargets; target -1 when it ends (landed, or the attacker fell). `side` is `SIDE_PARTY` or `SIDE_ENEMY`. |
 | `effect_applied(member_index: int, effect_type: String, amount: int)` | Fired when a heal or buff effect is applied to a party member. |
 
 **Functions:**
@@ -1044,10 +1048,12 @@ No special abilities for MVP — auto-attack only.
 | `get_alive_enemy_count() -> int` | Returns count of alive enemies. |
 | `get_enemy_data(index: int) -> Dictionary` | Returns enemy definition at index. Used by DropManager after `enemy_died` signal. |
 | `is_combat_running() -> bool` | True while the tick timer runs. |
-| `reach(attack_type: String, candidates: Array[int]) -> Array[int]` | Static. The one targeting rule for both sides: melee returns the first (front) candidate, missile returns all. |
-| `windup_progress(heavy_in: int, windup: int, tick_time_left: float, tick_wait: float, landing_delay: float) -> float` | Static and pure. 0 when a windup starts, 1 when its heavy attack plays; the view plays enemy hits `landing_delay` after their tick, so the countdown stretches to end on that beat. Clamped. |
-| `get_windup_progress(enemy_index: int, landing_delay: float) -> float` | `windup_progress` for a live enemy using the tick timer; -1 if it isn't winding up or combat is stopped. |
-| `get_incoming_heavy_damage(member_index: int) -> int` | Sum of heavy damage alive enemies have telegraphed at this member. |
+| `is_winding_up(side: int, index: int) -> bool` | True while the unit is standing and winding up an attack. |
+| `get_pending_damage(side: int, index: int) -> int` | What the current windup will deal when it lands (buffs and crit included); 0 when idle. |
+| `get_incoming_damage(member_index: int) -> int` | Sum of damage alive enemies are winding up at this member. |
+| `windup_progress(ticks_left: int, windup_ticks: int, tick_time_left: float, tick_wait: float, landing_delay: float) -> float` | Static and pure. 0 when a windup starts, 1 when its hit plays; a side whose hits play `landing_delay` after their tick gets a countdown stretched to end on that beat. Clamped. |
+| `get_windup_progress(side: int, index: int, landing_delay: float) -> float` | `windup_progress` for a unit using the tick timer; -1 if it isn't winding up or combat is stopped. |
+| `rng: RandomNumberGenerator` | Rolls crits; randomized in `_ready`. |
 
 #### DropManager
 
@@ -1083,9 +1089,9 @@ No special abilities for MVP — auto-attack only.
 | Function | Description |
 |----------|-------------|
 | `update_hp(current: int, max_hp: int)` | Sets HP bar value and color based on ratio; forwards to the ghost (a drop starts the damage trail). |
-| `set_incoming_damage(amount: int)` | Shows `amount` of telegraphed heavy damage as the HP ghost; 0 hides it. |
+| `set_incoming_damage(amount: int)` | Shows `amount` of damage being wound up at the unit as the HP ghost; 0 hides it. |
 | `get_displayed_hp() -> int` | The HP the bar shows (it trails the engine until a hit arrives). CombatLines judges lethality against it. |
-| `play_lunge(direction: Vector2, distance: float)` | Moves the sprite toward the target and back over 0.2 s. The hit itself lands when its tracer arrives. |
+| `play_lunge(direction: Vector2, distance: float)` | Moves the sprite toward the target and back over 0.2 s, as the hit plays. |
 
 #### PartyMember
 

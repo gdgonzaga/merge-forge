@@ -1,24 +1,25 @@
 extends Node
 
-# Plays combat for the dungeon view: attacker motions, a tracer along each
-# attack's lane, impacts and floating numbers, and HP, KO and death visuals.
+# Plays combat for the dungeon view: attacker motions, impacts and floating
+# numbers, crit call-outs, and HP, KO and death visuals. The attack lines
+# themselves are CombatLines.
 #
-# Hits land in two volleys per tick: the party's on the tick, the enemies'
-# ENEMY_VOLLEY_DELAY later, so each side's attacks read as a beat. Unit HP
-# bars change when a hit arrives rather than when the engine resolves it, so
-# bars, numbers and impacts stay in step. Engine state is already final for the
-# tick, so a bar refreshed on arrival always shows the truth.
+# Every attack lands when its windup line fills. Party hits play on the tick;
+# enemy hits play ENEMY_VOLLEY_DELAY later, so each side's attacks read as a
+# beat. Unit HP bars change when a hit plays rather than when the engine
+# resolves it, so bars, numbers and impacts stay in step. Engine state is
+# already final for the tick, so a bar refreshed then always shows the truth.
 
-const LINES := preload("res://dungeon/combat_lines.gd")
+const ENGINE := preload("res://dungeon/combat_engine.gd")
 
 const ENEMY_VOLLEY_DELAY := 0.3
 const MELEE := "melee"
 const LUNGE_DISTANCE := 20.0
-const HEAVY_LUNGE_DISTANCE := 30.0
+const CRIT_LUNGE_DISTANCE := 30.0
 const PARTY_NUMBER_COLOR := Color(0.55, 0.85, 1.0)
 const ENEMY_NUMBER_COLOR := Color(1.0, 0.3, 0.3)
-const HEAVY_NUMBER_COLOR := Color(1.0, 0.2, 0.2)
-const HEAVY_NAME_COLOR := Color(1.0, 0.6, 0.15)
+const CRIT_NUMBER_COLOR := Color(1.0, 0.82, 0.15)
+const CRIT_NAME_COLOR := Color(1.0, 0.6, 0.15)
 # Several attackers can hit one unit in the same volley; each attacker's number
 # is offset by its slot so they don't print on top of each other.
 const NUMBER_SPREAD := 40.0
@@ -40,7 +41,7 @@ func setup(engine: Node, party_units: Array, vfx: Control, lines: Control) -> vo
 	_lines.setup(engine, party_units, ENEMY_VOLLEY_DELAY)
 	engine.party_attacked.connect(_on_party_attacked)
 	engine.enemy_attacked.connect(_on_enemy_attacked)
-	engine.telegraph_changed.connect(_on_telegraph_changed)
+	engine.windup_changed.connect(_on_windup_changed)
 	engine.effect_applied.connect(_on_effect_applied)
 	engine.tick_resolved.connect(_on_tick_resolved)
 
@@ -58,73 +59,51 @@ func refresh_member(member_index: int) -> void:
 	_refresh_member(member_index)
 
 
-# --- Party volley ---
+# --- Hits ---
 
-func _on_party_attacked(member_index: int, targets: Array[int], damage: int) -> void:
-	if not _valid(_party_units, member_index) or targets.is_empty():
-		return
-	var melee: bool = _engine.get_member_data(member_index)["attack_type"] == MELEE
-	_play_attacker_motion(_party_units[member_index], melee, _enemy_units, targets[0], LUNGE_DISTANCE)
-	for t in targets:
-		_lines.spawn_tracer(LINES.SIDE_PARTY, member_index, t, not melee,
-			_on_party_hit_arrived.bind(t, member_index, damage, melee))
-
-
-func _on_party_hit_arrived(enemy_index: int, member_index: int, damage: int, melee: bool) -> void:
-	if not _valid(_enemy_units, enemy_index):
-		return
-	var ed: Control = _enemy_units[enemy_index]
-	ed.play_hit(false)
-	_play_impact(ed, melee)
-	_vfx.spawn_floating_text(_number_pos(ed, member_index, _party_units.size()), str(damage), PARTY_NUMBER_COLOR)
-	_refresh_enemy(enemy_index)
-
-
-# --- Enemy volley ---
-
-func _on_enemy_attacked(enemy_index: int, attack_type: String, is_heavy: bool, targets: Array[int], damage: int) -> void:
-	if is_heavy and not targets.is_empty():
-		_lines.hold_heavy(enemy_index, targets[0], damage)
-	get_tree().create_timer(ENEMY_VOLLEY_DELAY).timeout.connect(
-		_play_enemy_attack.bind(enemy_index, attack_type == MELEE, is_heavy, targets, damage))
-
-
-func _play_enemy_attack(enemy_index: int, melee: bool, is_heavy: bool, targets: Array[int], damage: int) -> void:
-	if not _valid(_enemy_units, enemy_index) or targets.is_empty():
-		return
-	if is_heavy:
-		_play_heavy_attack(enemy_index, targets[0], damage)
-		return
-	_play_attacker_motion(_enemy_units[enemy_index], melee, _party_units, targets[0], LUNGE_DISTANCE)
-	for t in targets:
-		_lines.spawn_tracer(LINES.SIDE_ENEMY, enemy_index, t, not melee,
-			_on_enemy_hit_arrived.bind(t, enemy_index, damage, melee))
-
-
-func _on_enemy_hit_arrived(member_index: int, enemy_index: int, damage: int, melee: bool) -> void:
+func _on_party_attacked(member_index: int, target: int, damage: int, is_crit: bool) -> void:
 	if not _valid(_party_units, member_index):
 		return
-	var pm: Control = _party_units[member_index]
-	pm.play_hit(false)
-	_play_impact(pm, melee)
-	_vfx.spawn_floating_text(_number_pos(pm, enemy_index, _enemy_units.size()), "-%d" % damage, ENEMY_NUMBER_COLOR)
-	_refresh_member(member_index)
+	var data: Dictionary = _engine.get_member_data(member_index)
+	_play_attack(_party_units[member_index], data, _enemy_units, target, is_crit)
+	if _valid(_enemy_units, target):
+		var number_color := CRIT_NUMBER_COLOR if is_crit else PARTY_NUMBER_COLOR
+		_vfx.spawn_floating_text(_number_pos(_enemy_units[target], member_index, _party_units.size()),
+			str(damage), number_color, is_crit)
+		_refresh_enemy(target)
 
 
-# The heavy line has just filled to its target, so the hit lands at once.
-func _play_heavy_attack(enemy_index: int, target: int, damage: int) -> void:
-	var ed: Control = _enemy_units[enemy_index]
-	var heavy_name: String = _engine.get_enemy_data(enemy_index)["heavy_attack"]["name"]
-	_vfx.screen_shake(8.0, 0.25)
-	_vfx.spawn_floating_text(ed.global_position + Vector2(ed.size.x * 0.5, 0.0), heavy_name, HEAVY_NAME_COLOR, true)
-	_play_attacker_motion(ed, true, _party_units, target, HEAVY_LUNGE_DISTANCE)
-	if not _valid(_party_units, target):
+func _on_enemy_attacked(enemy_index: int, target: int, damage: int, is_crit: bool) -> void:
+	var windup_ticks: int = _engine.get_enemy_data(enemy_index)["windup_ticks"]
+	_lines.hold(enemy_index, target, damage, is_crit, windup_ticks)
+	get_tree().create_timer(ENEMY_VOLLEY_DELAY).timeout.connect(
+		_play_enemy_hit.bind(enemy_index, target, damage, is_crit))
+
+
+func _play_enemy_hit(enemy_index: int, target: int, damage: int, is_crit: bool) -> void:
+	if not _valid(_enemy_units, enemy_index):
 		return
-	var pm: Control = _party_units[target]
-	pm.play_hit(true)
-	_vfx.spawn_impact(_center(pm), true)
-	_vfx.spawn_floating_text(_center(pm), "-%d" % damage, HEAVY_NUMBER_COLOR, true)
-	_refresh_member(target)
+	var data: Dictionary = _engine.get_enemy_data(enemy_index)
+	_play_attack(_enemy_units[enemy_index], data, _party_units, target, is_crit)
+	if _valid(_party_units, target):
+		var number_color := CRIT_NUMBER_COLOR if is_crit else ENEMY_NUMBER_COLOR
+		_vfx.spawn_floating_text(_number_pos(_party_units[target], enemy_index, _enemy_units.size()),
+			"-%d" % damage, number_color, is_crit)
+		_refresh_member(target)
+
+
+# The attacker's motion and the impact on the target; a crit adds its name over
+# the attacker and a screen shake.
+func _play_attack(attacker: Control, attacker_data: Dictionary, targets: Array, target: int, is_crit: bool) -> void:
+	var melee: bool = attacker_data["attack_type"] == MELEE
+	_play_attacker_motion(attacker, melee, targets, target, CRIT_LUNGE_DISTANCE if is_crit else LUNGE_DISTANCE)
+	if is_crit:
+		_vfx.screen_shake(8.0, 0.25)
+		_vfx.spawn_floating_text(attacker.global_position + Vector2(attacker.size.x * 0.5, 0.0),
+			attacker_data["crit_name"], CRIT_NAME_COLOR, true)
+	if _valid(targets, target):
+		targets[target].play_hit(is_crit)
+		_play_impact(targets[target], melee, is_crit)
 
 
 # --- Shared visuals ---
@@ -138,11 +117,11 @@ func _play_attacker_motion(attacker: Control, melee: bool, targets: Array, targe
 
 
 # Melee hits add a slash across the impact; missile hits are a burst only.
-func _play_impact(unit: Control, melee: bool) -> void:
+func _play_impact(unit: Control, melee: bool, is_crit: bool) -> void:
 	var pos := _center(unit)
 	if melee:
 		_vfx.spawn_slash(pos, Vector2.RIGHT.rotated(randf_range(-0.6, 0.6)))
-	_vfx.spawn_impact(pos, false)
+	_vfx.spawn_impact(pos, is_crit)
 
 
 func _refresh_member(member_index: int) -> void:
@@ -157,6 +136,8 @@ func _refresh_member(member_index: int) -> void:
 
 
 func _refresh_enemy(enemy_index: int) -> void:
+	if not _valid(_enemy_units, enemy_index):
+		return
 	var data: Dictionary = _engine.get_enemy_data(enemy_index)
 	var ed: Control = _enemy_units[enemy_index]
 	ed.update_hp(data.get("current_hp", 0), data.get("max_hp", 30))
@@ -175,9 +156,10 @@ func _on_tick_resolved() -> void:
 			_party_units[i].update_buffs(_engine.get_member_data(i).get("active_buffs", []))
 
 
-func _on_telegraph_changed(enemy_index: int, target_index: int, turns_remaining: int) -> void:
-	if _valid(_enemy_units, enemy_index):
-		_enemy_units[enemy_index].get_unit().play_heavy_charge(target_index >= 0 and turns_remaining > 0)
+func _on_windup_changed(side: int, attacker_index: int, target_index: int, is_crit: bool) -> void:
+	var units := _party_units if side == ENGINE.SIDE_PARTY else _enemy_units
+	if _valid(units, attacker_index):
+		units[attacker_index].get_unit().play_crit_charge(target_index >= 0 and is_crit)
 
 
 func _on_effect_applied(member_index: int, effect_type: String, amount: int) -> void:

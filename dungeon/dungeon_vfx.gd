@@ -44,14 +44,14 @@ func spawn_slash(global_pos: Vector2, direction: Vector2) -> void:
 
 
 # Impact burst
-func spawn_impact(global_pos: Vector2, is_heavy: bool) -> void:
+func spawn_impact(global_pos: Vector2, is_crit: bool) -> void:
 	var sprite := TextureRect.new()
 	sprite.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	sprite.texture = load("res://resources/sprites/vfx/hit_impact.png")
 	var tex_size := sprite.texture.get_size() if sprite.texture else Vector2(32, 32)
 	sprite.pivot_offset = tex_size * 0.5
 	sprite.position = _to_local(global_pos) - tex_size * 0.5
-	sprite.scale = Vector2.ONE * (1.6 if is_heavy else 1.0)
+	sprite.scale = Vector2.ONE * (1.6 if is_crit else 1.0)
 	add_child(sprite)
 	var tween := create_tween()
 	tween.tween_property(sprite, "modulate:a", 0.0, 0.25).set_ease(Tween.EASE_IN)

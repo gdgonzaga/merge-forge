@@ -143,9 +143,10 @@ All input is touch-based. Mouse is emulated as touch for testing.
 
 Enemies are auto-combat opponents in dungeon mode. The player does not control combat directly — they influence it by crafting usable items and dragging them to party members.
 
-Every unit, enemy or party member, has one attack type, and one rule covers both sides:
-- **Melee** hits only the front of the other side — the lowest slot still standing — with its full attack. The party is ordered Fighter, Mage, Healer, so the Fighter tanks; when the Fighter falls, the Mage becomes the front member, then the Healer. Enemies are ordered as the encounter lists them, so the party's melee members focus the first enemy and enemies die one at a time.
-- **Missile** reaches the whole other side: basic damage is split across everyone standing. An enemy's missile heavy attack picks the weakest member. Missile damage is kept low; on the party side the Mage is the only missile attacker.
+Every unit, enemy or party member, has one attack, and one rule covers both sides:
+- **Every attack winds up.** A unit picks its target, winds up for its `windup` (1 second for every unit today), then hits. A line from attacker to target fills during the windup, so every incoming hit is visible before it lands. The target is locked when the windup starts; it changes only if that target falls first.
+- **Crits.** Each windup rolls the unit's crit chance (15% for everyone today). A crit winds up twice as long and hits four times as hard: twice the damage per second, with a longer warning. A crit is shown from the moment its windup starts (gold line, "!" on the attacker), so the player can answer it with a potion; the crit's name ("Smash") pops up when it lands.
+- **Every attack hits one target.** **Melee** hits the front of the other side — the lowest slot still standing. The party is ordered Fighter, Mage, Healer, so the Fighter tanks; when the Fighter falls, the Mage becomes the front member, then the Healer. Enemies are ordered as the encounter lists them, so the party's melee members focus the first enemy. **Missile** hits the weakest unit on the other side (lowest current HP), reaching past the front: the Goblin Archer picks off the Mage, and the Mage finishes wounded enemies.
 
 ### Enemy — Slime
 
@@ -163,8 +164,8 @@ Transitions:
 |----------|-------|
 | Health | 90 |
 | Attack type | Melee |
-| Attack damage | 2 |
-| Heavy attack | Slam: 12 damage to the front member every 5s, telegraphed 3s ahead |
+| Attack damage | 3 per 1s windup |
+| Crit | 15%, "Slam": 12 damage after a 2s windup |
 | Drop pool | `[{item_id: "iron_ore", weight: 2}, {item_id: "herb_bundle", weight: 2}, {item_id: "refined_potion", weight: 2}]` |
 | Drop count | 2–3 |
 
@@ -186,8 +187,8 @@ Transitions:
 |----------|-------|
 | Health | 160 |
 | Attack type | Melee |
-| Attack damage | 5 |
-| Heavy attack | Smash: 30 damage to the front member every 5s, telegraphed 3s ahead |
+| Attack damage | 7 per 1s windup |
+| Crit | 15%, "Smash": 28 damage after a 2s windup |
 | Drop pool | `[{item_id: "iron_ore", weight: 1}, {item_id: "iron_ingot", weight: 2}, {item_id: "herb_bundle", weight: 1}, {item_id: "refined_potion", weight: 2}]` |
 | Drop count | 3–4 |
 
@@ -197,7 +198,7 @@ Transitions:
 ### Enemy — Goblin Archer
 
 **Description:** A goblin that shoots from behind the melee line. Uses the Goblin sprite for now.
-**Role:** Low-damage pressure on the back line, so the Mage and Healer are not perfectly safe while the Fighter tanks.
+**Role:** Pressure on the weakest party member, so the Mage and Healer are not perfectly safe while the Fighter tanks.
 
 ```
 States: Alive, Dead
@@ -210,8 +211,8 @@ Transitions:
 |----------|-------|
 | Health | 60 |
 | Attack type | Missile |
-| Attack damage | 3 (split across the standing party) |
-| Heavy attack | Arrow: 12 damage to the weakest member every 3s, telegraphed 2s ahead |
+| Attack damage | 5 per 1s windup, to the weakest member |
+| Crit | 15%, "Arrow": 20 damage after a 2s windup |
 | Drop pool | `[{item_id: "iron_ore", weight: 2}, {item_id: "herb_bundle", weight: 1}, {item_id: "refined_potion", weight: 2}]` |
 | Drop count | 2–3 |
 
@@ -300,12 +301,13 @@ Transitions:
 - **Top:** Progress bar (0–100%)
 - **Top row:** Party side — 3 party member cards in slot order (Fighter, Mage, Healer), each with a large sprite, a wide HP bar, the HP number, an attack-type badge (sword = melee, bow = missile) and active buffs. The cards are drop targets for usable items.
 - **Below the party, after a gap:** Enemy side — enemies with HP bars and the same attack-type badge. A defeated enemy fades but keeps its place, so the others don't slide over.
-- **Attack tracers:** every basic attack sends a short comet along its lane from attacker to target; the hit (flash, impact, number, HP change) lands when the comet arrives. Melee reads as a swing: the attacker lunges toward its target, and a short, fast, solid comet with a slash head ends in a slash impact. Missile reads as a flight: the attacker pulses in place, and a longer, slower, dotted comet with an arrow head ends in a burst. Party comets are cool white, enemy comets warm white. Numbers from several attackers on one target are spread apart.
+- **Attack lines:** every unit winding up an attack has a line along its lane to its target. A fill travels from the attacker toward the target, and the hit (flash, impact, number, HP change) lands when the fill arrives, so the line is both the aim and the countdown. Width grows with the hit's share of the target's current HP, so a line as wide as they get means "this finishes it". Melee reads as a swing: a solid fill with a slash head, the attacker lunges, and the hit ends in a slash impact. Missile reads as a flight: a dashed fill with an arrow head, the attacker pulses in place, and the hit ends in a burst. Normal lines are thin and translucent, party lines cool white, enemy lines warm white. Numbers from several attackers on one target are spread apart.
+- **Crits:** a crit's line is gold, outlined and shimmering from the moment its windup starts, with a "!" on the attacker and a pulsing gold tint on its sprite. It pulses just before landing; the hit brings gold numbers, a bigger impact, a screen shake and the crit's name over the attacker.
 - **Lanes:** every attack line keeps to its attacker's right, like traffic, so "Fighter hits Goblin" and "Goblin hits Fighter" run in two separate curved lanes that never touch.
-- **Volleys:** each combat second plays as two beats: the party's attacks on the tick, the enemies' 0.3 s later (heavy attacks included; their telegraph fill ends on that beat). When an encounter is won or lost, the scene waits 0.8 s so the last hits play out.
-- **Heavy-attack telegraph:** while an enemy winds up a heavy attack, a line runs from it to its target. A bright fill travels from the enemy toward the target, and the hit lands when the fill arrives, so the line is both the damage indicator and the countdown. The line is red when the hit would KO the target and orange otherwise, and thicker for heavier hits. The target's HP bar shows the chunk the hit will take as a pulsing "ghost"; healing during the windup visibly shrinks the danger (red turns orange, solid HP returns). The attack's name pops up when it lands.
+- **Volleys:** each combat second plays as two beats: the party's attacks on the tick, the enemies' 0.3 s later (their line fills end on that beat). When an encounter is won or lost, the scene waits 0.8 s so the last hits play out.
+- **Danger read-out:** each party member's HP bar shows the chunk everything winding up at it will take as a pulsing "ghost". When that would KO the member, the enemy lines turn red and ring the member; healing during the windup visibly shrinks the danger (red goes back, solid HP returns).
 - **Damage trail:** when HP drops, the lost chunk stays pale for a moment and then drains away.
-- **Layout rule:** nothing that appears during combat (telegraphs, VFX, floating text) may move the board or the unit rows.
+- **Layout rule:** nothing that appears during combat (attack lines, VFX, floating text) may move the board or the unit rows.
 - **Between sides:** Encounter banner — label showing encounter number (e.g. "Encounter 1/3"), shown during combat
 - **Center/bottom:** Merge board (same grid as shop, separate board state)
 - **Staging area:** Enemy drops appear here
@@ -367,9 +369,11 @@ Transitions:
 | Despawn timer (default) | 12 seconds | Staging area items |
 | Despawn timer (upgraded) | 18 seconds | With Slow Timer upgrade |
 | Combat tick interval | 1.0 second | Auto-combat damage frequency |
-| Party: Fighter | HP 120, ATK 14 | Melee. Slot 0 (front); takes all melee damage while standing |
-| Party: Mage | HP 50, ATK 18 | Missile: splits its attack across all enemies. Auto-attack only for MVP |
-| Party: Healer | HP 60, ATK 5 | Melee: hits the front enemy. Auto-attack only for MVP |
+| Party: Fighter | HP 120, ATK 11 | Melee. Slot 0 (front); takes all melee damage while standing. Crit "Cleave" |
+| Party: Mage | HP 50, ATK 14 | Missile: hits the weakest enemy. Highest damage. Crit "Fireball". Auto-attack only for MVP |
+| Party: Healer | HP 60, ATK 4 | Melee: hits the front enemy. Lowest damage. Crit "Smite". Auto-attack only for MVP |
+| Attack windup | 1 second, every unit | A crit winds up 2x as long |
+| Crit chance / damage | 15%, every unit / 4x | 2x damage per second of a normal attack |
 | Dungeon walk speed | 0.075 progress/second | Default value; configurable per dungeon definition |
 | Session size | 10 customers per session | |
 | Starting gold | 50 | |
@@ -747,7 +751,7 @@ On merge producing a variant-eligible item:
 ### Submodule — Dungeon Combat
 
 **What it does:**
-Manages auto-combat between the party and enemies during dungeon mode. Both sides follow the same reach rule: melee attackers hit the front of the other side with their full attack; missile attackers split their attack across the whole other side. Handles HP, knockouts, buffs, and usable item effects.
+Manages auto-combat between the party and enemies during dungeon mode. Both sides follow the same rules: every attack winds up before it hits one target, crits are rolled at windup start, melee attackers hit the front of the other side and missile attackers its weakest unit. Handles HP, knockouts, buffs, and usable item effects.
 
 **What triggers it:**
 Encounter spawns enemies. Combat ticks every 1 second until all enemies are dead or the party wipes. Progress halts while combat is active — the walk timer resumes only after all enemies in the current encounter are defeated.
@@ -768,20 +772,21 @@ Encounter spawns enemies. Combat ticks every 1 second until all enemies are dead
 **States / Logic:**
 ```
 Party members (3): Fighter, Mage, Healer
-- Each has: max_hp, current_hp, attack, active_buffs
+- Each has: max_hp, current_hp, attack, attack_type, windup, crit_chance, active_buffs
 - Buffs have: effect, power, duration (seconds)
 
 Combat tick (every 1 second):
-1. For each active party member: melee deals its full attack (plus buffs) to the front enemy (lowest alive slot);
-   missile deals floor(attack / count) to each enemy still above 0 HP, min 1
-2. For each alive enemy: melee deals its full attack to the front member (lowest standing slot);
-   missile deals floor(attack / standing_count) to each standing member, min 1.
-   Every few ticks the enemy's telegraphed heavy attack replaces its basic attack. The telegraph is a line from enemy to target that fills up over the windup (see Dungeon Mode (In-Game)).
-3. Check enemy deaths → spawn drops
+1. For each active party member: count down its windup; when it ends, hit the locked target
+   (re-picked if it fell) for attack + buffs, x4 on a crit. Melee targets the front enemy
+   (lowest alive slot), missile the weakest.
+2. Check enemy deaths → spawn drops
+3. For each alive enemy: the same against the party (melee: front member; missile: weakest member)
 4. Check member knockouts → emit signal
 5. If all enemies dead → victory
 6. If all members KO → wipe
 7. Tick all buffs (reduce duration, remove expired)
+8. Every idle unit starts a new windup: roll the crit (a crit winds up 2x as long), lock a target.
+   The line from attacker to target fills over the windup (see Dungeon Mode (In-Game)).
 ```
 
 **Fixed values:**
@@ -846,6 +851,7 @@ Combat tick (every 1 second):
 | 2026-09-26 | Melee vs. missile attacks, party slots | Melee enemies hit the front member (party slot order Fighter, Mage, Healer; the next slot takes over when the front falls); only missile enemies reach the back line, with low damage. New Goblin Archer (missile) replaces the Slime in encounter 2. Retune: Fighter HP 90 → 120; Slime ATK 2 / Slam 12; Goblin ATK 4 / Smash 30. Balance targets unchanged: unassisted wipe in encounter 3, one potion clears with a KO, two clear cleanly. |
 | 2026-09-27 | Party attack types, attack tracers, two-lane lines | Party members get melee/missile like enemies (Fighter and Healer melee, Mage missile), so enemies die one at a time and pressure eases mid-fight instead of every enemy dropping at once. Retune: Goblin HP 170 → 160, ATK 4 → 5 (encounter 2 keeps Archer first: Goblin-first put the first kill at 86% of the fight). Every basic attack shows a tracer on its lane (lanes keep to the attacker's right, so opposite attacks never overlap); melee vs. missile differ in motion, tracer and impact, plus idle sword/bow badges. Enemy hits play 0.3 s after the party's, and HP bars change when hits arrive. Balance targets unchanged. |
 | 2026-09-27 | Content lives only in `.tres` definitions | The `data/items.json`, `party.json` and `enemies.json` fallback copies are gone. The Android export listed files by hand and shipped no definitions, so phones silently ran on the JSON copies; it now exports all resources minus tmp/test/docs/tools. Board saves store item ids only (a sprite texture can't go through JSON, so reloaded boards had lost their icons); `SAVE_VERSION` 3. |
+| 2026-09-27 | Every attack winds up; crits replace heavy attacks | Every attack now winds up (1 s) with a visible line, so every hit is readable before it lands. Heavy attacks are gone; instead each windup rolls a 15% crit (2x windup, 4x damage: 2x DPS with a longer warning), shown gold from the start. Multi-target attacks removed: missile now hits the weakest unit instead of splitting. Line width follows the hit's share of the target's current HP. Retune (sim medians): party ATK Fighter 11, Mage 14, Healer 4 (Mage > Fighter > Healer); Slime 3, Goblin 7, Archer 5. No items: wipe in encounter 3 (~89%); one potion: ~67% clear, usually with a KO; two potions: ~98% clear, no KOs; combat ~23-26 s. |
 | 2026-09-27 | Telegraph lines and HP ghost instead of labels | The "Smash: Fighter in 2" label and the hidden target marker resized the unit rows and pushed the board down. Replaced with a line from enemy to target whose fill is the countdown (red when lethal, width by damage) and a ghost chunk on the target's HP bar. Party cards widened (128 px sprites, 270 px HP bars, HP numbers, 32 px buff text); a fixed gap between the party and enemy rows gives the lines room; dead enemies keep their slot. |
 
 ---

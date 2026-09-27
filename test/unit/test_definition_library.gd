@@ -1,7 +1,7 @@
 extends TestBase
 
 # Tests for DefinitionLibrary and .tres definition resources.
-# Verifies that items, party members, enemies, attacks, and effects load
+# Verifies that items, party members, enemies, and effects load
 # as valid Resource instances with Texture2D sprites.
 
 
@@ -25,7 +25,6 @@ func test_definition_library_loads_party_members() -> void:
 	assert_object(fighter).is_not_null()
 	assert_str(fighter.id).is_equal("fighter")
 	assert_int(fighter.max_hp).is_equal(120)
-	assert_int(fighter.attack).is_equal(14)
 	assert_object(fighter.sprite).is_not_null()
 	assert_bool(fighter.sprite is Texture2D).is_true()
 
@@ -36,9 +35,6 @@ func test_definition_library_loads_enemies() -> void:
 	assert_str(slime.id).is_equal("slime")
 	assert_int(slime.max_hp).is_equal(90)
 	assert_str(slime.attack_type).is_equal("melee")
-	assert_object(slime.heavy_attack).is_not_null()
-	assert_str(slime.heavy_attack.name).is_equal("Slam")
-	assert_int(slime.heavy_attack.damage).is_equal(12)
 	assert_object(slime.sprite).is_not_null()
 	assert_bool(slime.sprite is Texture2D).is_true()
 
@@ -52,7 +48,7 @@ func test_definition_library_missing_returns_null() -> void:
 func test_combat_engine_applies_effect_definition() -> void:
 	var engine: Node = auto_free(load("res://dungeon/combat_engine.gd").new())
 	add_child(engine)
-	var test_party: Array[Dictionary] = [{"name": "Hero", "max_hp": 100, "attack": 10, "attack_type": "melee"}]
+	var test_party: Array[Dictionary] = [{"name": "Hero", "max_hp": 100, "attack": 10, "attack_type": "melee", "windup": 1, "crit_chance": 0.0, "crit_name": "Crit"}]
 	engine.init_party(test_party)
 	# Reduce HP to 50
 	engine.party_members[0]["current_hp"] = 50

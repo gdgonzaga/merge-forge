@@ -27,17 +27,17 @@ func update_hp(current: int, max_hp: int) -> void:
 	_hp_ghost.set_hp(current, max_hp)
 
 
-# The HP the bar shows, which trails the engine until a hit's tracer arrives.
+# The HP the bar shows, which trails the engine until a hit plays.
 func get_displayed_hp() -> int:
 	return _displayed_hp
 
 
-# Heavy damage telegraphed at this unit, shown as a pulsing chunk of the HP bar.
+# Damage being wound up at this unit, shown as a pulsing chunk of the HP bar.
 func set_incoming_damage(amount: int) -> void:
 	_hp_ghost.set_incoming(amount)
 
 
-# Brief lunge toward the target; the hit itself lands when its tracer arrives.
+# Brief lunge toward the target as the hit plays.
 func play_lunge(direction: Vector2, distance: float) -> void:
 	var start := sprite.position
 	var tween := create_tween()
@@ -52,24 +52,24 @@ func play_cast() -> void:
 	tween.tween_property(sprite, "scale", Vector2.ONE, 0.15).set_ease(Tween.EASE_IN)
 
 
-# Flash red on hit; heavier blow also squishes the sprite briefly.
-func play_hit(is_heavy: bool) -> void:
+# Flash red on hit; a crit also squishes the sprite briefly.
+func play_hit(is_crit: bool) -> void:
 	var original_mod := sprite.modulate
 	sprite.modulate = Color(1.0, 0.0, 0.0)
 	var tween := create_tween()
 	tween.tween_property(sprite, "modulate", original_mod, 0.2)
-	if is_heavy:
+	if is_crit:
 		tween.tween_property(sprite, "scale", Vector2.ONE * 0.9, 0.1).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 		tween.tween_property(sprite, "scale", Vector2.ONE, 0.1).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 
 
-# Pulsating highlight while charging a telegraphed heavy attack.
-func play_heavy_charge(charging: bool) -> void:
+# Pulsating gold highlight while winding up a crit.
+func play_crit_charge(charging: bool) -> void:
 	if _charge_tween and _charge_tween.is_valid():
 		_charge_tween.kill()
 	if charging:
 		_charge_tween = create_tween().set_loops()
-		_charge_tween.tween_property(sprite, "modulate", Color(1.3, 0.6, 0.6, 1.0), 0.3)
+		_charge_tween.tween_property(sprite, "modulate", Color(1.4, 1.2, 0.5, 1.0), 0.3)
 		_charge_tween.tween_property(sprite, "modulate", Color.WHITE, 0.3)
 	else:
 		sprite.modulate = Color.WHITE

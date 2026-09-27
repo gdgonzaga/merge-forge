@@ -42,12 +42,3 @@ static func point(a: Vector2, c: Vector2, b: Vector2, t: float) -> Vector2:
 static func tangent(a: Vector2, c: Vector2, b: Vector2, t: float) -> Vector2:
 	return ((c - a) * (1.0 - t) + (b - c) * t) * 2.0
 
-
-# (tail, head) of a tracer comet as 0..1 positions along its lane. The head
-# eases out from the attacker and reaches 1 (the hit arrives) before the end of
-# `duration`; the tail follows `length` behind and drains into the target.
-static func tracer_span(elapsed: float, duration: float, length: float) -> Vector2:
-	var u := clampf(elapsed / duration, 0.0, 1.0)
-	var eased := 1.0 - (1.0 - u) * (1.0 - u)
-	var head := eased * (1.0 + length)
-	return Vector2(clampf(head - length, 0.0, 1.0), clampf(head, 0.0, 1.0))

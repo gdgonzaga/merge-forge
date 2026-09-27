@@ -69,27 +69,23 @@ func _party_member_to_dict(def: PartyMemberDefinition) -> Dictionary:
 		"max_hp": def.max_hp,
 		"attack": def.attack,
 		"attack_type": def.attack_type,
+		"windup": def.windup,
+		"crit_chance": def.crit_chance,
+		"crit_name": def.crit_name,
 		"slot_order": def.slot_order,
 	}
 
 
 func _enemy_to_dict(def: EnemyDefinition) -> Dictionary:
-	var heavy_dict: Dictionary = {}
-	if def.heavy_attack != null:
-		heavy_dict = {
-			"name": def.heavy_attack.name,
-			"interval": def.heavy_attack.interval,
-			"windup": def.heavy_attack.windup,
-			"damage": def.heavy_attack.damage,
-			"type": def.heavy_attack.type,
-		}
 	return {
 		"id": def.id,
 		"name": def.name,
 		"max_hp": def.max_hp,
 		"attack_type": def.attack_type,
 		"attack": def.attack,
-		"heavy_attack": heavy_dict,
+		"windup": def.windup,
+		"crit_chance": def.crit_chance,
+		"crit_name": def.crit_name,
 		"sprite": def.sprite,
 		"drop_count": def.drop_count,
 		"drop_pool": def.drop_pool,

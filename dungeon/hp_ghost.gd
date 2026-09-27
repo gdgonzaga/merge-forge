@@ -1,7 +1,7 @@
 extends Control
 
-# Drawn over a CombatUnit's HP bar: the pulsing chunk a telegraphed heavy attack
-# will take (the ghost), and the pale chunk of HP just lost draining away (the
+# Drawn over a CombatUnit's HP bar: the pulsing chunk the attacks winding up at
+# it will take (the ghost), and the pale chunk of HP just lost draining away (the
 # trail). A sibling of the bar, not a child, because the bar is tinted with
 # modulate and a child would inherit that tint.
 
