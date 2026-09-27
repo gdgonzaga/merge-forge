@@ -1113,6 +1113,7 @@ No special abilities for MVP — auto-attack only.
 |------|------|----------------|
 | `core/prep_phase.tscn` | Scene | Prep phase with TabContainer: Blueprints (buy blueprints), Upgrades (buy upgrades), Reagents (buy reagents). Crates are purchased during shop sessions, not here. Forecast tab deferred to post-MVP. |
 | `autoloads/game_manager.gd` | Autoload | Persistent state data store. No game logic — pure state with change signals. |
+| `core/purchases.gd` | RefCounted | Purchase rules for blueprints, upgrades and reagents: checks, charges and grants, and refuses without charging when a check fails. Held by PrepPhase. |
 
 ### Upgrades and Reagents
 
@@ -1191,12 +1192,13 @@ Reagents are bought in the prep phase and stored in `GameManager.reagent_invento
 | `_upgrade_scroll: VBoxContainer` | `@onready $VBox/TabContainer/Upgrades/UpgradeContent` | Upgrade tab content container |
 | `_reagent_scroll: VBoxContainer` | `@onready $VBox/TabContainer/Reagents/ReagentContent` | Reagent tab content container |
 | `_dungeon_btn: Button` | `@onready %DungeonBtn` | Enter Dungeon button; its disabled state follows `GameManager.reputation_changed` |
+| `_purchases: RefCounted` | `core/purchases.gd` | Purchase rules; `try_purchase` delegates to it |
 
 **Functions:**
 
 | Function | Description |
 |----------|-------------|
-| `try_purchase(type: String, id: String) -> bool` | Validates and executes a purchase (blueprint, upgrade, or reagent). Returns true on success. |
+| `try_purchase(type: String, id: String) -> bool` | Delegates a blueprint, upgrade or reagent purchase to its `core/purchases.gd` helper. Returns true on success. |
 | `_debug_unlock_all()` | Debug: sets debug_mode, grants 2000g, 1000 rep, all blueprints, 5 of every reagent. |
 
 #### GameManager

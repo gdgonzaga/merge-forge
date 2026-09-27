@@ -1,11 +1,14 @@
 extends Control
 
 const CONFIRM_DIALOG := preload("res://ui/confirm_dialog.tscn")
+const PURCHASES := preload("res://core/purchases.gd")
 
 @onready var _bp_scroll: VBoxContainer = $VBox/TabContainer/Blueprints/BpContent
 @onready var _upgrade_scroll: VBoxContainer = $VBox/TabContainer/Upgrades/UpgradeContent
 @onready var _reagent_scroll: VBoxContainer = $VBox/TabContainer/Reagents/ReagentContent
 @onready var _dungeon_btn: Button = %DungeonBtn
+
+var _purchases: RefCounted = PURCHASES.new()
 
 
 func _ready() -> void:
@@ -68,55 +71,12 @@ func _on_reputation_changed(points: int) -> void:
 func try_purchase(type: String, id: String) -> bool:
 	match type:
 		"blueprint":
-			return _buy_blueprint(id)
+			return _purchases.buy_blueprint(id)
 		"upgrade":
-			return _buy_upgrade(id)
+			return _purchases.buy_upgrade(id)
 		"reagent":
-			return _buy_reagent(id)
+			return _purchases.buy_reagent(id)
 	return false
-
-
-func _buy_blueprint(bp_id: String) -> bool:
-	if RecipeResolver.has_blueprint(bp_id):
-		return false
-	var blueprint := DefinitionLibrary.get_blueprint(bp_id)
-	if blueprint == null or blueprint.cost <= 0:
-		return false
-	if not RecipeResolver.are_dependencies_met(blueprint):
-		return false
-	if not GameManager.deduct_gold(blueprint.cost):
-		return false
-	GameManager.add_blueprint(bp_id)
-	EventBus.save_requested.emit()
-	return true
-
-
-func _buy_upgrade(upgrade_id: String) -> bool:
-	if upgrade_id in GameManager.purchased_upgrades:
-		return false
-	var upgrade := DefinitionLibrary.get_upgrade(upgrade_id)
-	if upgrade == null:
-		return false
-	if not GameManager.deduct_gold(upgrade.cost):
-		return false
-	if upgrade.effect == "grid_size":
-		GameManager.grid_cols += upgrade.grid_cols
-		GameManager.grid_rows += upgrade.grid_rows
-		GameManager.grid_size_changed.emit(GameManager.grid_cols, GameManager.grid_rows)
-	GameManager.add_upgrade(upgrade_id)
-	EventBus.save_requested.emit()
-	return true
-
-
-func _buy_reagent(reagent_id: String) -> bool:
-	var reagent := DefinitionLibrary.get_reagent(reagent_id)
-	if reagent == null:
-		return false
-	if not GameManager.deduct_gold(reagent.cost):
-		return false
-	GameManager.add_reagent(reagent_id, 1)
-	EventBus.save_requested.emit()
-	return true
 
 
 func _refresh_all() -> void:
