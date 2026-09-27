@@ -6,6 +6,7 @@ extends TestBase
 
 const USE_TARGETS: Array[String] = ["party-individual", "enemy-individual", "enemy-all"]
 const UPGRADE_EFFECTS: Array[String] = ["grid_size", "despawn_time", "crate_discount"]
+const ATTACK_TYPES: Array[String] = ["melee", "missile"]
 
 
 # A copy-pasted file that kept its source's id would shadow it in the catalog.
@@ -81,28 +82,51 @@ func test_upgrades_have_a_known_effect() -> void:
 			.override_failure_message("%s has effect '%s'" % [upgrade.id, upgrade.effect]).is_true()
 
 
-func test_definition_library_loads_party_members() -> void:
-	var members: Array[PartyMemberDefinition] = DefinitionLibrary.get_all_party_members()
-	assert_int(members.size()).is_equal(3)
-	var fighter: PartyMemberDefinition = DefinitionLibrary.get_party_member("fighter")
-	assert_object(fighter).is_not_null()
-	assert_str(fighter.id).is_equal("fighter")
-	assert_int(fighter.max_hp).is_equal(120)
-	assert_object(fighter.sprite).is_not_null()
-	assert_bool(fighter.sprite is Texture2D).is_true()
+func test_party_members_have_valid_stats() -> void:
+	var slots: Array[int] = []
+	for member in DefinitionLibrary.get_all_party_members():
+		_assert_unit_stats(member)
+		assert_bool(member.slot_order in slots) \
+			.override_failure_message("%s reuses slot_order %d" % [member.id, member.slot_order]).is_false()
+		slots.append(member.slot_order)
 
 
-func test_definition_library_loads_enemies() -> void:
-	var slime: EnemyDefinition = DefinitionLibrary.get_enemy("slime")
-	assert_object(slime).is_not_null()
-	assert_str(slime.id).is_equal("slime")
-	assert_int(slime.max_hp).is_equal(90)
-	assert_str(slime.attack_type).is_equal("melee")
-	assert_object(slime.sprite).is_not_null()
-	assert_bool(slime.sprite is Texture2D).is_true()
+func test_enemies_have_valid_stats() -> void:
+	for enemy: EnemyDefinition in DefinitionLibrary.get_all_enemies().values():
+		_assert_unit_stats(enemy)
+		assert_bool(enemy.min_drops <= enemy.max_drops) \
+			.override_failure_message("%s has min_drops > max_drops" % enemy.id).is_true()
+
+
+func test_party_members_come_back_in_slot_order() -> void:
+	var back := PartyMemberDefinition.new()
+	back.id = "__test_back"
+	back.slot_order = 9001
+	var front := PartyMemberDefinition.new()
+	front.id = "__test_front"
+	front.slot_order = -9001
+	set_definition(DefinitionLibrary.party, back)
+	set_definition(DefinitionLibrary.party, front)
+	var members := DefinitionLibrary.get_all_party_members()
+	assert_str(members.front().id).is_equal("__test_front")
+	assert_str(members.back().id).is_equal("__test_back")
 
 
 func test_definition_library_missing_returns_null() -> void:
 	assert_object(DefinitionLibrary.get_item("__nonexistent__")).is_null()
 	assert_object(DefinitionLibrary.get_party_member("__nonexistent__")).is_null()
 	assert_object(DefinitionLibrary.get_enemy("__nonexistent__")).is_null()
+
+
+# Party members and enemies share the combat stat fields CombatEngine reads.
+func _assert_unit_stats(unit: Resource) -> void:
+	var id: String = unit.id
+	assert_str(unit.name).override_failure_message("%s has no name" % id).is_not_empty()
+	assert_bool(unit.sprite is Texture2D).override_failure_message("%s has no sprite" % id).is_true()
+	assert_bool(unit.max_hp > 0).override_failure_message("%s has max_hp %d" % [id, unit.max_hp]).is_true()
+	assert_bool(unit.attack >= 0).override_failure_message("%s has attack %d" % [id, unit.attack]).is_true()
+	assert_bool(unit.windup >= 1).override_failure_message("%s has windup %d" % [id, unit.windup]).is_true()
+	assert_bool(unit.crit_chance >= 0.0 and unit.crit_chance <= 1.0) \
+		.override_failure_message("%s has crit_chance %s" % [id, unit.crit_chance]).is_true()
+	assert_bool(unit.attack_type in ATTACK_TYPES) \
+		.override_failure_message("%s has attack_type '%s'" % [id, unit.attack_type]).is_true()
