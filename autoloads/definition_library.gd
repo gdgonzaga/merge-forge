@@ -139,12 +139,12 @@ func get_all_upgrades() -> Array[UpgradeDefinition]:
 	return result
 
 
-# In shop-session queue order.
+# Sorted by id; shop sessions deal from these archetypes.
 func get_all_customers() -> Array[CustomerDefinition]:
 	var result: Array[CustomerDefinition] = []
 	result.assign(customers.values())
 	result.sort_custom(func(a: CustomerDefinition, b: CustomerDefinition) -> bool:
-		return a.queue_order < b.queue_order
+		return a.id < b.id
 	)
 	return result
 

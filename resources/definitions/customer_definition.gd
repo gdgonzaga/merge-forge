@@ -16,6 +16,3 @@ class_name CustomerDefinition
 # Scales every order's price (item gold_value x quantity).
 @export var price_multiplier: float = 1.0
 @export var wants: Array[OrderTemplate] = []
-# Removed in Task 5, once the shop deals generated customers.
-@export var queue_order: int = 0
-@export var orders: Array[OrderDefinition] = []

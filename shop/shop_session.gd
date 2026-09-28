@@ -1,16 +1,16 @@
 extends Control
 
 const PORTRAIT_SIZE := 200
-# Per-position shadow alpha step. Denominator is the INITIAL pending count
-# (session_count - 1), fixed for the whole session: position 0 (next customer)
-# gets no shadow, the back gets ~(step * initial_pending) which tops out
-# near-but-not-100% (e.g. 8 * 11.1% = 89%). The whole stack fades lighter as
-# the queue shrinks, since position is the renumbered (current) index.
-const SHADOW_ALPHA_STEP := 100.0 / 9.0 / 100.0  # 0.0..1.0 scale, ~= 0.111
+const CUSTOMER_GENERATOR := preload("res://shop/customer_generator.gd")
 
-var customers: Array[CustomerDefinition] = []
+var customers: Array[ShopCustomer] = []
 var current_index: int = 0
 var summary_data: Dictionary = {}
+var _rules: ShopRulesDefinition
+# Per-position shadow alpha in the pending queue: the back of a full queue
+# tops out just under 100% (e.g. 8 / 9 with 10 customers). Fixed for the
+# session, so the stack lightens as it shrinks.
+var _shadow_step: float = 0.0
 
 @onready var board: Control = $CustomerBox/Board
 @onready var _portrait_rect: TextureRect = $CustomerBox/CustomerAndLabels/Customers/CurrentCustomer/PortraitWrapper/PortraitRect
@@ -32,7 +32,15 @@ func _ready() -> void:
 		"portraits": [],
 	}
 
-	customers = DefinitionLibrary.get_all_customers()
+	_rules = DefinitionLibrary.get_shop_rules()
+	customers = CUSTOMER_GENERATOR.new().generate(
+		DefinitionLibrary.get_all_customers(),
+		_rules.session_size,
+		GameManager.reputation_points,
+		GameManager.get_session_seed(),
+		RecipeResolver.is_craftable,
+	)
+	_shadow_step = 1.0 / float(maxi(customers.size() - 1, 1))
 
 	AudioManager.play_sfx("session_start")
 
@@ -122,11 +130,11 @@ func _populate_queue() -> void:
 		_pending_content.add_child(portrait)
 
 
-func _build_queue_portrait(customer: CustomerDefinition, position: int) -> TextureRect:
+func _build_queue_portrait(customer: ShopCustomer, position: int) -> TextureRect:
 	var portrait := TextureRect.new()
 	portrait.custom_minimum_size = Vector2(PORTRAIT_SIZE, PORTRAIT_SIZE)
 	portrait.size = Vector2(PORTRAIT_SIZE, PORTRAIT_SIZE)
-	portrait.texture = customer.sprite
+	portrait.texture = customer.definition.sprite
 	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	# Shadow: same texture as the portrait, tinted black, alpha-scaled by
@@ -142,7 +150,7 @@ func _build_queue_portrait(customer: CustomerDefinition, position: int) -> Textu
 		shadow.stretch_mode = portrait.stretch_mode
 		shadow.expand_mode = portrait.expand_mode
 		shadow.modulate = Color.BLACK
-		shadow.modulate.a = SHADOW_ALPHA_STEP * float(position)
+		shadow.modulate.a = _shadow_step * float(position)
 		shadow.size = Vector2(PORTRAIT_SIZE, PORTRAIT_SIZE)
 		shadow.position = Vector2.ZERO
 		shadow.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -176,14 +184,14 @@ func try_fulfill_order(order_index: int) -> void:
 	board_ref.remove_items_by_id(item_id, needed)
 	var reward := order.gold_reward
 	GameManager.add_gold(reward)
-	GameManager.add_reputation(10)
+	GameManager.add_reputation(_rules.fulfill_reputation)
 	EventBus.customer_fulfilled.emit(item_id)
 	EventBus.save_requested.emit()
 
 	summary_data["gold_earned"] = summary_data.get("gold_earned", 0) + reward
 	summary_data["items_sold"] = summary_data.get("items_sold", 0) + needed
 	summary_data["fulfilled"] = summary_data.get("fulfilled", 0) + 1
-	summary_data["portraits"].append(customer.sprite)
+	summary_data["portraits"].append(customer.definition.sprite)
 
 	current_index += 1
 	advance_customer.call_deferred()
@@ -193,8 +201,8 @@ func reject_customer() -> void:
 	if current_index >= customers.size():
 		return
 
-	GameManager.add_reputation(-2)
-	EventBus.customer_rejected.emit(customers[current_index].id)
+	GameManager.add_reputation(-_rules.reject_reputation_penalty)
+	EventBus.customer_rejected.emit(customers[current_index].definition.id)
 	EventBus.save_requested.emit()
 
 	summary_data["rejected"] = summary_data.get("rejected", 0) + 1
@@ -219,6 +227,8 @@ func end_session() -> void:
 	if board_ref and is_instance_valid(board_ref):
 		GameManager.shop_board_state = board_ref.get_board_state()
 
+	GameManager.record_session_played()
+	EventBus.save_requested.emit()
 	EventBus.session_ended.emit(summary_data)
 
 
@@ -228,9 +238,10 @@ func try_buy_crate(crate_id: String) -> bool:
 	return false
 
 
-func _display_customer(customer: CustomerDefinition) -> void:
-	_portrait_rect.texture = customer.sprite
-	_customer_label.text = customer.name if customer.role.is_empty() else "%s the %s" % [customer.name, customer.role]
+func _display_customer(customer: ShopCustomer) -> void:
+	_portrait_rect.texture = customer.definition.sprite
+	_customer_label.text = customer.definition.name if customer.definition.role.is_empty() \
+		else "%s the %s" % [customer.definition.name, customer.definition.role]
 	_remaining_label.text = "Customer %d of %d" % [current_index + 1, customers.size()]
 
 	_clear_orders()

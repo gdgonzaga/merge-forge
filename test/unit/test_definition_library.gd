@@ -60,9 +60,6 @@ func test_shop_links_are_complete() -> void:
 	for crate in DefinitionLibrary.get_all_crates():
 		for entry in crate.pool:
 			assert_object(entry.item).override_failure_message("crate %s has an empty entry" % crate.id).is_not_null()
-	for customer in DefinitionLibrary.get_all_customers():
-		for order in customer.orders:
-			assert_object(order.item).override_failure_message("%s has an order with no item" % customer.id).is_not_null()
 	for blueprint in DefinitionLibrary.get_all_blueprints():
 		for dep in blueprint.dependencies:
 			assert_object(dep).override_failure_message("%s has an empty dependency" % blueprint.id).is_not_null()
@@ -154,6 +151,14 @@ func test_shop_rules_are_defined() -> void:
 	var rules := DefinitionLibrary.get_shop_rules()
 	assert_object(rules).is_not_null()
 	assert_int(rules.session_size).is_greater(0)
+
+
+# A new player (no blueprints, no reputation) must be dealt a full session.
+func test_a_fresh_game_deals_a_full_session() -> void:
+	var size := DefinitionLibrary.get_shop_rules().session_size
+	var dealt: Array = preload("res://shop/customer_generator.gd").new().generate(
+		DefinitionLibrary.get_all_customers(), size, 0, 1, RecipeResolver.is_craftable)
+	assert_int(dealt.size()).is_equal(size)
 
 
 # Party members and enemies share the combat stat fields CombatEngine reads.
