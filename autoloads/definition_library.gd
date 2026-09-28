@@ -170,6 +170,23 @@ func get_shop_rules() -> ShopRulesDefinition:
 	return shop_rules.get("default", null)
 
 
+# Everything that opens when the shop goes from old_level to new_level: above
+# old_level, up to and including new_level. Ordered by level, then catalog,
+# then id, so a multi-level jump reads in unlock order.
+func get_unlocks_between(old_level: int, new_level: int) -> Array[Resource]:
+	var found: Array[Array] = []
+	var catalogs := get_catalogs()
+	for folder: String in catalogs:
+		for definition: Resource in catalogs[folder].values():
+			if "min_shop_level" in definition and definition.min_shop_level > old_level and definition.min_shop_level <= new_level:
+				found.append([definition.min_shop_level, folder, definition.id, definition])
+	found.sort()
+	var result: Array[Resource] = []
+	for entry in found:
+		result.append(entry[3])
+	return result
+
+
 # Shop listings run cheapest first; ties by id so the order is stable.
 static func _by_cost(catalog: Dictionary) -> Array:
 	var result := catalog.values()

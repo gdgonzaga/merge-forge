@@ -58,7 +58,7 @@ No autoload uses `class_name` — globally accessible by registration name only 
 | `merge_completed(result_id: String, bonus_gold: int)` | `merge_resolver.gd` | `audio_manager.gd` | A merge produced a result item |
 | `customer_fulfilled(order_id: String)` | `shop_session.gd` | `save_manager.gd` | Order delivered to customer |
 | `customer_rejected(customer_id: String)` | `shop_session.gd` | `save_manager.gd` | Customer was skipped |
-| `session_ended(summary: Dictionary)` | `shop_session.gd` | `main.gd` | 10th customer done, transition to summary |
+| `session_ended(summary: Dictionary)` | `shop_session.gd` | `main.gd` | 10th customer done, transition to summary. Summary: `{gold_earned: int, items_sold: int, fulfilled: int, rejected: int, portraits: Array, xp_earned: int, level_before: int, level_after: int}` |
 | `session_summary_dismissed()` | `session_summary.gd` | `main.gd` | Player taps Continue, go to prep |
 | `prep_start_session()` | `prep_phase.gd` | `main.gd` | Player starts next shop session |
 | `prep_enter_dungeon(dungeon_id: String)` | `prep_phase.gd` | `main.gd` | Player enters that dungeon (if unlocked) |

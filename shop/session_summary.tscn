@@ -7,6 +7,7 @@
 [ext_resource type="StyleBox" uid="uid://d13ojkcc4ssv4" path="res://resources/themes/button_disabled.tres" id="5_qsg6t"]
 [ext_resource type="FontFile" path="res://resources/fonts/MedievalSharp-Regular.ttf" id="6_font"]
 [ext_resource type="FontFile" path="res://resources/fonts/RobotoCondensed-VariableFont_wght.ttf" id="7_font"]
+[ext_resource type="PackedScene" path="res://ui/level_up_panel.tscn" id="8_level_up"]
 
 [node name="SessionSummary" type="Control" unique_id=916557174]
 layout_mode = 3
@@ -53,6 +54,12 @@ theme_override_fonts/font = ExtResource("7_font")
 theme_override_font_sizes/font_size = 32
 horizontal_alignment = 1
 
+[node name="XpLabel" type="Label" parent="VBox" unique_id=1127888940]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("7_font")
+theme_override_font_sizes/font_size = 32
+horizontal_alignment = 1
+
 [node name="SoldLabel" type="Label" parent="VBox" unique_id=1127888939]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("7_font")
@@ -72,6 +79,9 @@ layout_mode = 2
 theme_override_fonts/font = ExtResource("7_font")
 theme_override_font_sizes/font_size = 24
 horizontal_alignment = 1
+
+[node name="LevelUpPanel" parent="VBox" instance=ExtResource("8_level_up")]
+layout_mode = 2
 
 [node name="SpacerMid" type="Control" parent="VBox" unique_id=217523971]
 custom_minimum_size = Vector2(0, 80)

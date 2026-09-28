@@ -1,9 +1,11 @@
 extends Control
 
 @onready var _gold_label: Label = $VBox/GoldLabel
+@onready var _xp_label: Label = $VBox/XpLabel
 @onready var _sold_label: Label = $VBox/SoldLabel
 @onready var _fulfilled_label: Label = $VBox/FulfilledLabel
 @onready var _rejected_label: Label = $VBox/RejectedLabel
+@onready var _level_up_panel: VBoxContainer = $VBox/LevelUpPanel
 
 var _target_gold: int = 0
 var _countup_tween: Tween
@@ -23,6 +25,8 @@ func display_summary(data: Dictionary) -> void:
 	_sold_label.text = "Items Sold: %d" % data.get("items_sold", 0)
 	_fulfilled_label.text = "Fulfilled: %d" % data.get("fulfilled", 0)
 	_rejected_label.text = "Rejected: %d" % data.get("rejected", 0)
+	_xp_label.text = "XP Earned: %d" % data.get("xp_earned", 0)
+	_level_up_panel.setup(data.get("level_before", 1), data.get("level_after", 1))
 
 	if _target_gold > 0:
 		_gold_label.text = "Gold Earned: 0"

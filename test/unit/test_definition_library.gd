@@ -207,6 +207,65 @@ func test_a_healing_item_is_craftable_when_each_dungeon_opens() -> void:
 		assert_bool(heals).override_failure_message("%s opens with nothing craftable that heals" % dungeon.id).is_true()
 
 
+func test_unlocks_between_is_exclusive_below_and_inclusive_above() -> void:
+	_push_shipped_gates_away()
+	set_definition(DefinitionLibrary.crates, _gated_crate("__test_l2", 2))
+	set_definition(DefinitionLibrary.blueprints, _gated_blueprint("__test_l3", 3))
+	set_definition(DefinitionLibrary.blueprints, _gated_blueprint("__test_l4", 4))
+	assert_array(_ids_of(DefinitionLibrary.get_unlocks_between(2, 3))).is_equal(["__test_l3"])
+
+
+func test_unlocks_between_spans_every_skipped_level() -> void:
+	_push_shipped_gates_away()
+	set_definition(DefinitionLibrary.blueprints, _gated_blueprint("__test_l4", 4))
+	set_definition(DefinitionLibrary.crates, _gated_crate("__test_l2", 2))
+	set_definition(DefinitionLibrary.blueprints, _gated_blueprint("__test_l3", 3))
+	assert_array(_ids_of(DefinitionLibrary.get_unlocks_between(1, 4))).is_equal(["__test_l2", "__test_l3", "__test_l4"])
+
+
+func test_no_level_gained_unlocks_nothing() -> void:
+	assert_array(DefinitionLibrary.get_unlocks_between(3, 3)).is_empty()
+
+
+func test_every_gated_definition_has_a_name() -> void:
+	for definition in _gated():
+		assert_str(definition.name).override_failure_message("%s has no name" % definition.id).is_not_empty()
+
+
+# Pushes every shipped gated definition out of the tested range, through
+# set_definition so TestBase restores it.
+func _push_shipped_gates_away() -> void:
+	for catalog: Dictionary in DefinitionLibrary.get_catalogs().values():
+		for definition: Resource in catalog.values().duplicate():
+			if "min_shop_level" in definition:
+				var moved: Resource = definition.duplicate()
+				moved.min_shop_level = 9999
+				set_definition(catalog, moved)
+
+
+func _gated_crate(id: String, level: int) -> CrateDefinition:
+	var crate := CrateDefinition.new()
+	crate.id = id
+	crate.name = id
+	crate.min_shop_level = level
+	return crate
+
+
+func _gated_blueprint(id: String, level: int) -> BlueprintDefinition:
+	var blueprint := BlueprintDefinition.new()
+	blueprint.id = id
+	blueprint.name = id
+	blueprint.min_shop_level = level
+	return blueprint
+
+
+func _ids_of(defs: Array[Resource]) -> Array[String]:
+	var ids: Array[String] = []
+	for definition in defs:
+		ids.append(definition.id)
+	return ids
+
+
 func test_some_archetype_is_open_at_level_1() -> void:
 	var open := DefinitionLibrary.get_all_customers().filter(
 		func(customer: CustomerDefinition) -> bool: return customer.min_shop_level == 1)
