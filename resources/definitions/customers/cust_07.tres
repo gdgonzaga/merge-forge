@@ -11,7 +11,6 @@
 script = ExtResource("1_tpl")
 item = ExtResource("2_potion")
 weight = 2
-max_quantity = 2
 
 [sub_resource type="Resource" id="Resource_elixir"]
 script = ExtResource("1_tpl")

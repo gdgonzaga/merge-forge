@@ -30,5 +30,4 @@ role = "Knight-Captain"
 sprite = ExtResource("6_sprite")
 reputation_required = 200
 max_orders = 3
-price_multiplier = 1.25
 wants = Array[ExtResource("1_tpl")]([SubResource("Resource_sword"), SubResource("Resource_shield"), SubResource("Resource_flame")])

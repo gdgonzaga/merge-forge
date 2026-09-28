@@ -34,5 +34,4 @@ sprite = ExtResource("6_sprite")
 reputation_required = 30
 min_orders = 2
 max_orders = 3
-price_multiplier = 1.1
 wants = Array[ExtResource("1_tpl")]([SubResource("Resource_plate"), SubResource("Resource_tonic"), SubResource("Resource_ingot")])
