@@ -6,4 +6,4 @@
 script = ExtResource("1_o4xck")
 id = "bp_healing_potion"
 name = "Healing Potion Blueprint"
-cost = 60
+cost = 300

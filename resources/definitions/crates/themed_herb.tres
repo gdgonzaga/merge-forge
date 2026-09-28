@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="CrateDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/weighted_item.gd" id="1_w"]
+[ext_resource type="Resource" path="res://resources/definitions/items/herb_leaf.tres" id="2_leaf"]
+[ext_resource type="Resource" path="res://resources/definitions/items/herb_bundle.tres" id="3_bundle"]
+[ext_resource type="Script" path="res://resources/definitions/crate_definition.gd" id="4_c"]
+
+[sub_resource type="Resource" id="Resource_leaf"]
+script = ExtResource("1_w")
+item = ExtResource("2_leaf")
+weight = 4
+
+[sub_resource type="Resource" id="Resource_bundle"]
+script = ExtResource("1_w")
+item = ExtResource("3_bundle")
+
+[resource]
+script = ExtResource("4_c")
+id = "themed_herb"
+name = "Herb Crate"
+cost = 25
+min_items = 3
+max_items = 4
+pool = Array[ExtResource("1_w")]([SubResource("Resource_leaf"), SubResource("Resource_bundle")])

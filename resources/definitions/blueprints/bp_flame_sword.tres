@@ -7,5 +7,5 @@
 script = ExtResource("1_wg1fi")
 id = "bp_flame_sword"
 name = "Flame Sword Blueprint"
-cost = 250
+cost = 1500
 dependencies = Array[ExtResource("1_wg1fi")]([ExtResource("2_0c7t5")])

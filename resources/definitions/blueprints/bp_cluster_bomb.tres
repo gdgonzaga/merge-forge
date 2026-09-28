@@ -7,5 +7,5 @@
 script = ExtResource("1_08lsq")
 id = "bp_cluster_bomb"
 name = "Cluster Bomb Blueprint"
-cost = 200
+cost = 1200
 dependencies = Array[ExtResource("1_08lsq")]([ExtResource("2_55kuq")])

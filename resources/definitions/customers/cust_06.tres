@@ -10,13 +10,13 @@
 script = ExtResource("1_o2daw")
 item = ExtResource("2_e6404")
 quantity = 3
-gold_reward = 45
+gold_reward = 60
 
 [sub_resource type="Resource" id="Resource_7e66d"]
 script = ExtResource("1_o2daw")
 item = ExtResource("3_gelq6")
 quantity = 2
-gold_reward = 30
+gold_reward = 40
 
 [resource]
 script = ExtResource("4_0i6q0")

@@ -9,12 +9,12 @@
 [sub_resource type="Resource" id="Resource_7feh4"]
 script = ExtResource("1_hifc5")
 item = ExtResource("2_054ga")
-gold_reward = 40
+gold_reward = 280
 
 [sub_resource type="Resource" id="Resource_fy1ki"]
 script = ExtResource("1_hifc5")
 item = ExtResource("3_82mps")
-gold_reward = 50
+gold_reward = 280
 
 [resource]
 script = ExtResource("4_woa1g")

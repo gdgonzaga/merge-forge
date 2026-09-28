@@ -17,6 +17,6 @@ script = ExtResource("1_4vgte")
 id = "iron_ingot"
 name = "Iron Ingot"
 family = "metal"
-gold_value = 15
+gold_value = 20
 sprite = ExtResource("2_lnj24")
 merge_results = Array[ExtResource("1_q5irx")]([SubResource("Resource_tvmtl")])

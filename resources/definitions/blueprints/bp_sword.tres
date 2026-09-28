@@ -7,5 +7,5 @@
 script = ExtResource("1_445fj")
 id = "bp_sword"
 name = "Sword Blueprint"
-cost = 120
+cost = 600
 dependencies = Array[ExtResource("1_445fj")]([ExtResource("2_u1hyq")])

@@ -6,6 +6,6 @@
 script = ExtResource("1_vitjk")
 id = "slow_timer"
 name = "Patience Clock"
-cost = 80
+cost = 600
 effect = "despawn_time"
 value = 15.0

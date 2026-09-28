@@ -6,6 +6,6 @@
 script = ExtResource("1_83b82")
 id = "crate_discount"
 name = "Bulk Deal"
-cost = 150
+cost = 1200
 effect = "crate_discount"
 value = 0.8

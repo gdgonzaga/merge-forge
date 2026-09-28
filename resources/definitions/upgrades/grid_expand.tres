@@ -6,7 +6,7 @@
 script = ExtResource("1_kumrm")
 id = "grid_expand"
 name = "Board Expansion"
-cost = 100
+cost = 1500
 effect = "grid_size"
 grid_cols = 1
 grid_rows = 1

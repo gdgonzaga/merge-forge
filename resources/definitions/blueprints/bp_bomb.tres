@@ -6,4 +6,4 @@
 script = ExtResource("1_s6ort")
 id = "bp_bomb"
 name = "Bomb Blueprint"
-cost = 100
+cost = 500

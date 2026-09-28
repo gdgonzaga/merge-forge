@@ -45,4 +45,4 @@ reputation_required = 150
 walk_speed = 0.075
 encounter_points = Array[float]([0.2, 0.5, 0.8])
 encounters = Array[ExtResource("1_5lyl5")]([SubResource("Resource_supk0"), SubResource("Resource_0nrh2"), SubResource("Resource_kryoi")])
-gold_reward = 80
+gold_reward = 400
