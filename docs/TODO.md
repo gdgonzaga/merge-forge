@@ -1,4 +1,10 @@
 - **Crates as inventory items — implement after Phase 3, see `PARKED-crates-as-inventory.md`.** Crates bought in prep phase, stored as inventory, opened during sessions. Available in both shop and dungeon modes. Includes ad reward stub.
+- **Paid ad removal.** A one-time non-consumable in-app purchase that turns off interstitials (see GDD "Submodule — Ads").
+  - Needs Google Play Billing (the Godot Google Play Billing plugin), a Play payments profile, and a purchase check on every launch.
+  - Needs a Restore Purchases path.
+  - Update the Data safety form (purchase history), `docs/ADS-COMPLIANCE.md`, and the GDD's Out of Scope list.
+- **Decide: speed pressure in the shop.** An optional "rush customer" archetype with a visible countdown and a tip for serving fast. It would amend the GDD's no-timer rule for that archetype only. Deferred from the shop long-term plan (`tmp/shop-improvements/README.md`, decision D1).
+- **Decide: item quality in the dungeon.** Whether Fine and Masterwork items (shop plan Phase 6) do more in the dungeon, for example a Masterwork potion healing more. Touches `dungeon/` through the effect definitions, and only matters once items can carry quality into a dungeon.
 - Implement a max queue feature - customer queue builds up in time. Possible monetization.
 - Implement a dungeon license feature - players need to buy a license to raid dungeons. Possible monetization.
 - Think of a reason why the player needs to raid dungeons. Maybe for reagents, blueprints

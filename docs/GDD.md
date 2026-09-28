@@ -38,14 +38,15 @@
 - Enemy drops into staging area
 - Save/load system (auto-save at key checkpoints)
 - Audio: music and SFX for both modes
+- Ad-supported: AdMob interstitial ads at natural breaks, with consent through Google's UMP (see Submodule — Ads and `docs/ADS-COMPLIANCE.md`)
 
 ### Out of Scope (do not implement, do not design for)
 
 - Multiplayer / co-op / social features
 - Player character movement or direct combat control
 - Procedural dungeon generation
-- In-app purchases (v1.0 is premium or ad-free)
-- Ads (interstitial, rewarded, banner)
+- In-app purchases, including paid ad removal (tracked in `docs/TODO.md`)
+- Banner, rewarded, app-open and native ads (v1.0 shows interstitials only)
 - Leaderboards / achievements / challenges
 - Tutorial system (v1.0 assumes player learns by doing)
 - Localization (English only)
@@ -277,8 +278,8 @@ Transitions:
 ## 8. Screens and UI
 
 ### Main Menu
-- Elements: Game title, New Game button, Continue button (disabled if no save)
-- Does NOT have: Animated background, settings menu, credits
+- Elements: Game title, New Game button, Continue button (disabled if no save), Privacy policy link, "Privacy choices" button (shown only when UMP says privacy options are required; reopens the consent form)
+- Does NOT have: Animated background, settings menu, credits, ads
 
 ### Shop Mode (In-Game)
 - **Top:** Customer queue — current customer portrait + 1–3 order cards showing item icons and quantities + reject button. On the left side, the current customer's image is shown, with a "Reject" button at the bottom. On the right side, their 1–3 orders are stacked vertically, each showing item icon, quantity, and gold reward. Tapping an order card fulfills it. **Parked:** Show silhouette of other customers behind the current customer, with random movements (just horizontal movements).
@@ -449,11 +450,12 @@ Effects in *italics* are defined but not applied yet: CombatEngine only runs `he
 - **Platform:** Android + iOS
 - **Orientation:** Portrait
 - **Engine:** Godot 4.x (GDScript)
-- **Min Android version:** TBD
-- **Ad integration:** Not for MVP
-- **Consent (UMP/TCF):** No
+- **Min Android version:** API 24 (export preset)
+- **Target Android API:** 36, which Google Play requires for new apps and updates from 2026-08-31. The export preset is still at 33 and must be raised before release.
+- **Ad integration:** AdMob interstitials only (see Submodule — Ads). Requires the INTERNET permission (currently off in the export preset) and a Gradle build (already on).
+- **Consent (UMP/TCF):** Yes. Google's UMP consent message runs on launch before any ad request, and there's an in-game "Privacy choices" entry point. Store and account setup is in `docs/ADS-COMPLIANCE.md`.
 - **Save system:** Yes — single JSON file (`user://save_data.json`), auto-save at checkpoints
-- **In-app purchases:** Not for MVP
+- **In-app purchases:** Not for v1.0 (paid ad removal is in `docs/TODO.md`)
 - **Performance targets:** 60fps on mid-range Android devices
 - **Rendering:** 2D, mobile renderer
 
@@ -833,6 +835,47 @@ Combat tick (every 1 second):
 
 ---
 
+### Submodule — Ads
+
+**What it does:**
+Shows a full-screen AdMob interstitial at natural breaks between play sessions. It's the only ad format in v1.0: there are no banners, no rewarded ads and no paid removal yet.
+
+**What triggers it:**
+The player leaving a summary screen for the prep phase: the Session Summary's Continue, or the Dungeon Summary's Continue after a **cleared** dungeon. The ad shows before prep loads. If no ad is ready, or a rule below blocks it, the transition goes ahead with no delay.
+
+**Rules:**
+- **Never:**
+  - on app launch or quit, or on the main menu or intro;
+  - during a shop session or dungeon run;
+  - over a popup;
+  - after a dungeon wipe (a loss plus an ad stacks frustration).
+- **Grace period:** no ads until the player has completed `AD_GRACE_SESSIONS` shop sessions in a new game. This needs a persistent count of completed shop sessions.
+- **Frequency cap:** at least `AD_MIN_INTERVAL` seconds since the last ad was shown. The AdMob ad-unit frequency cap is a backstop, not the rule.
+- **Consent first:** the UMP consent check runs on every launch, and ads are only requested once UMP allows it. When UMP says privacy options are required, the main menu shows a "Privacy choices" button next to the privacy policy link.
+- **Failure is silent:** no fill, a load error, or no consent just skips the ad. Game flow never waits on an ad.
+- **During an ad:** music and SFX pause, and the game saves before the ad shows, since a click can leave the app.
+- **Builds:** debug and closed-test builds use Google's test interstitial unit. Only production builds use the real unit.
+
+**Fixed values (starting points, tune in playtesting):**
+
+| Property | Value | Notes |
+|----------|-------|-------|
+| AD_GRACE_SESSIONS | 2 | Ad-free completed shop sessions; the first ad can follow session 3 |
+| AD_MIN_INTERVAL | 240 s | Between shown ads; about one per shop session (5-10 min) |
+| Eligible breaks | Session Summary → Prep; Dungeon Cleared Summary → Prep | Not after a wipe |
+
+**Does NOT:**
+- Show banners, rewarded, app-open or native ads
+- Reward, encourage or trick the player into clicking an ad
+- Block or delay any screen transition while an ad loads
+
+**GDD dependencies:**
+- Shop session and dungeon summary transitions (EventBus)
+- Save system (save before showing)
+- Audio (pause and resume)
+
+---
+
 ## 14. Decisions Log
 
 | Date | Decision | Reason |
@@ -869,6 +912,7 @@ Combat tick (every 1 second):
 | 2026-09-27 | Telegraph lines and HP ghost instead of labels | The "Smash: Fighter in 2" label and the hidden target marker resized the unit rows and pushed the board down. Replaced with a line from enemy to target whose fill is the countdown (red when lethal, width by damage) and a ghost chunk on the target's HP bar. Party cards widened (128 px sprites, 270 px HP bars, HP numbers, 32 px buff text); a fixed gap between the party and enemy rows gives the lines room; dead enemies keep their slot. |
 | 2026-09-28 | Dungeon item roles and usable-only drops | Herbs heal, metal buffs, powder (new family) damages. Tier 1 stays raw; tiers 2 to 4 are dungeon-usable, and enemy drop pools hold only usable items (Slime: herbs, Archer: powder, Goblin: plates and herbs). refined_potion renamed herbal_tonic (`SAVE_VERSION` 4). Fire essence now makes phoenix_draught from tonics instead of a Healing Potion from herb bundles, which skipped a tier and bp_healing_potion. absorb, crit_charges, revive, damage and enemy targets are defined but not implemented in CombatEngine yet. The old balance targets no longer hold (heals now drop directly); re-sim before tuning. |
 | 2026-09-28 | All content is `.tres`; `data/` is gone | Recipes, reagent variants, blueprints, crates, upgrades, reagents, customers and dungeons moved from JSON to typed definitions under `resources/definitions/`. Definitions reference each other directly, so a broken link shows up in the editor and in the integrity tests instead of as a silent id typo; references only point down the tiers because Godot can't load cyclic resources. Ids are unchanged, so saves still load (no `SAVE_VERSION` bump). Fire Essence costs 100 as specified; `reagents.json` had drifted to 75. Shop listings are ordered cheapest first. |
+| 2026-09-28 | v1.0 is ad-supported: interstitials only | AdMob interstitials at summary-to-prep breaks, with UMP consent (Submodule — Ads). No persistent banner: it would take about 130-240 px of a full portrait layout, and it would sit next to drag-and-drop input, which risks accidental clicks (an AdMob policy violation) for little revenue. No rewarded ads yet. Paid ad removal is deferred (`docs/TODO.md`). Store and account setup: `docs/ADS-COMPLIANCE.md`. |
 
 ---
 
