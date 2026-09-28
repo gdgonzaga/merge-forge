@@ -132,6 +132,29 @@ func test_a_staging_item_dropped_on_the_shelf_during_a_merge_stays_in_staging() 
 	_board._resolver.is_processing = false
 
 
+func test_dragging_a_board_item_to_the_shelf_leaves_a_matching_staging_item() -> void:
+	var shelf: Control = _board.get_shelf_grid()
+	var grid: Control = _board.get_board_grid()
+	grid.place_item(RecipeResolver.make_item(_gem), Vector2i(0, 0))
+	var floating: Control = FLOATING_ITEM.instantiate()
+	floating.setup(RecipeResolver.make_item(_gem), 60.0)
+	_board.get_staging_area().add_child(floating)
+	_drop(grid, Vector2i(0, 0), shelf, Vector2i(2, 0))
+	await _await_cell_item(shelf, Vector2i(2, 0), "__test_gem")
+	assert_int(_live_children(_board.get_staging_area())).is_equal(1)
+
+
+func test_dragging_a_board_item_to_another_board_cell_leaves_a_matching_staging_item() -> void:
+	var grid: Control = _board.get_board_grid()
+	grid.place_item(RecipeResolver.make_item(_gem), Vector2i(0, 0))
+	var floating: Control = FLOATING_ITEM.instantiate()
+	floating.setup(RecipeResolver.make_item(_gem), 60.0)
+	_board.get_staging_area().add_child(floating)
+	_drop(grid, Vector2i(0, 0), grid, Vector2i(2, 2))
+	await _await_cell_item(grid, Vector2i(2, 2), "__test_gem")
+	assert_int(_live_children(_board.get_staging_area())).is_equal(1)
+
+
 func test_a_staging_item_dropped_on_the_shelf_leaves_staging() -> void:
 	var shelf: Control = _board.get_shelf_grid()
 	var floating: Control = FLOATING_ITEM.instantiate()

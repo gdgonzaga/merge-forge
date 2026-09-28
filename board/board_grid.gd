@@ -2,6 +2,11 @@ extends GridContainer
 
 signal item_placed(item: Dictionary, pos: Vector2i)
 signal item_removed(pos: Vector2i)
+# Fires only for a move whose source was the staging area (from_grid == null),
+# never for a board/shelf move or swap. The only reliable way to tell a
+# staging placement apart: item dicts have no identity, so two different
+# items with the same item_id are dict-equal.
+signal staging_item_placed(item: Dictionary, pos: Vector2i)
 
 var grid: Array[Array] = []
 var grid_cols: int = 5
@@ -322,7 +327,10 @@ func finalize_move(moves: Array[Dictionary]) -> void:
 		m["to_grid"].refresh_cell(m["to_pos"])
 	for m in moves:
 		AudioManager.play_sfx("item_place")
-		m["to_grid"].item_placed.emit(m["item_data"], m["to_pos"])
+		var to_grid: Control = m["to_grid"]
+		to_grid.item_placed.emit(m["item_data"], m["to_pos"])
+		if m.get("from_grid") == null:
+			to_grid.staging_item_placed.emit(m["item_data"], m["to_pos"])
 
 
 func _get_drag_source_screen(drag_data: Dictionary) -> Vector2:

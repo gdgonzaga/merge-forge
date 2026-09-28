@@ -28,9 +28,11 @@ func _ready() -> void:
 	_resolver = load("res://board/merge_resolver.gd").new()
 	if _board:
 		_board.item_placed.connect(_on_item_placed)
+		_board.staging_item_placed.connect(_on_staging_item_placed)
 	# A staging item dropped on the shelf must leave staging, and detection
 	# only scans the board, so this is safe.
 	_shelf.item_placed.connect(_on_item_placed)
+	_shelf.staging_item_placed.connect(_on_staging_item_placed)
 	var popup_scene: PackedScene = load("res://board/merge_choice_popup.tscn")
 	_popup = popup_scene.instantiate()
 	add_child(_popup)
@@ -281,9 +283,14 @@ func _remove_staging_item(item_data: Dictionary) -> void:
 func _on_item_placed(item: Dictionary, _pos: Vector2i) -> void:
 	if GameManager.debug_mode:
 		print("[MergeBoard] item_placed: item=%s pos=%s is_processing=%s" % [item.get("item_id", "?"), str(_pos), str(_resolver.is_processing if _resolver else "no_resolver")])
-	if not (_resolver and _resolver.is_processing):
-		_remove_staging_item(item)
 	_run_merge_detection()
+
+
+# Only a move that actually left the staging area should remove a staging
+# item; a board/shelf move or swap must never touch staging just because an
+# item there happens to share an id (dicts have no identity of their own).
+func _on_staging_item_placed(item: Dictionary, _pos: Vector2i) -> void:
+	_remove_staging_item(item)
 
 
 func _on_board_move(moves: Array[Dictionary]) -> void:
