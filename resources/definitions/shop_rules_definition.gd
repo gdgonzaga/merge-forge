@@ -6,6 +6,8 @@ class_name ShopRulesDefinition
 @export var session_size: int = 10
 # Chance that a session rolls a market modifier (at most one per session).
 @export var modifier_chance: float = 0.0
+# How many of the next session's customers the prep forecast reveals.
+@export var forecast_customers: int = 3
 
 # Order XP = gold reward x xp_per_gold, raised by the fulfil streak: each
 # customer fulfilled in a row adds streak_step, up to streak_cap.

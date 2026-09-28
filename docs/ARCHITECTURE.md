@@ -32,7 +32,7 @@ res://
     - `MainMenu` (`main_menu.tscn`)
     - `ShopSession` (`shop_session.tscn`) → instances `MergeBoard` (`merge_board.tscn`) (shop board)
     - `SessionSummary` (`session_summary.tscn`)
-    - `PrepPhase` (`prep_phase.tscn`) → TabContainer: Blueprints / Upgrades / Reagents
+    - `PrepPhase` (`prep_phase.tscn`) → TabContainer: Forecast / Blueprints / Upgrades / Reagents (Forecast tab holds `ForecastPanel`, `core/forecast_panel.tscn`)
     - `DungeonRun` (`dungeon_run.tscn`) → instances `MergeBoard` (`merge_board.tscn`) (dungeon board, separate state)
     - `DungeonSummary` (`dungeon_summary.tscn`)
 
@@ -135,7 +135,6 @@ These are emitted directly on GameManager. Connect via `GameManager.gold_changed
 
 ### Post-MVP (Deferred)
 
-- **Demand Forecast / Forecast tab:** The prep phase Forecast tab and a customer `forecast_bias` are deferred to post-MVP. The tab should be removed from the PrepPhase TabContainer for v1.0, or hidden behind a feature flag. Do not build forecast UI or bias logic for MVP.
 - **Equipment Durability / Repair mechanic:** Party equipment wears during dungeon raids. The player must maintain item durability during the raid by crafting repair items (usable item type: `repair`). This mechanic is deferred to post-MVP — do not implement `repair` as a usable item effect type for v1.0.
 - **Party Abilities / Healing:** All party members auto-attack only for MVP. No healer ability, no skills, no active party abilities. Usable-item buffs (buff_attack) remain in MVP. Post-MVP: add active abilities, healing, and party/enemy skill system.
 - **Dungeon Mid-Exit Penalty:** MVP wipes all partial progress on dungeon exit/fail. Post-MVP: impose a penalty for mid-dungeon exit and implement anti-scumming measures (e.g., gold cost, cooldown timer).
@@ -544,7 +543,7 @@ The GDD lists effect types (heal, buff_attack). Party stats are confirmed (see t
 | `autoloads/definition_library.gd` | Autoload | Loads every definition folder into a catalog keyed by id. Shop listings (blueprints, crates, upgrades, reagents) come back cheapest first, customers in `queue_order`, party members in `slot_order`. |
 | `autoloads/recipe_resolver.gd` | Autoload | Synchronous rules over the definitions, filtered by player progress. |
 | `autoloads/session_planner.gd` | Autoload | `plan_next_session() -> SessionPlan`. The only caller of `customer_generator.gd`; prep and the shop both go through it. |
-| `autoloads/session_plan.gd` | Script (`RefCounted`, `SessionPlan`) | One dealt shop session: `customers: Array[ShopCustomer]`, `modifier: SessionModifierDefinition` (null when none rolled). |
+| `autoloads/session_plan.gd` | Script (`RefCounted`, `SessionPlan`) | One dealt shop session: `customers: Array[ShopCustomer]`, `modifier: SessionModifierDefinition` (null when none rolled). `family_demand() -> Array[Dictionary]` returns `{"family", "share"}` per item family across every order, largest share first (ties by family) — the prep forecast's "what will they ask for". |
 | `autoloads/customer_generator.gd` | Script (`RefCounted`) | `plan(...)` rolls a market modifier (its own RNG stream, so adding modifiers never reshuffles a seed's customers) then deals the session's customers from the unlocked archetypes: filters by shop level and craftability, does a weighted draw with replacement, rolls each dealt customer's orders. `roll_modifier(...)` picks at most one modifier, gated by `ShopRulesDefinition.modifier_chance` and each modifier's `min_shop_level`, weighted like everything else. Deterministic from its inputs (same archetypes, modifiers, level, seed and craftability give the same session). |
 | `autoloads/shop_customer.gd` | Script (`RefCounted`, `ShopCustomer`) | One customer dealt into a session: the `CustomerDefinition` archetype plus the `Array[OrderDefinition]` rolled for it. |
 | `resources/definitions/*.gd` | Resource scripts | One `class_name` per definition type (below). |
@@ -563,7 +562,7 @@ Each catalog is a folder of `.tres` files under `resources/definitions/`; the fi
 | `crates/` | `CrateDefinition` | `id`, `name`, `cost`, `min_items`, `max_items`, `pool: Array[WeightedItem]`, `min_shop_level` |
 | `upgrades/` | `UpgradeDefinition` | `id`, `name`, `cost`, `effect` (`grid_size`, `despawn_time` or `crate_discount`), `value` (seconds for despawn_time, price multiplier for crate_discount), `grid_cols` and `grid_rows` (grid_size) |
 | `customers/` | `CustomerDefinition` | A customer *archetype*, not a fixed customer: `id`, `name`, `role`, `sprite` (portrait), `min_shop_level`, `weight` (a real frequency weight: how often this archetype is dealt relative to the other eligible archetypes — see Shop Session), `min_orders`, `max_orders`, `price_multiplier` (scales every rolled order's price), `wants: Array[OrderTemplate]` |
-| `shop_rules/` | `ShopRulesDefinition` | One definition, id `"default"`: `id`, `session_size`, `modifier_chance`, `xp_per_gold`, `streak_step`, `streak_cap`, `level_xp_base`, `level_xp_exponent`, `max_level` |
+| `shop_rules/` | `ShopRulesDefinition` | One definition, id `"default"`: `id`, `session_size`, `modifier_chance`, `forecast_customers`, `xp_per_gold`, `streak_step`, `streak_cap`, `level_xp_base`, `level_xp_exponent`, `max_level` |
 | `dungeons/` | `DungeonDefinition` | See the Dungeon Run subsystem. |
 | `modifiers/` | `SessionModifierDefinition` | A market event a shop session may roll, at most one per session (`ShopRulesDefinition.modifier_chance`): `id`, `name`, `description`, `sprite`, `min_shop_level`, `weight`, `boosted_customers: Array[CustomerDefinition]`, `customer_weight_multiplier`, `family`, `family_price_multiplier`, `affected_crates: Array[CrateDefinition]`, `crate_cost_multiplier`, `session_size_delta` |
 | (inline) | `EffectDefinition` | `type`, `value`, `duration` (ticks, 0 = instant). The `value` meaning per type is in `effect_definition.gd`. |
@@ -634,7 +633,7 @@ RecipeResolver has no signals — it is queried synchronously by MergeResolver, 
 | `get_all_party_members()` | Ordered by `slot_order`: index 0 is the front member. |
 | `get_all_blueprints()`, `get_all_crates()`, `get_all_upgrades()`, `get_all_reagents()` | Typed arrays, cheapest first (ties by id). |
 | `get_all_customers() -> Array[CustomerDefinition]` | Sorted by id: the archetype pool `autoloads/customer_generator.gd` deals a session from. Not a fixed order — the generator decides who's dealt. |
-| `get_shop_rules() -> ShopRulesDefinition` | The one `shop_rules` definition, id `"default"` (`session_size`, `modifier_chance`, `xp_per_gold`, `streak_step`, `streak_cap`, `level_xp_base`, `level_xp_exponent`, `max_level`). |
+| `get_shop_rules() -> ShopRulesDefinition` | The one `shop_rules` definition, id `"default"` (`session_size`, `modifier_chance`, `forecast_customers`, `xp_per_gold`, `streak_step`, `streak_cap`, `level_xp_base`, `level_xp_exponent`, `max_level`). |
 | `get_all_dungeons()` | Ordered by `min_shop_level` (unlock order), ties by id. PrepPhase's Enter Dungeon button targets the first. |
 | `get_all_modifiers() -> Array[SessionModifierDefinition]` | Sorted by id, so a seeded modifier roll can't depend on catalog load order. |
 | `get_unlocks_between(old_level: int, new_level: int) -> Array[Resource]` | Every definition across every catalog whose `min_shop_level` is above `old_level` and at or below `new_level` (exclusive below, inclusive above). Sorted by level, then folder, then id. Used by `LevelUpPanel` to list what a level-up opened. |
@@ -1130,7 +1129,9 @@ No special abilities for MVP — auto-attack only.
 
 | File | Type | Responsibility |
 |------|------|----------------|
-| `core/prep_phase.tscn` | Scene | Prep phase with TabContainer: Blueprints (buy blueprints), Upgrades (buy upgrades), Reagents (buy reagents). Crates are purchased during shop sessions, not here. Forecast tab deferred to post-MVP. |
+| `core/prep_phase.tscn` | Scene | Prep phase with TabContainer: Forecast (next session preview), Blueprints (buy blueprints), Upgrades (buy upgrades), Reagents (buy reagents). Crates are purchased during shop sessions, not here. |
+| `core/forecast_panel.tscn` | Scene | The Forecast tab's content: `SessionPlanner.plan_next_session()`'s modifier card, demand by item family, and the first `forecast_customers` customers. |
+| `core/forecast_panel.gd` | Script | `setup(plan: SessionPlan, reveal_count: int)`. Rebuilds its demand rows and customer portraits each call; frees the previous ones with `queue_free`. |
 | `autoloads/game_manager.gd` | Autoload | Persistent state data store. No game logic — pure state with change signals. |
 | `core/purchases.gd` | RefCounted | Purchase rules for blueprints, upgrades and reagents: checks (including `GameManager.meets_level(min_shop_level)` for blueprints and reagents), charges and grants, and refuses without charging when a check fails. Held by PrepPhase. |
 
@@ -1196,12 +1197,37 @@ Reagents are bought in the prep phase and stored in `GameManager.reagent_invento
 |----------|-------------|
 | `setup(card_name, description, desc_color, btn_text, disabled, on_press, min_height)` | Configures card appearance and buy callback. Disconnects previous signal connections. |
 
+#### ForecastPanel
+
+**Extends:** VBoxContainer
+**Script:** `core/forecast_panel.gd`
+**Scene:** `core/forecast_panel.tscn`
+**Description:** The Forecast tab's content: a `SessionPlan`'s market modifier card (hidden when `modifier` is null), demand by item family (`SessionPlan.family_demand()`, one label per family, largest share first) and portraits for the first `reveal_count` customers. Shows `%EmptyLabel` when the plan has no customers.
+
+**Properties:**
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `_modifier_card: PanelContainer` | `@onready %ModifierCard` | Visible only when `plan.modifier != null` |
+| `_modifier_icon: TextureRect` | `@onready %ModifierIcon` | Modifier sprite; hidden when the modifier has none |
+| `_modifier_name: Label` | `@onready %ModifierName` | Modifier name |
+| `_modifier_description: Label` | `@onready %ModifierDescription` | Modifier description |
+| `_demand_list: VBoxContainer` | `@onready %DemandList` | One row per family from `family_demand()`, rebuilt (`queue_free` + `remove_child`) each `setup` |
+| `_portraits: HBoxContainer` | `@onready %CustomerPortraits` | One portrait + name column per revealed customer |
+| `_empty_label: Label` | `@onready %EmptyLabel` | Shown when `plan.customers` is empty |
+
+**Functions:**
+
+| Function | Description |
+|----------|-------------|
+| `setup(plan: SessionPlan, reveal_count: int)` | Refreshes the modifier card, demand rows and the first `reveal_count` customers' portraits from `plan`. |
+
 #### PrepPhase
 
 **Extends:** Control
 **Script:** `core/prep_phase.gd`
 **Scene:** `core/prep_phase.tscn`
-**Description:** TabContainer-based prep phase with 3 tabs: Blueprints, Upgrades, Reagents. Does not instance a MergeBoard — board rearrange deferred to post-MVP. Layout is scene-based with placeholder PurchaseCard instances in each tab (cleared at runtime).
+**Description:** TabContainer-based prep phase with 4 tabs: Forecast (first, opens by default), Blueprints, Upgrades, Reagents. Does not instance a MergeBoard — board rearrange deferred to post-MVP. Layout is scene-based with placeholder PurchaseCard instances in each purchase tab (cleared at runtime).
 
 **Properties:**
 
@@ -1213,12 +1239,16 @@ Reagents are bought in the prep phase and stored in `GameManager.reagent_invento
 | `_dungeon_btn: Button` | `@onready %DungeonBtn` | Enter Dungeon button; its text and disabled state follow `GameManager.shop_level_changed` (`_refresh_dungeon_button`), reading "Dungeon (Lv N)" while locked |
 | `_dungeon: DungeonDefinition` | DungeonDefinition | The button's target: `DefinitionLibrary.get_all_dungeons()[0]`, the first dungeon to unlock. Sets the button text and the `meets_level` check. |
 | `_purchases: RefCounted` | `core/purchases.gd` | Purchase rules; `try_purchase` delegates to it |
+| `_forecast_panel: VBoxContainer` | `@onready %ForecastPanel` | The Forecast tab's content; `_refresh_forecast()` calls `setup(plan, forecast_customers)` on it |
+| `_plan: SessionPlan` | SessionPlan | The next session, from `SessionPlanner.plan_next_session()`; exposed via `get_forecast_plan()` and used to feed the forecast panel |
 
 **Functions:**
 
 | Function | Description |
 |----------|-------------|
+| `get_forecast_plan() -> SessionPlan` | Returns `_plan`, the session the Forecast tab is showing. `shop_session.gd` deals the same plan (both call `SessionPlanner.plan_next_session()`, a pure function of GameManager's state). |
 | `try_purchase(type: String, id: String) -> bool` | Delegates a blueprint, upgrade or reagent purchase to its `core/purchases.gd` helper. Returns true on success. |
+| `_refresh_forecast()` | Rolls `_plan` from `SessionPlanner` and calls `_forecast_panel.setup(_plan, DefinitionLibrary.get_shop_rules().forecast_customers)`. Called from `_ready`, and will be called by the purchase signal handlers once buying affects the forecast (Task 6). |
 | `_debug_unlock_all()` | Debug: sets debug_mode, grants 20000g, 1000 rep, all blueprints, 5 of every reagent. |
 
 #### GameManager

@@ -7,10 +7,13 @@ const PURCHASES := preload("res://core/purchases.gd")
 @onready var _upgrade_scroll: VBoxContainer = $VBox/TabContainer/Upgrades/UpgradeContent
 @onready var _reagent_scroll: VBoxContainer = $VBox/TabContainer/Reagents/ReagentContent
 @onready var _dungeon_btn: Button = %DungeonBtn
+@onready var _forecast_panel: VBoxContainer = %ForecastPanel
 
 var _purchases: RefCounted = PURCHASES.new()
 # Today's single Enter Dungeon button targets the first dungeon to unlock.
 var _dungeon: DungeonDefinition
+# The next session exactly as the shop will deal it.
+var _plan: SessionPlan
 
 
 func _ready() -> void:
@@ -36,6 +39,7 @@ func _ready() -> void:
 	GameManager.reagent_count_changed.connect(_on_reagent_count_changed)
 	GameManager.shop_level_changed.connect(_on_shop_level_changed)
 	_refresh_all()
+	_refresh_forecast()
 
 
 # Quit to menu drops any in-flight prep/board state. Confirm before leaving.
@@ -77,6 +81,10 @@ func _refresh_dungeon_button() -> void:
 	_dungeon_btn.text = "Enter Dungeon" if open else "Dungeon (Lv %d)" % _dungeon.min_shop_level
 
 
+func get_forecast_plan() -> SessionPlan:
+	return _plan
+
+
 func try_purchase(type: String, id: String) -> bool:
 	match type:
 		"blueprint":
@@ -92,6 +100,11 @@ func _refresh_all() -> void:
 	_refresh_blueprints()
 	_refresh_upgrades()
 	_refresh_reagents()
+
+
+func _refresh_forecast() -> void:
+	_plan = SessionPlanner.plan_next_session()
+	_forecast_panel.setup(_plan, DefinitionLibrary.get_shop_rules().forecast_customers)
 
 
 func _refresh_blueprints() -> void:

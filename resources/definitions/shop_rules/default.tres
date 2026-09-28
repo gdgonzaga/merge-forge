@@ -7,6 +7,7 @@ script = ExtResource("1_rules")
 id = "default"
 session_size = 10
 modifier_chance = 0.35
+forecast_customers = 3
 xp_per_gold = 0.5
 streak_step = 0.1
 streak_cap = 0.5

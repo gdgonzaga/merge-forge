@@ -11,6 +11,7 @@
 [ext_resource type="StyleBox" uid="uid://d13ojkcc4ssv4" path="res://resources/themes/button_disabled.tres" id="7_qgtw2"]
 [ext_resource type="FontFile" path="res://resources/fonts/MedievalSharp-Regular.ttf" id="8_font"]
 [ext_resource type="FontFile" path="res://resources/fonts/RobotoCondensed-VariableFont_wght.ttf" id="9_font"]
+[ext_resource type="PackedScene" path="res://core/forecast_panel.tscn" id="10_forecast"]
 
 [node name="PrepPhase" type="Control" unique_id=504126686]
 layout_mode = 3
@@ -52,11 +53,23 @@ layout_mode = 2
 size_flags_vertical = 3
 current_tab = 0
 
-[node name="Blueprints" type="ScrollContainer" parent="VBox/TabContainer" unique_id=1466132517]
+[node name="Forecast" type="ScrollContainer" parent="VBox/TabContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 metadata/_tab_index = 0
+
+[node name="ForecastPanel" parent="VBox/TabContainer/Forecast" instance=ExtResource("10_forecast")]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Blueprints" type="ScrollContainer" parent="VBox/TabContainer" unique_id=1466132517]
+visible = false
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+metadata/_tab_index = 1
 
 [node name="BpContent" type="VBoxContainer" parent="VBox/TabContainer/Blueprints" unique_id=504126687]
 layout_mode = 2
@@ -72,7 +85,7 @@ visible = false
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
-metadata/_tab_index = 1
+metadata/_tab_index = 2
 
 [node name="UpgradeContent" type="VBoxContainer" parent="VBox/TabContainer/Upgrades" unique_id=504126688]
 layout_mode = 2
@@ -87,7 +100,7 @@ visible = false
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
-metadata/_tab_index = 2
+metadata/_tab_index = 3
 
 [node name="ReagentContent" type="VBoxContainer" parent="VBox/TabContainer/Reagents" unique_id=504126689]
 layout_mode = 2
