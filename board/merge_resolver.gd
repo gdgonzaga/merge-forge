@@ -12,6 +12,11 @@ var _last_group_count: int = 0
 var _pending_options: Array[Dictionary] = []
 var _result_center: Vector2i = Vector2i(-1, -1)
 
+# Share of the source item's value paid per item past 3 in a group. The
+# extras are refunded as well, so a group of 5 can be rebuilt every merge;
+# a high rate turns that into a gold farm independent of customers.
+const BONUS_RATE := 0.25
+
 
 func setup(board_ref: Control, popup_cb: Callable, detector: RefCounted, merge_board: Control) -> void:
 	board = board_ref
@@ -136,12 +141,13 @@ func _place_results(option: Dictionary) -> void:
 	var result_count := _last_group_count / 3
 	var refund_count := _last_group_count % 3
 	var gold_value: int = result_def.gold_value
-	var bonus: int = calculate_bonus_gold(_last_group_count, gold_value)
+	var source_def := DefinitionLibrary.get_item(_last_group_item_id)
+	var bonus: int = calculate_bonus_gold(_last_group_count, source_def.gold_value)
 	_dbg("_place_results: result_count=%d refund_count=%d bonus=%d" % [result_count, refund_count, bonus])
 	if bonus > 0:
 		_spawn_bonus_coins(bonus)
 	_spawn_results(RecipeResolver.make_item(result_def), result_count)
-	_refund_source_items(RecipeResolver.make_item(DefinitionLibrary.get_item(_last_group_item_id)), refund_count)
+	_refund_source_items(RecipeResolver.make_item(source_def), refund_count)
 	if gold_value > 0 and _result_center.x >= 0:
 		_merge_board.show_gold_text(gold_value, _result_center)
 	EventBus.merge_completed.emit(result_id, bonus)
@@ -205,8 +211,8 @@ func calculate_center_of_mass(positions: Array[Vector2i]) -> Vector2i:
 	return Vector2i(sum_x / positions.size(), sum_y / positions.size())
 
 
-func calculate_bonus_gold(count: int, item_value: int) -> int:
-	return (count - 3) * int(floor(item_value * 0.5))
+func calculate_bonus_gold(count: int, source_value: int) -> int:
+	return (count - 3) * int(floor(source_value * BONUS_RATE))
 
 
 func _dbg(msg: String) -> void:
