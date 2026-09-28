@@ -102,8 +102,88 @@ func _merge_result(result: ItemDefinition, blueprint: BlueprintDefinition) -> Me
 	return option
 
 
+func test_item_sold_in_a_crate_is_craftable() -> void:
+	var raw := _item("__test_raw")
+	set_definition(DefinitionLibrary.items, raw)
+	set_definition(DefinitionLibrary.crates, _crate("__test_crate", [raw]))
+	assert_bool(RecipeResolver.is_craftable(raw)).is_true()
+
+
+func test_item_nothing_produces_is_not_craftable() -> void:
+	var orphan := _item("__test_orphan")
+	set_definition(DefinitionLibrary.items, orphan)
+	assert_bool(RecipeResolver.is_craftable(orphan)).is_false()
+
+
+func test_ungated_merge_of_a_crate_item_is_craftable() -> void:
+	var raw := _item("__test_raw")
+	var mid := _item("__test_mid")
+	raw.merge_results.append(_merge_result(mid, null))
+	set_definition(DefinitionLibrary.items, raw)
+	set_definition(DefinitionLibrary.items, mid)
+	set_definition(DefinitionLibrary.crates, _crate("__test_crate", [raw]))
+	assert_bool(RecipeResolver.is_craftable(mid)).is_true()
+
+
+func test_gated_merge_needs_its_blueprint() -> void:
+	var raw := _item("__test_raw")
+	var mid := _item("__test_mid")
+	raw.merge_results.append(_merge_result(mid, _blueprint))
+	set_definition(DefinitionLibrary.items, raw)
+	set_definition(DefinitionLibrary.items, mid)
+	set_definition(DefinitionLibrary.crates, _crate("__test_crate", [raw]))
+	assert_bool(RecipeResolver.is_craftable(mid)).is_false()
+	GameManager.add_blueprint(_blueprint.id)
+	assert_bool(RecipeResolver.is_craftable(mid)).is_true()
+
+
+func test_variant_with_an_unsold_reagent_needs_one_in_stock() -> void:
+	var raw := _item("__test_raw")
+	var fancy := _item("__test_fancy")
+	_reagent.cost = 0
+	var variant := ReagentVariant.new()
+	variant.result = fancy
+	variant.reagent = _reagent
+	variant.blueprint = _blueprint
+	raw.reagent_variants.append(variant)
+	set_definition(DefinitionLibrary.items, raw)
+	set_definition(DefinitionLibrary.items, fancy)
+	set_definition(DefinitionLibrary.crates, _crate("__test_crate", [raw]))
+	GameManager.add_blueprint(_blueprint.id)
+	assert_bool(RecipeResolver.is_craftable(fancy)).is_false()
+	GameManager.add_reagent(_reagent.id, 1)
+	assert_bool(RecipeResolver.is_craftable(fancy)).is_true()
+
+
+func test_variant_with_a_reagent_for_sale_is_craftable_with_none_in_stock() -> void:
+	var raw := _item("__test_raw")
+	var fancy := _item("__test_fancy")
+	_reagent.cost = 100
+	var variant := ReagentVariant.new()
+	variant.result = fancy
+	variant.reagent = _reagent
+	variant.blueprint = _blueprint
+	raw.reagent_variants.append(variant)
+	set_definition(DefinitionLibrary.items, raw)
+	set_definition(DefinitionLibrary.items, fancy)
+	set_definition(DefinitionLibrary.crates, _crate("__test_crate", [raw]))
+	GameManager.add_blueprint(_blueprint.id)
+	assert_bool(RecipeResolver.is_craftable(fancy)).is_true()
+
+
 func _weighted(item: ItemDefinition, weight: int) -> WeightedItem:
 	var entry := WeightedItem.new()
 	entry.item = item
 	entry.weight = weight
 	return entry
+
+
+func _crate(id: String, contents: Array) -> CrateDefinition:
+	var crate := CrateDefinition.new()
+	crate.id = id
+	crate.cost = 10
+	for item: ItemDefinition in contents:
+		var entry := WeightedItem.new()
+		entry.item = item
+		crate.pool.append(entry)
+	return crate

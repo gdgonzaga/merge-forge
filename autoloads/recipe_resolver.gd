@@ -50,6 +50,50 @@ func are_dependencies_met(blueprint: BlueprintDefinition) -> bool:
 	return true
 
 
+# True when the player can make `item` today: a crate sells it, or a merge they
+# hold the blueprint for makes it from something craftable. A reagent variant
+# counts when the reagent is for sale or in stock.
+func is_craftable(item: ItemDefinition) -> bool:
+	return _is_craftable(item, {})
+
+
+# `visited` holds ids already on the path or already disproven, so a cycle in
+# content can't recurse forever.
+func _is_craftable(item: ItemDefinition, visited: Dictionary) -> bool:
+	if item == null or visited.has(item.id):
+		return false
+	if _sold_in_a_crate(item):
+		return true
+	visited[item.id] = true
+	for source: ItemDefinition in DefinitionLibrary.get_all_items().values():
+		if _makes(source, item) and _is_craftable(source, visited):
+			return true
+	return false
+
+
+func _sold_in_a_crate(item: ItemDefinition) -> bool:
+	for crate in DefinitionLibrary.get_all_crates():
+		for entry in crate.pool:
+			if entry.item != null and entry.item.id == item.id:
+				return true
+	return false
+
+
+# Whether merging `source` can give `target` with what the player owns.
+func _makes(source: ItemDefinition, target: ItemDefinition) -> bool:
+	for option in source.merge_results:
+		if option.result == target and is_unlocked(option.blueprint):
+			return true
+	for variant in source.reagent_variants:
+		if variant.result == target and is_unlocked(variant.blueprint) and _can_get_reagent(variant.reagent):
+			return true
+	return false
+
+
+func _can_get_reagent(reagent: ReagentDefinition) -> bool:
+	return reagent.cost > 0 or GameManager.reagent_inventory.get(reagent.id, 0) > 0
+
+
 static func roll_weighted_pool(pool: Array[WeightedItem], min_rolls: int, max_rolls: int) -> Array[ItemDefinition]:
 	var results: Array[ItemDefinition] = []
 	var total_weight := 0
