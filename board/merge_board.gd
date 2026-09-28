@@ -50,11 +50,13 @@ func setup(config: Dictionary) -> void:
 		})
 		_resolver.setup(_board, _on_merge_choice_requested, _detector, self)
 		_board.set_move_callback(_on_board_move)
+		_board.set_drop_guard(_drops_allowed)
 	# Only the shop passes shelf_slots; the dungeon's board has no shelf.
 	var shelf_slots: int = config.get("shelf_slots", 0)
 	_shelf.set_cell_scene(cell_scene)
 	_shelf.setup({"cols": shelf_slots, "rows": 1, "merges_enabled": false})
 	_shelf.set_move_callback(_on_board_move)
+	_shelf.set_drop_guard(_drops_allowed)
 	_shelf_area.visible = shelf_slots > 0
 
 
@@ -286,6 +288,13 @@ func _on_board_move(moves: Array[Dictionary]) -> void:
 	animate_move(moves, func(): pass)
 
 
+# The grid model between the merge burst and remove_items() still holds the
+# merging items, so a drop mid-merge (board or shelf) could lose or
+# duplicate one.
+func _drops_allowed() -> bool:
+	return not (_resolver and _resolver.is_processing)
+
+
 func _run_merge_detection() -> void:
 	if _resolver and _resolver.is_processing:
 		return
@@ -321,6 +330,8 @@ func get_shelf_state() -> Array:
 
 
 # Saved items past the shelf's end go to the board or staging, never lost.
+# Must run after the board is loaded: load_board_state wipes the board, which
+# would erase any overflow this placed there.
 func load_shelf_state(state: Array) -> void:
 	for item in _shelf.load_board_state(state):
 		place_drop(item)

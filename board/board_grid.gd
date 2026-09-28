@@ -11,10 +11,17 @@ var merges_enabled: bool = true
 
 var _cell_scene: PackedScene
 var _move_callback: Callable
+var _drop_guard: Callable
 
 
 func set_move_callback(cb: Callable) -> void:
 	_move_callback = cb
+
+
+# With no guard set, drops are always allowed (the dungeon board and
+# bare-grid tests never call this).
+func set_drop_guard(guard: Callable) -> void:
+	_drop_guard = guard
 
 
 func setup(config: Dictionary) -> void:
@@ -256,6 +263,11 @@ func refresh_cell(pos: Vector2i) -> void:
 # (an item dragged from the staging area). Dropping onto an occupied cell
 # swaps, except from staging, which only fills empty cells.
 func _on_cell_drop(to_pos: Vector2i, drag_data: Dictionary) -> void:
+	# A merge in progress still owns the grid model between the burst
+	# animation and remove_items(), so a drop mid-merge could lose or
+	# duplicate an item. Refuse every drop until the merge settles.
+	if _drop_guard.is_valid() and not _drop_guard.call():
+		return
 	var source: Control = drag_data.get("_source_grid")
 	var from_pos: Vector2i = drag_data.get("_source_pos", Vector2i(-1, -1))
 	if source == self and from_pos == to_pos:
@@ -266,17 +278,35 @@ func _on_cell_drop(to_pos: Vector2i, drag_data: Dictionary) -> void:
 		if target_item != null:
 			return
 		grid[to_pos.y][to_pos.x] = drag_data
-		moves.append({"item_data": drag_data, "from_grid": null, "from_pos": Vector2i(-1, -1),
-			"from_screen": _get_drag_source_screen(drag_data), "to_grid": self, "to_pos": to_pos})
+		moves.append({
+			"item_data": drag_data,
+			"from_grid": null,
+			"from_pos": Vector2i(-1, -1),
+			"from_screen": _get_drag_source_screen(drag_data),
+			"to_grid": self,
+			"to_pos": to_pos,
+		})
 	else:
 		var moved_item = source.grid[from_pos.y][from_pos.x]
 		if moved_item == null:
 			return
 		source.grid[from_pos.y][from_pos.x] = target_item
 		grid[to_pos.y][to_pos.x] = moved_item
-		moves.append({"item_data": moved_item, "from_grid": source, "from_pos": from_pos, "to_grid": self, "to_pos": to_pos})
+		moves.append({
+			"item_data": moved_item,
+			"from_grid": source,
+			"from_pos": from_pos,
+			"to_grid": self,
+			"to_pos": to_pos,
+		})
 		if target_item != null:
-			moves.append({"item_data": target_item, "from_grid": self, "from_pos": to_pos, "to_grid": source, "to_pos": from_pos})
+			moves.append({
+				"item_data": target_item,
+				"from_grid": self,
+				"from_pos": to_pos,
+				"to_grid": source,
+				"to_pos": from_pos,
+			})
 	if _move_callback.is_valid():
 		_move_callback.call(moves)
 	else:

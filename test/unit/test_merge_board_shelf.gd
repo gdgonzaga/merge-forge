@@ -93,6 +93,45 @@ func test_dropping_a_board_item_on_an_occupied_board_cell_still_swaps() -> void:
 	assert_str(grid.grid[0][0]["item_id"]).is_equal("__test_gem")
 
 
+func test_dropping_a_board_item_on_an_occupied_shelf_slot_swaps() -> void:
+	var shelf: Control = _board.get_shelf_grid()
+	var grid: Control = _board.get_board_grid()
+	grid.place_item(RecipeResolver.make_item(_ore), Vector2i(1, 1))
+	shelf.place_item(RecipeResolver.make_item(_gem), Vector2i(0, 0))
+	_drop(grid, Vector2i(1, 1), shelf, Vector2i(0, 0))
+	assert_str(shelf.grid[0][0]["item_id"]).is_equal("__test_ore")
+	assert_str(grid.grid[1][1]["item_id"]).is_equal("__test_gem")
+	await _await_cell_item(shelf, Vector2i(0, 0), "__test_ore")
+	await _await_cell_item(grid, Vector2i(1, 1), "__test_gem")
+
+
+# MergeBoard has no public getter for its resolver; there is no clean public
+# route to force is_processing, so the test sets it directly on the private
+# member, as the fix-round notes allow.
+func test_a_shelf_item_dropped_on_the_board_during_a_merge_changes_neither_grid() -> void:
+	var shelf: Control = _board.get_shelf_grid()
+	var grid: Control = _board.get_board_grid()
+	grid.place_item(RecipeResolver.make_item(_ore), Vector2i(1, 1))
+	shelf.place_item(RecipeResolver.make_item(_gem), Vector2i(0, 0))
+	_board._resolver.is_processing = true
+	_drop(shelf, Vector2i(0, 0), grid, Vector2i(1, 1))
+	assert_str(grid.grid[1][1]["item_id"]).is_equal("__test_ore")
+	assert_str(shelf.grid[0][0]["item_id"]).is_equal("__test_gem")
+	_board._resolver.is_processing = false
+
+
+func test_a_staging_item_dropped_on_the_shelf_during_a_merge_stays_in_staging() -> void:
+	var shelf: Control = _board.get_shelf_grid()
+	var floating: Control = FLOATING_ITEM.instantiate()
+	floating.setup(RecipeResolver.make_item(_gem), 60.0)
+	_board.get_staging_area().add_child(floating)
+	_board._resolver.is_processing = true
+	shelf.get_cell_at(Vector2i(1, 0))._drop_data(Vector2.ZERO, floating.make_drag_data())
+	assert_object(shelf.grid[0][1]).is_null()
+	assert_int(_live_children(_board.get_staging_area())).is_equal(1)
+	_board._resolver.is_processing = false
+
+
 func test_a_staging_item_dropped_on_the_shelf_leaves_staging() -> void:
 	var shelf: Control = _board.get_shelf_grid()
 	var floating: Control = FLOATING_ITEM.instantiate()
