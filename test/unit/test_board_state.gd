@@ -18,10 +18,21 @@ func before_test() -> void:
 	set_definition(DefinitionLibrary.items, _gem)
 
 
-func test_board_state_saves_only_ids() -> void:
+func test_board_state_saves_ids_and_quality() -> void:
 	var board := _make_board()
 	board.place_item(RecipeResolver.make_item(_gem), Vector2i(1, 2))
-	assert_array(board.get_board_state()).is_equal([{"col": 1, "row": 2, "item_id": GEM_ID}])
+	assert_array(board.get_board_state()).is_equal([{"col": 1, "row": 2, "item_id": GEM_ID, "quality": 0}])
+
+
+func test_quality_survives_a_json_round_trip() -> void:
+	var board := _make_board()
+	board.place_item(RecipeResolver.make_item(_gem, 2), Vector2i(0, 1))
+	var saved: Array = JSON.parse_string(JSON.stringify(board.get_board_state()))
+	var reloaded := _make_board()
+	reloaded.load_board_state(saved)
+	# JSON turns 2 into 2.0; the reloaded item must hold an int again.
+	assert_int(reloaded.grid[1][0]["quality"]).is_equal(2)
+	assert_bool(reloaded.grid[1][0]["quality"] is int).is_true()
 
 
 func test_board_state_restores_sprite_after_json_round_trip() -> void:
@@ -45,7 +56,7 @@ func test_a_full_board_keeps_its_items_in_place_on_a_taller_board() -> void:
 	var state: Array = []
 	for r in range(3):
 		for c in range(3):
-			state.append({"col": c, "row": r, "item_id": GEM_ID})
+			state.append({"col": c, "row": r, "item_id": GEM_ID, "quality": 0})
 	var taller := _make_board()
 	taller.setup({"cols": 3, "rows": 4})
 	taller.load_board_state(state)

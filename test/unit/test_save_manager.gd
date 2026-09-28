@@ -76,7 +76,7 @@ func test_load_board_entry_without_item_id_returns_CORRUPT() -> void:
 
 func test_load_board_entry_with_non_numeric_position_returns_CORRUPT() -> void:
 	var bad := GameManager.serialize()
-	bad["dungeon_board_state"] = [{"col": "a", "row": 0, "item_id": "ore"}]
+	bad["dungeon_board_state"] = [{"col": "a", "row": 0, "item_id": "ore", "quality": 0}]
 	_write_save_file(JSON.stringify(bad))
 	var r: Dictionary = SaveManager.load_game_ex()
 	assert_int(r["status"]).is_equal(SaveManager.LoadStatus.CORRUPT)
@@ -114,10 +114,32 @@ func test_load_shelf_entry_without_item_id_returns_CORRUPT() -> void:
 	assert_int(r["status"]).is_equal(SaveManager.LoadStatus.CORRUPT)
 
 
+func test_load_board_entry_without_quality_returns_CORRUPT() -> void:
+	var bad := GameManager.serialize()
+	bad["shop_board_state"] = [{"col": 0, "row": 0, "item_id": "ore"}]
+	_write_save_file(JSON.stringify(bad))
+	assert_int(SaveManager.load_game_ex()["status"]).is_equal(SaveManager.LoadStatus.CORRUPT)
+
+
+func test_load_board_entry_with_a_bad_quality_returns_CORRUPT() -> void:
+	for quality: Variant in [3, -1, 1.5, "1", true]:
+		var bad := GameManager.serialize()
+		bad["dungeon_board_state"] = [{"col": 0, "row": 0, "item_id": "ore", "quality": quality}]
+		_write_save_file(JSON.stringify(bad))
+		assert_int(SaveManager.load_game_ex()["status"]).override_failure_message("quality %s" % str(quality)).is_equal(SaveManager.LoadStatus.CORRUPT)
+
+
+func test_load_shelf_entry_with_a_bad_quality_returns_CORRUPT() -> void:
+	var bad := GameManager.serialize()
+	bad["shop_shelf_state"] = [{"col": 0, "row": 0, "item_id": "ore", "quality": 9}]
+	_write_save_file(JSON.stringify(bad))
+	assert_int(SaveManager.load_game_ex()["status"]).is_equal(SaveManager.LoadStatus.CORRUPT)
+
+
 # JSON turns the level into a float; it must come back as the same level.
 func test_upgrade_levels_and_shelf_survive_save_and_load() -> void:
 	GameManager.upgrade_levels = {"__test_track": 2}
-	GameManager.shop_shelf_state = [{"col": 1, "row": 0, "item_id": "ore"}]
+	GameManager.shop_shelf_state = [{"col": 1, "row": 0, "item_id": "ore", "quality": 0}]
 	SaveManager.save_game()
 	var r: Dictionary = SaveManager.load_game_ex()
 	assert_int(r["status"]).is_equal(SaveManager.LoadStatus.OK)
@@ -127,7 +149,7 @@ func test_upgrade_levels_and_shelf_survive_save_and_load() -> void:
 
 
 func test_board_state_entries_survive_save_and_load() -> void:
-	GameManager.shop_board_state = [{"col": 1, "row": 2, "item_id": "ore"}]
+	GameManager.shop_board_state = [{"col": 1, "row": 2, "item_id": "ore", "quality": 1}]
 	SaveManager.save_game()
 	var r: Dictionary = SaveManager.load_game_ex()
 	assert_int(r["status"]).is_equal(SaveManager.LoadStatus.OK)
@@ -135,6 +157,7 @@ func test_board_state_entries_survive_save_and_load() -> void:
 	assert_int(int(entry["col"])).is_equal(1)
 	assert_int(int(entry["row"])).is_equal(2)
 	assert_str(entry["item_id"]).is_equal("ore")
+	assert_int(int(entry["quality"])).is_equal(1)
 
 
 # --- load: OK ---

@@ -9,7 +9,7 @@ signal reagent_count_changed(id: String, count: int)
 signal grid_size_changed(cols: int, rows: int)
 
 const DEFAULT_GOLD := 50
-const SAVE_VERSION := 7
+const SAVE_VERSION := 8
 const DEFAULT_DESPAWN_TIME := 12.0
 const DEFAULT_CRATE_COST_MULTIPLIER := 1.0
 const DEFAULT_SHELF_SLOTS := 0
@@ -203,7 +203,7 @@ static func _is_valid_upgrade_levels(value: Variant) -> bool:
 	return true
 
 
-# Board entries are {col, row, item_id}; item data is rebuilt from the catalog.
+# Board entries are {col, row, item_id, quality}; item data is rebuilt from the catalog.
 static func _is_valid_board_state(value: Variant) -> bool:
 	if not value is Array:
 		return false
@@ -214,7 +214,17 @@ static func _is_valid_board_state(value: Variant) -> bool:
 			return false
 		if not entry.get("item_id") is String:
 			return false
+		if not _is_valid_quality(entry.get("quality")):
+			return false
 	return true
+
+
+# A whole number in 0..MAX_QUALITY (JSON makes it a float).
+static func _is_valid_quality(value: Variant) -> bool:
+	if not _is_number(value):
+		return false
+	var quality: float = value
+	return quality >= 0.0 and quality <= ItemDefinition.MAX_QUALITY and quality == floor(quality)
 
 
 # True for int or float, but not bool (GDScript bools are int subtypes, so the

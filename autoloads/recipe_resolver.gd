@@ -6,10 +6,11 @@ extends Node
 
 
 # The dictionary a board cell holds. item_id is load-bearing: board cells,
-# merge detection, shop fulfillment and saves all read it. Drag and drop adds
-# transient _source_* keys to copies of it.
-func make_item(def: ItemDefinition) -> Dictionary:
-	return {"item_id": def.id, "definition": def}
+# merge detection, shop fulfillment and saves all read it. quality is 0
+# Normal, 1 Fine, 2 Masterwork (ItemDefinition.QUALITY_NAMES). Drag and drop
+# adds transient _source_* keys to copies of it.
+func make_item(def: ItemDefinition, quality: int = 0) -> Dictionary:
+	return {"item_id": def.id, "definition": def, "quality": quality}
 
 
 func get_options(item_id: String) -> Array[MergeResult]:

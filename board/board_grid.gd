@@ -191,14 +191,14 @@ func clear_board() -> void:
 			refresh_cell(Vector2i(c, r))
 
 
-# Saves hold item ids only. The definition (including its sprite texture, which
-# JSON can't carry) is looked up again on load.
+# Saves hold ids and quality only. The definition (including its sprite texture,
+# which JSON can't carry) is looked up again on load.
 func get_board_state() -> Array:
 	var state: Array = []
 	for r in range(grid_rows):
 		for c in range(grid_cols):
 			if grid[r][c] != null:
-				state.append({"col": c, "row": r, "item_id": grid[r][c]["item_id"]})
+				state.append({"col": c, "row": r, "item_id": grid[r][c]["item_id"], "quality": grid[r][c]["quality"]})
 	return state
 
 
@@ -214,10 +214,11 @@ func load_board_state(state: Array) -> Array[Dictionary]:
 			continue
 		var c := int(entry["col"])
 		var r := int(entry["row"])
+		var item := RecipeResolver.make_item(def, int(entry["quality"]))
 		if c < 0 or c >= grid_cols or r < 0 or r >= grid_rows:
-			overflow.append(RecipeResolver.make_item(def))
+			overflow.append(item)
 			continue
-		grid[r][c] = RecipeResolver.make_item(def)
+		grid[r][c] = item
 		refresh_cell(Vector2i(c, r))
 	return overflow
 

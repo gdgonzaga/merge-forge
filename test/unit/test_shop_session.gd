@@ -115,14 +115,14 @@ func test_the_shelf_is_saved_at_the_end_of_the_session() -> void:
 	session.board.get_shelf_grid().place_item(RecipeResolver.make_item(_item), Vector2i(1, 0))
 	session.reject_customer()
 	await _await_session_end(session)
-	assert_array(GameManager.shop_shelf_state).is_equal([{"col": 1, "row": 0, "item_id": "__test_item"}])
+	assert_array(GameManager.shop_shelf_state).is_equal([{"col": 1, "row": 0, "item_id": "__test_item", "quality": 0}])
 
 
 # Spec Task 6: the shelf survives a save round trip and is back on the shelf
 # when the next session starts.
 func test_a_saved_shelf_is_restored_after_a_reload() -> void:
 	_give_shelf(2)
-	GameManager.shop_shelf_state = [{"col": 0, "row": 0, "item_id": "__test_item"}]
+	GameManager.shop_shelf_state = [{"col": 0, "row": 0, "item_id": "__test_item", "quality": 0}]
 	var saved := GameManager.serialize()
 	reset_game_state()
 	GameManager.deserialize(saved)

@@ -173,10 +173,10 @@ func test_a_staging_item_dropped_on_the_shelf_leaves_staging() -> void:
 func test_items_beyond_a_smaller_shelf_go_to_the_board() -> void:
 	var small := _make_board({"cols": 3, "rows": 3, "shelf_slots": 2})
 	small.load_shelf_state([
-		{"col": 0, "row": 0, "item_id": "__test_gem"},
-		{"col": 1, "row": 0, "item_id": "__test_gem"},
-		{"col": 2, "row": 0, "item_id": "__test_ore"},
-		{"col": 3, "row": 0, "item_id": "__test_ore"},
+		{"col": 0, "row": 0, "item_id": "__test_gem", "quality": 0},
+		{"col": 1, "row": 0, "item_id": "__test_gem", "quality": 0},
+		{"col": 2, "row": 0, "item_id": "__test_ore", "quality": 0},
+		{"col": 3, "row": 0, "item_id": "__test_ore", "quality": 0},
 	])
 	assert_int(small.get_shelf_grid().count_items_on_board("__test_gem")).is_equal(2)
 	assert_int(small.get_shelf_grid().count_items_on_board("__test_ore")).is_equal(0)
@@ -186,7 +186,7 @@ func test_items_beyond_a_smaller_shelf_go_to_the_board() -> void:
 func test_shelf_state_round_trips() -> void:
 	_board.get_shelf_grid().place_item(RecipeResolver.make_item(_gem), Vector2i(2, 0))
 	var saved: Array = _board.get_shelf_state()
-	assert_array(saved).is_equal([{"col": 2, "row": 0, "item_id": "__test_gem"}])
+	assert_array(saved).is_equal([{"col": 2, "row": 0, "item_id": "__test_gem", "quality": 0}])
 	var reloaded := _make_board({"cols": 3, "rows": 3, "shelf_slots": 3})
 	reloaded.load_shelf_state(saved)
 	assert_str(reloaded.get_shelf_grid().grid[0][2]["item_id"]).is_equal("__test_gem")

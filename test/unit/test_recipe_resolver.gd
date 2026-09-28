@@ -31,10 +31,15 @@ func before_test() -> void:
 	set_definition(DefinitionLibrary.items, _source)
 
 
-func test_make_item_carries_id_and_definition() -> void:
+func test_make_item_carries_id_definition_and_normal_quality() -> void:
 	var item := RecipeResolver.make_item(_plain)
 	assert_str(item["item_id"]).is_equal("__test_plain")
 	assert_object(item["definition"]).is_same(_plain)
+	assert_int(item["quality"]).is_equal(0)
+
+
+func test_make_item_carries_the_quality_it_is_given() -> void:
+	assert_int(RecipeResolver.make_item(_plain, 2)["quality"]).is_equal(2)
 
 
 func test_blueprint_gated_result_needs_its_blueprint() -> void:
