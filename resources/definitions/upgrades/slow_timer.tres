@@ -5,7 +5,7 @@
 
 [sub_resource type="Resource" id="Resource_level_1"]
 script = ExtResource("2_level")
-cost = 600
+cost = 400
 value = 15.0
 grid_cols = 0
 grid_rows = 0
@@ -13,7 +13,7 @@ min_shop_level = 1
 
 [sub_resource type="Resource" id="Resource_level_2"]
 script = ExtResource("2_level")
-cost = 1800
+cost = 1200
 value = 18.0
 grid_cols = 0
 grid_rows = 0
@@ -21,11 +21,11 @@ min_shop_level = 8
 
 [sub_resource type="Resource" id="Resource_level_3"]
 script = ExtResource("2_level")
-cost = 4500
+cost = 3000
 value = 22.0
 grid_cols = 0
 grid_rows = 0
-min_shop_level = 16
+min_shop_level = 24
 
 [resource]
 script = ExtResource("1_vitjk")

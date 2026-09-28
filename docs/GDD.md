@@ -276,9 +276,10 @@ The curve is a power law: XP from level k to k+1 is `round(level_xp_base x k^lev
 - Gold balance
 - Shop XP (and the level derived from it)
 - Blueprints unlocked
-- Upgrades purchased
+- Upgrade levels bought (`upgrade_levels`, upgrade id to level)
 - Reagent inventory (Dictionary[String, int])
 - Board state (items on grid carry over)
+- Display shelf contents (`shop_shelf_state`; shop only)
 - Grid size (if upgraded)
 
 ---
@@ -291,7 +292,7 @@ The curve is a power law: XP from level k to k+1 is `round(level_xp_base x k^lev
 
 ### Shop Mode (In-Game)
 - **Top:** Customer queue — current customer portrait + 1–3 order cards showing item icons and quantities + reject button. On the left side, the current customer's image is shown, with a "Reject" button at the bottom. On the right side, their 1–3 orders are stacked vertically, each showing item icon, quantity, and gold reward. Tapping an order card fulfills it. **Parked:** Show silhouette of other customers behind the current customer, with random movements (just horizontal movements).
-- **Center-left:** Merge board (5×5 grid with staging area above it).
+- **Center-left:** Merge board (5x5 grid, up to 6x6 with Board Expansion). Under it, once Display Shelf is bought, a one-row display shelf (2, 4 or 6 slots) that stores finished goods: items on it never merge or despawn, the player can drag items between the board and the shelf, and orders are filled from the shelf first. Staging area below the shelf.
 - **Right side:** CratePanel — VBoxContainer with crate buy buttons populated from the level-unlocked crate definitions and a discard trash bin below.
 - **Overlay (CanvasLayer):** HUD — gold, shop level and XP bar (always visible during gameplay)
 - Does NOT have: Timer, health bar, pause button
@@ -301,7 +302,7 @@ The curve is a power law: XP from level k to k+1 is `round(level_xp_base x k^lev
 - Does NOT have: Star rating, share button
 
 ### Prep Phase
-- Elements: TabContainer with tabs — **Forecast** (first, default tab: previews the next session exactly as the shop will deal it — a market modifier card, shown only when a modifier rolled, with its icon, name and description; demand by item family, largest share first; and portraits for the first `forecast_customers` (3) customers), Blueprints (buy blueprints), Upgrades (buy upgrades and reagents). Material crates are purchased during shop sessions. Board rearrange deferred to post-MVP. Locked entries are greyed with "Unlocks at level N"; the dungeon button reads "Dungeon (Lv N)" while locked. The forecast refreshes whenever a purchase or level-up could change what's craftable (blueprint bought, reagent count changed, level crossed).
+- Elements: TabContainer with tabs — **Forecast** (first, default tab: previews the next session exactly as the shop will deal it — a market modifier card, shown only when a modifier rolled, with its icon, name and description; demand by item family, largest share first; and portraits for the first `forecast_customers` (3) customers), Blueprints (buy blueprints), Upgrades (buy upgrades and reagents). Upgrade cards read "Name (k/N)" (levels bought of the track's N), show the next level's value ("Next: ...") and cost, "Max" once every level is bought, and "Unlocks at level N" while the next level is level-locked; buying an upgrade buys its next level. With Town Crier the forecast reveals that level's customer count (5 or 8), and at the top level every customer plus their orders. Material crates are purchased during shop sessions. Board rearrange deferred to post-MVP. Locked entries are greyed with "Unlocks at level N"; the dungeon button reads "Dungeon (Lv N)" while locked. The forecast refreshes whenever a purchase or level-up could change what's craftable (blueprint bought, reagent count changed, level crossed).
 - **Overlay (CanvasLayer):** HUD — gold, shop level and XP bar (always visible during gameplay)
 - **Bottom:** Continue button → start next session or enter dungeon. Quit button (with confirmation) → return to Main Menu.
 - Does NOT have: Timer, limited item slots
@@ -370,13 +371,13 @@ The curve is a power law: XP from level k to k+1 is `round(level_xp_base x k^lev
 | Value | Setting | Notes |
 |-------|---------|-------|
 | Target resolution | 1080×1920 portrait | Android primary |
-| Board default size | 5×5 (25 cells) | Expandable to 6×6 via upgrade |
+| Board default size | 5x5 (25 cells) | Board Expansion grows it to 5x6, then 6x6 (never past 6 columns). A third level (6x7) was cut: with the display shelf and a 3-order customer it doesn't fit a 1080x1920 screen (see Decisions Log) |
 | Merge minimum | 3 connected identical items | Orthogonally adjacent (4-directional) |
 | Merge result count | floor(count / 3) result items | Groups of 3 each produce 1 upper-tier item |
 | Merge refund | count % 3 source items | Remainder items refunded to board at former positions |
 | Merge bonus gold | (count - 3) × floor(source_value × 0.25) | Gold bonus for groups larger than 3; source = the merged item, not the result |
 | Despawn timer (default) | 12 seconds | Staging area items |
-| Despawn timer (upgraded) | 15 seconds | With Slow Timer upgrade |
+| Despawn timer (upgraded) | 15 / 18 / 22 seconds | Patience Clock (`slow_timer`) levels 1 / 2 / 3 |
 | Combat tick interval | 1.0 second | Auto-combat damage frequency |
 | Party: Fighter | HP 120, ATK 11 | Melee. Slot 0 (front); takes all melee damage while standing. Crit "Cleave" |
 | Party: Mage | HP 50, ATK 14 | Missile: hits the weakest enemy. Highest damage. Crit "Fireball". Auto-attack only for MVP |
@@ -386,13 +387,16 @@ The curve is a power law: XP from level k to k+1 is `round(level_xp_base x k^lev
 | Dungeon walk speed | 0.075 progress/second | Default value; configurable per dungeon definition |
 | Session size | 10 customers per session | A market modifier's `session_size_delta` can change this (e.g. Caravan Day, +3) |
 | Starting gold | 50 | |
-| Crate discount | 20% | With Crate Discount upgrade |
+| Crate discount | 10% / 20% / 30% (x0.9 / x0.8 / x0.7) | Bulk Deal (`crate_discount`) levels 1 / 2 / 3 |
 | Crate cost | `max(floor(cost x modifier x discount + 0.0001), 1)` | Modifier and Crate Discount both apply, rounded down once (the epsilon stops float error losing a gold: `30 x 0.7` is `20.999...`); a crate is never free |
+| Display shelf | 2 / 4 / 6 slots | Display Shelf (`display_shelf`) levels 1 / 2 / 3. Shop only (the dungeon board has none). Shelf items never merge and never despawn; order fulfilment takes from the shelf first, then the board. The shelf is saved between sessions |
+| Town Crier | 5 / 8 / all customers | Town Crier (`town_crier`) levels 1 / 2 / 3; replaces `forecast_customers` (3) in the Forecast tab. A level value of 0 means every customer, and revealing every customer also shows their orders |
+| Shop Signage | order gold x1.05 / x1.10 / x1.15 / x1.20 / x1.25 | Shop Signage (`shop_signage`) levels 1 to 5; applied with the other order price multipliers and rounded once (see Customers) |
 | Market modifier chance | 35% | `ShopRulesDefinition.modifier_chance`; at most one modifier per session, rolled from the seed (`hash([session_seed, "modifier"])`), not the clock — see Market Modifiers below and Decisions Log |
 | Forecast customers revealed | 3 | `ShopRulesDefinition.forecast_customers`; the prep Forecast tab shows this many of the next session's dealt customers |
-| Upgrades | Data-driven | Defined in `upgrades.json` (Slow Timer, Crate Discount, Grid Expand) |
+| Upgrades | Data-driven leveled tracks | One `UpgradeDefinition` per track under `resources/definitions/upgrades/`, each with `levels: Array[UpgradeLevel]` (cost, value, grid growth, `min_shop_level`). Level costs (gold, unlock level): Board Expansion 1000 (L1), 3000 (L12); Patience Clock 400 (L1), 1200 (L8), 3000 (L24); Town Crier 600 (L3), 1800 (L15), 4500 (L32); Bulk Deal 800 (L4), 2400 (L22), 5000 (L50); Display Shelf 700 (L5), 2500 (L20), 5500 (L42); Shop Signage 700 (L6), 1800 (L14), 3500 (L28), 5500 (L40), 7500 (L55). Upgrades total 51400g |
 | Crates | Data-driven | Defined in `crates.json` (whatever entries exist become buy buttons) |
-| Customers | Data-driven: level-gated archetypes | `CustomerDefinition` archetypes under `resources/definitions/customers/`, dealt each session by `autoloads/customer_generator.gd` (weighted draw with replacement by `weight`, no back-to-back repeats). Order price = `gold_value x quantity x price_multiplier x modifier.price_multiplier(item)`. |
+| Customers | Data-driven: level-gated archetypes | `CustomerDefinition` archetypes under `resources/definitions/customers/`, dealt each session by `autoloads/customer_generator.gd` (weighted draw with replacement by `weight`, no back-to-back repeats). Order price = `round(gold_value x quantity x price_multiplier x modifier.price_multiplier(item) x signage)`, rounded once; `signage` is Shop Signage's level value (1.0 without it). |
 | Order XP | `round(gold_reward x xp_per_gold x (1 + min(streak x streak_step, streak_cap)))` | `xp_per_gold` 0.5, `streak_step` 0.1, `streak_cap` 0.5. `streak` is the customers fulfilled in a row before this one. |
 | Shop level curve | `round(level_xp_base x level^level_xp_exponent)` | XP from level k to k+1. `level_xp_base` 70, `level_xp_exponent` 1.5. |
 | Max shop level | 60 | XP past the level-60 threshold has nowhere to go; the HUD's XP bar stays full |
@@ -477,7 +481,7 @@ Effects in *italics* are defined but not applied yet: CombatEngine only runs `he
 - **Target Android API:** 36, which Google Play requires for new apps and updates from 2026-08-31. The export preset is still at 33 and must be raised before release.
 - **Ad integration:** AdMob interstitials only (see Submodule — Ads). Requires the INTERNET permission (currently off in the export preset) and a Gradle build (already on).
 - **Consent (UMP/TCF):** Yes. Google's UMP consent message runs on launch before any ad request, and there's an in-game "Privacy choices" entry point. Store and account setup is in `docs/ADS-COMPLIANCE.md`.
-- **Save system:** Yes — single JSON file (`user://save_data.json`), auto-save at checkpoints
+- **Save system:** Yes — single JSON file (`user://save_data.json`), auto-save at checkpoints. `SAVE_VERSION` 7: `upgrade_levels` (upgrade id to level bought) replaced `purchased_upgrades`, and `shop_shelf_state` holds the display shelf; older saves load as CORRUPT
 - **In-app purchases:** Not for v1.0 (paid ad removal is in `docs/TODO.md`)
 - **Performance targets:** 60fps on mid-range Android devices
 - **Rendering:** 2D, mobile renderer
@@ -566,15 +570,15 @@ Player taps a buy button (blueprint, reagent, or upgrade) in prep phase, a crate
 **Inputs:**
 - Player's current gold (from GameManager)
 - Crate/blueprint/reagent/upgrade definitions from JSON files
-- Discount upgrade status from GameManager.purchased_upgrades
+- Upgrade levels from GameManager.upgrade_levels (upgrade id to level bought); every effect getter reads the value at the bought level
 
 **Outputs:**
 - Modifies GameManager.gold
 - Spawns items on the board directly when possible (via BoardGrid.place_or_stage), only using staging area as fallback when no safe cell exists
 - Adds reagents to GameManager.reagent_inventory (Dictionary[String, int]) directly — reagents are never placed on the board or in staging
 - Adds blueprints to GameManager.unlocked_blueprints
-- Adds upgrades to GameManager.purchased_upgrades
-- Applies upgrade effects (grid size, despawn timer, discount)
+- Raises GameManager.upgrade_levels: buying an upgrade buys its next level
+- Applies upgrade effects (grid size, despawn timer, crate discount, shelf slots, forecast reveal, order price)
 
 **States / Logic:**
 ```
@@ -584,7 +588,7 @@ Purchase flow:
    3. If crate → pick random items from crate's pool definition (weighted), place on board directly via merge-safe placement; only use staging if no safe cell exists
 4. If reagent → add reagents to GameManager.reagent_inventory directly (no staging, no board items)
 5. If blueprint → add to unlocked_blueprints, emit blueprint_added
-6. If upgrade → add to purchased_upgrades, apply effect, emit upgrade_added
+6. If upgrade → buy its next level (raise upgrade_levels), apply effect, emit upgrade_level_changed(upgrade_id, level)
 7. Trigger auto-save
 ```
 
@@ -593,12 +597,12 @@ Purchase flow:
 | Property | Value | Notes |
 |----------|-------|-------|
 | Starting gold | 50 | |
-| Crate discount | 20% (multiply by 0.8) | With upgrade only |
+| Crate discount | 10% / 20% / 30% (multiply by 0.9 / 0.8 / 0.7) | Bulk Deal levels 1 / 2 / 3 |
 | Crate cost | `max(floor(cost x modifier x discount + 0.0001), 1)` | The dealt session's market modifier (if any) and the Crate Discount upgrade both apply, rounded down once; never free |
 | Crate definitions | Fully data-driven, one `.tres` per crate | Each crate has: name, cost, item_count range, weighted item pool. Whatever crate definitions exist are shown as buy buttons, cheapest first. No hardcoded crate types. |
 | Crates (current) | Basic Crate 10g, Metal Crate 25g, Herb Crate 25g | Basic: iron_ore (weight 3) / herb_leaf (weight 2), 3-5 items. Metal: iron_ore (weight 4) / iron_ingot (weight 1), 3-4 items. Herb Crate (new): herb_leaf (weight 4) / herb_bundle (weight 1), 3-4 items. |
 | Fire Essence price | 100g | 1 reagent, goes directly to inventory |
-| Upgrade costs | Slow Timer 600g, Crate Discount 1200g, Grid Expand 1500g | Data-driven, one `.tres` per upgrade under `resources/definitions/upgrades/` |
+| Upgrade costs | Per level, see Fixed Values (Upgrades row) | Data-driven, one `.tres` per track under `resources/definitions/upgrades/`; costs rise within a track. Tuned by `tmp/shop-improvements/sim/economy_sim.gd` to about 52 best-case sessions to buy every blueprint and every upgrade level (target 40-60) |
 
 **Does NOT:**
 - Set prices dynamically (all prices are fixed in JSON)
@@ -942,6 +946,7 @@ The player leaving a summary screen for the prep phase: the Session Summary's Co
 | 2026-09-28 | Power-law level curve, not geometric | XP from level k to k+1 is `round(level_xp_base x k^level_xp_exponent)`, not a fixed per-level multiplier. Income plateaus once content runs out (there's nothing left to sell for more gold), so a geometric curve would make each later level cost a fixed factor more sessions forever; a power law's cost grows but at a rate the sim can tune to match the content that actually exists. |
 | 2026-09-28 | Archetype weight is a real frequency weight | Supersedes the deck rule in this date's "seeded archetype sessions" entry: the generator no longer deals a deck (one guaranteed slot per pass). It now does a weighted draw with replacement, so `weight` sets how often an archetype is dealt relative to the others, not just draw order within a pass; the no-repeat-back-to-back rule is unchanged. |
 | 2026-09-28 | Demand forecast shipped: market modifiers, Forecast tab | Reverses the 2026-06-04 "Demand forecast deferred" entry. The modifier rolls on its own RNG stream (`hash([session_seed, "modifier"])`), before the customers are dealt and independent of the customer RNG (still seeded by `session_seed` alone) — the spec's "roll after dealing" would let a modifier's customer-weight and session-size effects reshuffle who gets dealt; rolling first, on a separate stream, means adding a modifier to the catalog never reshuffles a seed's customers when the rolled modifier has no customer effects. A modifier's `family` field empty means it affects every item (Festival); other modifiers name a family key such as `"herb"`. Crate cost under a modifier is `cost x modifier x discount`, rounded down once and clamped to at least 1g (`max(floor(... + 0.0001), 1)`, the epsilon guarding float error like `30 x 0.7 == 20.999...`). The Forecast tab is the first, default prep tab, since planning is what prep is for; it shows the market modifier (if any), demand by item family, and the first `forecast_customers` (3) customers of the next session exactly as the shop will deal it, refreshing whenever a purchase or level-up could change what's craftable. Five modifiers ship (Herb Shortage L5, Festival L8, Iron Glut L12, Knights' Tournament L18, Caravan Day L25), checked by the economy sim's `_print_modifiers()`: no modifier pushes an item's margin from 1.0 or more down under 1.0. |
+| 2026-09-28 | Leveled upgrade tracks and the display shelf | Upgrades are tracks of levels (`UpgradeDefinition.levels: Array[UpgradeLevel]`), so they keep absorbing gold for the long haul; buying an upgrade buys its next level, and `GameManager.upgrade_levels` replaces `purchased_upgrades` (`SAVE_VERSION` 7, breaking: old saves load as CORRUPT). Three new tracks: Display Shelf, Town Crier and Shop Signage. The shelf is a second `BoardGrid` inside `MergeBoard` with merges off (a spike beat a custom shelf widget), so drag and drop between board and shelf reuses the board's code; the shop only talks to `MergeBoard`. A shrinking shelf never loses items: saved items past its end go to the board, else staging. Town Crier starts at 5, not the spec's 3, because the free forecast already shows 3; a level value of 0 means every customer, and revealing every customer also shows their orders, so no "top level" flag is needed in data. Shop Signage multiplies inside the customer generator, where order gold is computed and rounded once, so the order card, the forecast and the payout agree. The level-up panel doesn't list upgrade levels: it lists catalog entries with a top-level `min_shop_level`, and upgrades gate per level. Layout: with a 6-slot shelf and a 3-order customer the shop screen leaves the merge board 1202 px at 1080x1920, and a 6x7 board (968 px tall) plus the shelf, staging and padding needs 1332 (still over 1202 with the padding cut to nothing), so Board Expansion stops at 6x6 (its 6x7 level was cut). `merge_board.tscn` padding was trimmed and the board area now sizes to its grid; 6x6 with a 6-slot shelf fits at 1080x1920 and 1080x2520 with 128 px cells. Sim: level costs retuned so buying every blueprint and every upgrade level takes about 52 best-case sessions (target 40-60, was about 72), with unlock levels spread from 1 to 55. |
 
 ---
 

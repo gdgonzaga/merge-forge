@@ -30,7 +30,7 @@ res://
   - `CanvasLayer` → `HUD` (`hud.tscn`) — gold display, shop level and XP bar (always visible in-game)
   - `SceneContainer` (`Node`) — child swapped by Main on transition
     - `MainMenu` (`main_menu.tscn`)
-    - `ShopSession` (`shop_session.tscn`) → instances `MergeBoard` (`merge_board.tscn`) (shop board)
+    - `ShopSession` (`shop_session.tscn`) → instances `MergeBoard` (`merge_board.tscn`) (shop board; `MergeBoard/VBox/ShelfArea/ShelfGrid` is the display shelf, a second `board_grid.gd` with merges off, hidden without slots)
     - `SessionSummary` (`session_summary.tscn`)
     - `PrepPhase` (`prep_phase.tscn`) → TabContainer: Forecast / Blueprints / Upgrades / Reagents (Forecast tab holds `ForecastPanel`, `core/forecast_panel.tscn`)
     - `DungeonRun` (`dungeon_run.tscn`) → instances `MergeBoard` (`merge_board.tscn`) (dungeon board, separate state)
@@ -42,7 +42,7 @@ Scene transitions are driven by `main.gd` listening to EventBus signals. Main fr
 
 | Name              | Script                  | Responsibility                                                                                                   |
 | ----------------- | ----------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| GameManager       | `game_manager.gd`       | Persistent state: gold, shop XP, blueprints, reagent inventory, upgrades, shop board state, grid size         |
+| GameManager       | `game_manager.gd`       | Persistent state: gold, shop XP, blueprints, reagent inventory, upgrade levels, shop board and shelf state, grid size |
 | EventBus          | `event_bus.gd`          | Cross-scene signal relay (see registry below)                                                                    |
 | DefinitionLibrary | `definition_library.gd` | Loads and indexes every content definition (see Content Definitions), one catalog per folder under `resources/definitions/`. Lists folders with `ResourceLoader.list_directory` (works in exports, where `.tres` files are remapped). Every definition needs a unique `id`; an empty catalog is a hard error, since there is no fallback content. |
 | RecipeResolver    | `recipe_resolver.gd`    | Rules over the definitions, holding no content itself: merge options filtered by blueprint ownership and reagent inventory, blueprint dependency checks, weighted pool rolls, and the dictionary a board cell holds (`make_item`). |
@@ -81,7 +81,7 @@ These are emitted directly on GameManager. Connect via `GameManager.gold_changed
 | `shop_xp_changed(xp: int)` | Shop XP changes | HUD level label |
 | `shop_level_changed(level: int)` | Crossed a level, once per level crossed | `prep_phase.gd` (refreshes the dungeon button and every purchase list), `shop_session.gd` (rebuilds crate buttons) |
 | `blueprint_added(bp_id: String)` | Blueprint unlocked | Prep phase blueprints tab, audio_manager (SFX) |
-| `upgrade_added(upgrade_id: String)` | Upgrade purchased | audio_manager (SFX) |
+| `upgrade_level_changed(upgrade_id: String, level: int)` | An upgrade level was bought (`level` is the new level) | audio_manager (SFX), prep_phase (refreshes the upgrade cards) |
 | `reagent_count_changed(id: String, count: int)` | Reagent inventory changes | Prep phase reagent display, merge choice popup |
 | `grid_size_changed(cols: int, rows: int)` | Grid upgrade purchased | Active MergeBoard instance |
 
@@ -90,9 +90,9 @@ These are emitted directly on GameManager. Connect via `GameManager.gold_changed
 **Rule:** Nodes within the same scene communicate via direct references (`@onready`, passed references, parent methods). Nodes communicating across scene boundaries use EventBus. GameManager emits its own signals for state changes — connect directly, not through EventBus.
 
 **Exceptions:**
-- **MergeBoard:** Shared scene instanced by ShopSession and DungeonRun. Owns its own MergeChoicePopup internally. Defaults to GameManager values for grid size, despawn time, and crate discount, but accepts overrides via `setup(config)`. Communicates merge choices via its internal popup. Parent scenes call `board.setup({})` and interact via public methods (`buy_crate()`, `place_drop()`, `get_board_grid()`, `get_staging_area()`).
+- **MergeBoard:** Shared scene instanced by ShopSession and DungeonRun. Owns its own MergeChoicePopup internally. Defaults to GameManager values for grid size, despawn time, and crate discount, but accepts overrides via `setup(config)`. Communicates merge choices via its internal popup. Parent scenes call `board.setup({})` and interact via public methods (`buy_crate()`, `place_drop()`, `get_board_grid()`, `get_staging_area()`, and for the shop's display shelf `count_sellable()`, `take_sellable()`, `get_shelf_state()`, `load_shelf_state()`). The shop never reaches into the shelf grid itself.
 - **Drag-to-party-portrait (dungeon):** Uses Godot's built-in Control drag-and-drop. BoardCell provides `_get_drag_data`, PartyMember provides `_can_drop_data` / `_drop_data`. PartyMember calls `DungeonController.apply_usable_item()` on successful drop. No custom hit-testing needed — Godot handles cross-scene-tree drop detection.
-- **AudioManager:** Listens to EventBus signals for SFX. No script calls `AudioManager.play_sfx()` directly — SFX is fully signal-driven. Music switching is the one exception: `main.gd` calls `AudioManager.play_music()` directly during scene transitions, since only Main knows which scene just loaded. AudioManager also connects directly to GameManager signals (`blueprint_added`, `upgrade_added`) for purchase SFX.
+- **AudioManager:** Listens to EventBus signals for SFX. No script calls `AudioManager.play_sfx()` directly — SFX is fully signal-driven. Music switching is the one exception: `main.gd` calls `AudioManager.play_music()` directly during scene transitions, since only Main knows which scene just loaded. AudioManager also connects directly to GameManager signals (`blueprint_added`, `upgrade_level_changed`) for purchase SFX.
 
 ## Key Conventions
 
@@ -126,7 +126,7 @@ These are emitted directly on GameManager. Connect via `GameManager.gold_changed
   - `customer_reject` → `customer_rejected` on EventBus
   - `merge_complete` → `merge_completed` on EventBus
   - `customer_happy` → `customer_fulfilled` on EventBus
-  - `purchase` → `blueprint_added` / `upgrade_added` on GameManager
+  - `purchase` → `blueprint_added` / `upgrade_level_changed` on GameManager
 
 ## Unresolved / Needs Input
 
@@ -274,9 +274,9 @@ The GDD lists effect types (heal, buff_attack). Party stats are confirmed (see t
 
 | File                            | Type   | Responsibility                                                                                                                                                                                                                                                                                                         |
 | ------------------------------- | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `board/merge_board.tscn`d       | Scene  | Board grid + staging area container + AnimOverlay for merge animations. Instanced by ShopSession and DungeonRun. Holds MergeDetector and MergeResolver as member instances (RefCounted, not child nodes). Owns MergeChoicePopup internally — instantiated and managed in _ready(). Background texture via TextureRect. |
+| `board/merge_board.tscn`d       | Scene  | Board grid + display shelf grid (shop only) + staging area container + AnimOverlay for merge animations. Instanced by ShopSession and DungeonRun. Holds MergeDetector and MergeResolver as member instances (RefCounted, not child nodes). Owns MergeChoicePopup internally — instantiated and managed in _ready(). Background texture via TextureRect. |
 | `board/merge_board.gd`          | Script | Root script for the merge board scene. Receives config Dictionary via `setup()` called by parent, creates BoardGrid/MergeDetector/MergeResolver instances, wires them together, manages staging area, runs merge animations (burst + converge). Does NOT own game logic or state.                                      |
-| `board/board_grid.gd`           | Script | Grid data model: placement, removal, swap, discard. Does NOT own merge logic or recipe resolution.                                                                                                                                                                                                                     |
+| `board/board_grid.gd`           | Script | Grid data model: placement, removal, swap, discard. Used twice by MergeBoard: the merge board and the display shelf (`merges_enabled` false). Does NOT own merge logic or recipe resolution.                                                                                                                                                                                                                     |
 | `board/board_cell.gd`           | Script | Single cell visual + touch drag initiation via `_get_drag_data`. Drop target for board-to-board swaps via `_can_drop_data` / `_drop_data`. Does NOT own item data. Exposes `get_icon_texture()` for merge animations.                                                                                                  |
 | `board/floating_item.tscn`      | Scene  | Staging area item with despawn timer. Drag source via `_get_drag_data` (drags to BoardCell). Does NOT own placement logic.                                                                                                                                                                                             |
 | `board/merge_choice_popup.tscn` | Scene  | Non-blocking popup with 2–4 choice buttons. Instanced and owned by MergeBoard. Receives options from MergeResolver, emits choice. Does NOT own recipe data.                                                                                                                                                            |
@@ -288,7 +288,7 @@ The GDD lists effect types (heal, buff_attack). Party stats are confirmed (see t
 | Signal | Emitted by | Listeners | Via EventBus? | Flows |
 |--------|-----------|-----------|---------------|-------|
 | `cell_drag_started(from_pos: Vector2i, item: Dictionary)` | `board_cell.gd` | `board_grid.gd` | No | Item Drag |
-| `cell_drag_ended(from_pos: Vector2i, to_pos: Vector2i)` | `board_cell.gd` | `board_grid.gd` | No | Item Move, Item Swap, Item Discard |
+| `cell_drag_ended(to_pos: Vector2i, drag_data: Dictionary)` | `board_cell.gd` | `board_grid.gd` (`_on_cell_drop`) | No | Item Move, Item Swap (within a grid or between board and shelf), Staging Placement |
 | `item_placed(item: Dictionary, pos: Vector2i)` | `board_grid.gd` | `merge_detector.gd` (via parent callback) | No | Merge Detection |
 | `item_removed(pos: Vector2i)` | `board_grid.gd` | `merge_detector.gd` (via parent callback) | No | Chain Merge |
 | `merge_detected(groups: Array)` | `merge_detector.gd` | `merge_resolver.gd` | No | Merge Resolution |
@@ -298,7 +298,7 @@ The GDD lists effect types (heal, buff_attack). Party stats are confirmed (see t
 | `despawn_timeout()` | `floating_item.gd` | `board_grid.gd` (staging handler) | No | Staging Despawn |
 | `item_discarded(pos: Vector2i)` | `board_grid.gd` | internal | No | Item Discard |
 
-> **Note on drag-and-drop:** BoardCell and FloatingItem implement `_get_drag_data()` (drag source). BoardCell implements `_can_drop_data()` / `_drop_data()` (drop target for swaps/placement). PartyMember implements `_can_drop_data()` / `_drop_data()` (drop target for usable items in dungeon). Godot handles hit-testing automatically across the scene tree. Custom signals (`cell_drag_started`, `cell_drag_ended`) may still be used internally by BoardGrid for move/swap logic, but the initial drag detection uses the Godot system.
+> **Note on drag-and-drop:** BoardCell and FloatingItem implement `_get_drag_data()` (drag source). BoardCell implements `_can_drop_data()` / `_drop_data()` (drop target for swaps/placement). PartyMember implements `_can_drop_data()` / `_drop_data()` (drop target for usable items in dungeon). Godot handles hit-testing automatically across the scene tree. BoardCell turns a drop into `cell_drag_ended(to_pos, drag_data)`: the drag data travels with the signal, since `get_viewport().gui_get_drag_data()` is null outside a live OS drag. Drag data is the item Dictionary plus `_source_pos`, `_source_grid` (the BoardGrid the item left; absent for a staging item) and `_source_screen`. The target grid reads `_source_grid` to tell a same-grid move, a cross-grid move (board and shelf) and a staging placement apart; moves passed to the move callback name `from_grid` (null from staging) and `to_grid`. **Drops are refused while a merge is being resolved:** MergeBoard gives both grids a drop guard (`set_drop_guard`) that fails while `MergeResolver.is_processing`, because between the merge burst and `remove_items()` the grid model still holds the merging items, so a drop then could lose or duplicate one.
 
 ### Flow Trace: Merge Detection and Resolution
 
@@ -306,7 +306,7 @@ The GDD lists effect types (heal, buff_attack). Party stats are confirmed (see t
 
 1. FloatingItem or BoardCell `_get_drag_data()` initiates drag with item Dictionary. Drag preview shown with ~50px upward offset for mobile visibility.
 2. Player releases over a BoardCell → `_drop_data()` called on target BoardCell → BoardGrid processes placement/swap
-3. `board_grid.gd` interprets target: empty cell → place, occupied cell → swap, outside board / over trash bin → discard
+3. `board_grid.gd` (`_on_cell_drop`) interprets the target: refused while a merge is resolving (drop guard); empty cell → place or move, occupied cell → swap (a staging item only fills empty cells). The source may be the same grid, the other grid (board and shelf), or staging. Releasing outside every cell cancels the drag and the item stays where it was
 4. Grid array updated → `board_grid.gd` calls `merge_detector.gd.scan(grid)`
 5. `merge_detector.gd` runs flood-fill from each occupied cell, finds groups of 3+ orthogonally connected identical items → returns array of `MergeGroup` dicts
 6. If no groups → flow ends
@@ -332,15 +332,14 @@ The GDD lists effect types (heal, buff_attack). Party stats are confirmed (see t
 
 **End state:** Item removed from staging, despawn SFX played. Item is permanently lost.
 
-### Flow Trace: Item Discard (Drag Off Board)
+### Flow Trace: Release Outside the Board
 
-**Trigger:** Player drags a grid item and releases touch outside the board area.
+**Trigger:** Player drags a grid or shelf item and releases touch outside every BoardCell.
 
-1. `board_cell.gd` detects touch release outside board bounds → emits `cell_drag_ended(from, invalid_target)`
-2. `board_grid.gd` recognizes invalid target → removes item from grid array, frees cell visual, emits `item_removed(pos)`
-3. Item is permanently lost
+1. No `_drop_data()` runs, so `cell_drag_ended` is never emitted: `cell_drag_ended(to_pos, drag_data)` only fires on a drop onto a cell
+2. Godot cancels the drag; the grid model was never touched, so the item stays in its cell
 
-**End state:** Item removed from board. No SFX (discard is silent per GDD).
+**End state:** Nothing changes. There is no drag-off discard; `BoardGrid.discard_item(pos)` is only called by the dungeon when a usable item is dropped on a party member.
 
 ### Class Reference
 
@@ -348,9 +347,33 @@ The GDD lists effect types (heal, buff_attack). Party stats are confirmed (see t
 
 **Extends:** Control
 **Script:** `board/merge_board.gd`
-**Description:** Root script for the merge board scene. Owns MergeChoicePopup, MergeDetector, and MergeResolver. Provides public API for parent scenes: `setup()`, `buy_crate()`, `get_crate_cost()`, `place_drop()`, `get_board_grid()`, `get_staging_area()`. Defaults to GameManager values but accepts overrides via setup config. Runs merge animations via AnimOverlay child node (burst + converge, configurable via constants).
+**Description:** Root script for the merge board scene. Owns MergeChoicePopup, MergeDetector, and MergeResolver. Provides public API for parent scenes: `setup()`, `buy_crate()`, `get_crate_cost()`, `place_drop()`, `get_board_grid()`, `get_shelf_grid()`, `get_staging_area()`, `count_sellable()`, `take_sellable()`, `get_shelf_state()`, `load_shelf_state()`. Defaults to GameManager values but accepts overrides via setup config. Runs merge animations via AnimOverlay child node (burst + converge, configurable via constants).
 
 `setup(config)` reads `config.crate_cost_multipliers` (`Dictionary[String, float]`, crate id → multiplier, default `{}`) — `ShopSession` passes the dealt session's `SessionPlan.modifier.get_crate_cost_multipliers()` here. `get_crate_cost(crate) -> int` returns `max(floor(crate.cost x multiplier x GameManager.get_crate_discount() + 0.0001), 1)`: the market modifier and the Crate Discount upgrade both apply, rounded down once, never free. `buy_crate()` charges this same value, and `ShopSession`'s crate buttons call `get_crate_cost()` so the shown price always matches the charge.
+
+**Scene layout** (`merge_board.tscn`):
+
+- `MergeBoard` (`merge_board.gd`)
+  - `VBox` (VBoxContainer)
+    - `TopPadding` (8 px)
+    - `BoardArea` (CenterContainer, expands; its minimum height is the grid's, so a taller board can't overlap the shelf) → `BoardGrid` (`board_grid.gd`)
+    - `ShelfGap` (8 px)
+    - `%ShelfArea` (PanelContainer, hidden when the shelf has no slots) → `%ShelfGrid` (`board_grid.gd`, one row, merges off)
+    - `StagingWrapper` (160 px) → `StagingBg`, `StagingArea` (FlowContainer)
+    - `BottomPadding` (40 px)
+  - `AnimOverlay`
+
+Fits a 6x6 board of 128 px cells plus a 6-slot shelf on the shop screen at 1080x1920 even when the current customer shows 3 orders (see GDD Decisions Log, 2026-09-28 leveled upgrades entry).
+
+**Display shelf:** `setup(config)` reads `config.shelf_slots` (default 0): the shop passes `GameManager.get_shelf_slots()`, the dungeon passes none, so its shelf stays hidden. The shelf is a second BoardGrid with `merges_enabled` false, the same cell scene and the same move callback, so drags between board and shelf reuse the board's code. Its `item_placed` also removes a dropped staging item from staging; merge detection only scans the board. Shelf items never merge and never despawn.
+
+| Function | Description |
+|----------|-------------|
+| `get_shelf_grid() -> Control` | The shelf BoardGrid (for tests and animations; the shop doesn't use it). |
+| `count_sellable(item_id: String) -> int` | Items with this id on the board plus the shelf. Used by order fulfilment. |
+| `take_sellable(item_id: String, count: int)` | Removes `count` items, from the shelf first (shelf stock is what the player set aside to sell), then the board. |
+| `get_shelf_state() -> Array` | The shelf's `{col, row, item_id}` entries, saved as `GameManager.shop_shelf_state`. |
+| `load_shelf_state(state: Array)` | Restores the shelf. Saved items past the shelf's end (a shelf with fewer slots) go through `place_drop` to the board, else staging, so nothing is lost. |
 
 **Animation constants:**
 
@@ -370,7 +393,7 @@ The GDD lists effect types (heal, buff_attack). Party stats are confirmed (see t
 
 #### BoardGrid
 **Script:** `board/board_grid.gd`
-**Description:** Manages the grid data model and item placement/removal/swap. Creates BoardCell nodes dynamically based on grid dimensions. Handles staging area for floating items. BoardCells are both drag sources and drop targets via Godot's built-in drag-and-drop.
+**Description:** Manages the grid data model and item placement/removal/swap. Creates BoardCell nodes dynamically based on grid dimensions. Handles staging area for floating items. BoardCells are both drag sources and drop targets via Godot's built-in drag-and-drop. MergeBoard runs two: the merge board and the display shelf.
 
 **Lifecycle:** `setup(config)` called externally by MergeBoard — reads grid dimensions from config dict, creates BoardCell children, initializes empty grid array.
 
@@ -379,9 +402,10 @@ The GDD lists effect types (heal, buff_attack). Party stats are confirmed (see t
 | Property | Type | Description |
 |----------|------|-------------|
 | `grid: Array[Array]` | 2D array of Dictionary or null | Live board state. Each cell is item dict or null. |
-| `grid_cols: int` | int | Column count (5 or 6) |
-| `grid_rows: int` | int | Row count (5) |
+| `grid_cols: int` | int | Column count (5 or 6 on the board; the slot count on the shelf) |
+| `grid_rows: int` | int | Row count (5 or 6 on the board; 1 on the shelf) |
 | `despawn_time: float` | float | Seconds before staging items despawn (from GameManager) |
+| `merges_enabled: bool` | bool | From `setup` config (`merges_enabled`, default true); false on the shelf |
 
 **Signals:**
 
@@ -394,17 +418,20 @@ The GDD lists effect types (heal, buff_attack). Party stats are confirmed (see t
 
 | Function | Description |
 |----------|-------------|
+| `set_move_callback(cb: Callable)` | MergeBoard's move animation; called with the moves of a drop, each naming `from_grid`/`from_pos` and `to_grid`/`to_pos`. |
+| `set_drop_guard(guard: Callable)` | A drop is refused while `guard.call()` is false (MergeBoard: no merge resolving). |
+| `finalize_move(moves: Array[Dictionary])` | Refreshes the cells each move leaves and lands on (either grid) and emits `item_placed` on the landing grid. |
 | `place_item(item: Dictionary, pos: Vector2i) -> bool` | Places item at pos. Returns false if occupied. Emits `item_placed`. |
 | `remove_items(positions: Array[Vector2i])` | Removes items at given positions. Emits `item_removed` for each. |
 | `swap_items(pos_a: Vector2i, pos_b: Vector2i)` | Swaps items at two positions. |
 | `discard_item(pos: Vector2i)` | Removes item at pos permanently. |
 | `find_safe_cell(item_id: String) -> Vector2i` | Returns an empty cell where placing this item would NOT create a group of 3+ orthogonally connected identical items. Returns `Vector2i(-1, -1)` if no safe cell exists. |
 | `place_or_stage(item: Dictionary) -> bool` | Merge-safe placement: calls `find_safe_cell(item.item_id)`. If found, places on board directly (returns true). If not, adds to staging area (returns false). Used by crate opening and enemy drops — not player drag placement. |
-| `count_items_on_board(item_id: String) -> int` | Counts how many of a given item are on the grid. Used by order fulfillment. |
+| `count_items_on_board(item_id: String) -> int` | Counts how many of a given item are on this grid. Order fulfilment goes through `MergeBoard.count_sellable`, which adds the board and the shelf. |
 | `remove_items_by_id(item_id: String, count: int)` | Removes N items matching item_id. Used by order fulfillment. |
 | `clear_board()` | Removes all items. Used for dungeon cleanup. |
 | `get_board_state() -> Array` | Serializes grid for save/load. Returns array of `{col, row, item_id}` dicts: ids only, since item data (and its sprite texture) can't round-trip through JSON. |
-| `load_board_state(state: Array)` | Restores grid from save data, rebuilding each item with `RecipeResolver.make_item(DefinitionLibrary.get_item(item_id))`. Ids missing from the catalog are skipped with an error. Updates BoardCell visuals. |
+| `load_board_state(state: Array) -> Array[Dictionary]` | Restores grid from save data, rebuilding each item with `RecipeResolver.make_item(DefinitionLibrary.get_item(item_id))`. Ids missing from the catalog are skipped with an error. Returns the items that fall outside this grid (a smaller shelf) instead of dropping them. Updates BoardCell visuals. |
 
 #### MergeDetector
 
@@ -468,7 +495,7 @@ The GDD lists effect types (heal, buff_attack). Party stats are confirmed (see t
 | Signal | Description |
 |--------|-------------|
 | `cell_drag_started(from_pos: Vector2i, item: Dictionary)` | Drag initiated from this cell. board_grid listens. |
-| `cell_drag_ended(from_pos: Vector2i, to_pos: Vector2i)` | Drag released. board_grid uses to_pos to determine place/swap/discard. |
+| `cell_drag_ended(to_pos: Vector2i, drag_data: Dictionary)` | An item was dropped on this cell. board_grid reads the source from `drag_data` (`_source_grid`, `_source_pos`) and places, moves or swaps. Not emitted for a release outside every cell. |
 
 **Functions:**
 
@@ -476,9 +503,9 @@ The GDD lists effect types (heal, buff_attack). Party stats are confirmed (see t
 | ------------------------------------------------------------- | -------------------------------------------------------------------- |
 | `set_item(item: Dictionary)`                                  | Updates visual to show item icon. Stores item data.                  |
 | `clear_item()`                                                | Removes item visual. Sets item to null.                              |
-| `_get_drag_data(at_position: Vector2) -> Variant`             | Returns item Dictionary. Sets drag preview with ~50px upward offset. |
+| `_get_drag_data(at_position: Vector2) -> Variant`             | Returns `make_drag_data()`: the item Dictionary plus `_source_pos`, `_source_grid` (this cell's grid) and `_source_screen`. Sets drag preview with ~50px upward offset. |
 | `_can_drop_data(at_position: Vector2, data: Variant) -> bool` | Returns true if data contains valid item dict.                       |
-| `_drop_data(at_position: Vector2, data: Variant)`             | Receives dropped item, notifies BoardGrid via cell_drag_ended.       |
+| `_drop_data(at_position: Vector2, data: Variant)`             | Receives dropped item, emits `cell_drag_ended(grid_pos, data)`.      |
 
 #### MergeChoicePopup
 
@@ -562,7 +589,7 @@ Each catalog is a folder of `.tres` files under `resources/definitions/`; the fi
 | `reagents/` | `ReagentDefinition` | `id`, `name`, `cost`, `description`, `sprite`, `min_shop_level` |
 | `blueprints/` | `BlueprintDefinition` | `id`, `name`, `cost`, `dependencies: Array[BlueprintDefinition]`, `min_shop_level` |
 | `crates/` | `CrateDefinition` | `id`, `name`, `cost`, `min_items`, `max_items`, `pool: Array[WeightedItem]`, `min_shop_level` |
-| `upgrades/` | `UpgradeDefinition` | `id`, `name`, `cost`, `effect` (`grid_size`, `despawn_time` or `crate_discount`), `value` (seconds for despawn_time, price multiplier for crate_discount), `grid_cols` and `grid_rows` (grid_size) |
+| `upgrades/` | `UpgradeDefinition` | A leveled track: `id`, `name`, `description`, `effect` (`grid_size`, `despawn_time`, `crate_discount`, `shelf_slots`, `forecast_detail` or `order_price`), `levels: Array[UpgradeLevel]`. `max_level()` is `levels.size()`; `next_level(level)` is the level bought after `level`, or null at the max. Buying an upgrade buys its next level. |
 | `customers/` | `CustomerDefinition` | A customer *archetype*, not a fixed customer: `id`, `name`, `role`, `sprite` (portrait), `min_shop_level`, `weight` (a real frequency weight: how often this archetype is dealt relative to the other eligible archetypes — see Shop Session), `min_orders`, `max_orders`, `price_multiplier` (scales every rolled order's price), `wants: Array[OrderTemplate]` |
 | `shop_rules/` | `ShopRulesDefinition` | One definition, id `"default"`: `id`, `session_size`, `modifier_chance`, `forecast_customers`, `xp_per_gold`, `streak_step`, `streak_cap`, `level_xp_base`, `level_xp_exponent`, `max_level` |
 | `dungeons/` | `DungeonDefinition` | See the Dungeon Run subsystem. |
@@ -570,6 +597,7 @@ Each catalog is a folder of `.tres` files under `resources/definitions/`; the fi
 | (inline) | `EffectDefinition` | `type`, `value`, `duration` (ticks, 0 = instant). The `value` meaning per type is in `effect_definition.gd`. |
 | (inline) | `MergeResult` | `result: ItemDefinition`, `blueprint: BlueprintDefinition` (null = always available) |
 | (inline) | `ReagentVariant` | `result: ItemDefinition`, `reagent: ReagentDefinition`, `blueprint` (null = always available) |
+| (inline) | `UpgradeLevel` | One level of an upgrade track: `cost`, `value` (the absolute value at this level, not a step: seconds for despawn_time, price multiplier for crate_discount and order_price, slots for shelf_slots, customers revealed for forecast_detail with 0 meaning every customer plus their orders), `grid_cols` and `grid_rows` (what this level adds to the board, for grid_size), `min_shop_level` (default 1). Costs rise within a track (checked by `test_definition_library`). |
 | (inline) | `WeightedItem` | `item: ItemDefinition`, `weight: int` (relative; 0 never rolls) |
 | (inline) | `OrderTemplate` | A thing a customer archetype may ask for, on `CustomerDefinition.wants`: `item: ItemDefinition`, `weight: int`, `min_quantity`, `max_quantity`. Rolled into an `OrderDefinition` per session (see Shop Session). |
 | (inline) | `OrderDefinition` | A rolled order on a dealt `ShopCustomer`: `item: ItemDefinition`, `quantity`, `gold_reward` |
@@ -714,11 +742,11 @@ Customers are dealt from `CustomerDefinition` archetypes (see Content Definition
 
 1. `order_card.gd` emits `order_tapped(order_index)` → `shop_session.gd.try_fulfill_order(index)`
 2. `shop_session.gd` reads the chosen order's requirements: `{item_id: quantity}`
-3. Calls `board.count_items_on_board(item_id)` for each required item
-4. If all requirements met: `board.remove_items_by_id(item_id, qty)` for each, `GameManager.add_gold(reward)`, `GameManager.add_shop_xp(_streak.fulfill(reward, _rules))` (`ShopRulesDefinition.order_xp`: `round(gold x xp_per_gold x (1 + min(streak x streak_step, streak_cap)))`), emit `customer_fulfilled`, discard all other unfulfilled orders for this customer
+3. Calls `board.count_sellable(item_id)` for each required item (board plus display shelf)
+4. If all requirements met: `board.take_sellable(item_id, qty)` for each (shelf first, then board), `GameManager.add_gold(reward)`, `GameManager.add_shop_xp(_streak.fulfill(reward, _rules))` (`ShopRulesDefinition.order_xp`: `round(gold x xp_per_gold x (1 + min(streak x streak_step, streak_cap)))`), emit `customer_fulfilled`, discard all other unfulfilled orders for this customer
 5. Advance to next customer (or end session if last)
 
-**End state:** Chosen order fulfilled, remaining orders discarded, items removed from board, gold and XP added, customer replaced.
+**End state:** Chosen order fulfilled, remaining orders discarded, items removed from the shelf and board, gold and XP added, customer replaced. At session end ShopSession saves the board to `GameManager.shop_board_state` and the shelf to `GameManager.shop_shelf_state`.
 
 ### Class Reference
 
@@ -1139,7 +1167,7 @@ No special abilities for MVP — auto-attack only.
 
 ### Upgrades and Reagents
 
-Upgrades are `UpgradeDefinition`s and reagents `ReagentDefinition`s (see Content Definitions). GameManager finds an upgrade's effect by its `effect` type among the purchased upgrades, never by upgrade id.
+Upgrades are `UpgradeDefinition`s and reagents `ReagentDefinition`s (see Content Definitions). Each upgrade is a track of `UpgradeLevel`s; `GameManager.upgrade_levels` maps an upgrade id to the level bought (0 or absent = none). GameManager finds an upgrade's effect by its `effect` type, never by upgrade id, and reads the value at the bought level (capped at the track's length). `core/purchases.gd buy_upgrade` buys the next level: it checks the next level exists, `meets_level(next.min_shop_level)` and gold, charges `next.cost`, adds the level's `grid_cols`/`grid_rows` to `GameManager.grid_cols`/`grid_rows` for `grid_size`, then calls `GameManager.raise_upgrade_level(id)`. The Upgrades tab shows "Name (k/N)", the next level's value and cost, "Max" at the top level and "Unlocks at level N" while the next level is locked. Upgrade levels are not listed on the level-up panel (it lists catalog entries with a top-level `min_shop_level`).
 
 Reagents are bought in the prep phase and stored in `GameManager.reagent_inventory` as counts. They are never placed on the board. At merge time, the merged item's `reagent_variants` whose reagent is in stock become extra options (see Resolve Reagent Variants).
 
@@ -1155,7 +1183,7 @@ Reagents are bought in the prep phase and stored in `GameManager.reagent_invento
 | `shop_xp_changed(xp: int)` | `game_manager.gd` | HUD | No (GameManager direct) | Shop XP change |
 | `shop_level_changed(level: int)` | `game_manager.gd` | `prep_phase.gd`, `shop_session.gd` | No (GameManager direct) | Level crossed |
 | `blueprint_added(bp_id: String)` | `game_manager.gd` | prep blueprints tab, `audio_manager.gd` | No (GameManager direct) | Blueprint Purchase |
-| `upgrade_added(upgrade_id: String)` | `game_manager.gd` | `audio_manager.gd` | No (GameManager direct) | Upgrade Purchase |
+| `upgrade_level_changed(upgrade_id: String, level: int)` | `game_manager.gd` | `audio_manager.gd`, `prep_phase.gd` | No (GameManager direct) | Upgrade Purchase |
 | `grid_size_changed(cols: int, rows: int)` | `game_manager.gd` | active MergeBoard | No (GameManager direct) | Grid upgrade |
 | `reagent_count_changed(id: String, count: int)` | `game_manager.gd` | prep reagent display | No (GameManager direct) | Reagent purchase/use |
 
@@ -1170,9 +1198,9 @@ Reagents are bought in the prep phase and stored in `GameManager.reagent_invento
 5. Route by type:
    - **Reagent:** `GameManager.add_reagent(id, 1)` — goes directly to inventory. No items spawned to board or staging.
    - **Blueprint:** check dependencies met → `GameManager.add_blueprint(id)` → `blueprint_added` emitted
-   - **Upgrade:** `GameManager.add_upgrade(id)` → applies effect immediately (grid size, despawn time, discount), `upgrade_added` emitted
+   - **Upgrade:** `purchases.buy_upgrade(id)` buys the next level (price is that level's `cost`): grid growth is added for `grid_size`, then `GameManager.raise_upgrade_level(id)` emits `upgrade_level_changed(id, level)`. Other effects are read through GameManager's getters when next used
 6. `EventBus.save_requested` emitted → SaveManager writes
-7. SFX played via GameManager `blueprint_added` / `upgrade_added` signals (AudioManager connects directly)
+7. SFX played via GameManager `blueprint_added` / `upgrade_level_changed` signals (AudioManager connects directly)
 
 **End state:** Purchase applied, gold deducted, HUD updated, save triggered.
 
@@ -1257,7 +1285,7 @@ Reagents are bought in the prep phase and stored in `GameManager.reagent_invento
 
 **Extends:** Node
 **Script:** `autoloads/game_manager.gd`
-**Description:** Singleton data store for all persistent game state. No game logic — getters, setters, and change signals only.
+**Description:** Singleton data store for all persistent game state. No game logic — getters, setters, and change signals only. `SAVE_VERSION` is 7: `upgrade_levels` replaced `purchased_upgrades` and `shop_shelf_state` is new, and older saves are rejected as CORRUPT.
 
 **Properties:**
 
@@ -1267,11 +1295,12 @@ Reagents are bought in the prep phase and stored in `GameManager.reagent_invento
 | `shop_xp: int` | int | Cumulative shop XP (`SAVE_VERSION` 6) |
 | `unlocked_blueprints: Array[String]` | Array | Blueprint IDs owned |
 | `reagent_inventory: Dictionary` | Dictionary | String → int (reagent_id → count) |
-| `purchased_upgrades: Array[String]` | Array | Upgrade IDs purchased |
+| `upgrade_levels: Dictionary` | Dictionary | String → int (upgrade id → level bought). `SAVE_VERSION` 7. |
 | `shop_board_state: Array` | Array | Shop board as `{col, row, item_id}` entries (see BoardGrid.get_board_state) |
+| `shop_shelf_state: Array` | Array | Display shelf, same shape (see MergeBoard.get_shelf_state). `SAVE_VERSION` 7. |
 | `dungeon_board_state: Array` | Array | Dungeon board, same shape |
-| `grid_cols: int` | int | Board width (5 default, 6 with upgrade) |
-| `grid_rows: int` | int | Board height (always 5) |
+| `grid_cols: int` | int | Board width (5 default; Board Expansion adds its levels' `grid_cols`) |
+| `grid_rows: int` | int | Board height (5 default; Board Expansion adds its levels' `grid_rows`) |
 | `run_seed: int` | int | Rolled once per new game; combined with `sessions_played` to seed each shop session. `SAVE_VERSION` 5. |
 | `sessions_played: int` | int | Completed shop-session count. Incremented by `record_session_played()` at `end_session()`, saved right then. Also the ad grace-period counter (Submodule — Ads). `SAVE_VERSION` 5. |
 
@@ -1283,7 +1312,7 @@ Reagents are bought in the prep phase and stored in `GameManager.reagent_invento
 | `shop_xp_changed(xp: int)` | Shop XP changed. HUD listens. |
 | `shop_level_changed(level: int)` | Level crossed. Emitted once per level crossed. |
 | `blueprint_added(bp_id: String)` | Blueprint unlocked. Prep phase blueprints tab, audio_manager (purchase SFX) listen. |
-| `upgrade_added(upgrade_id: String)` | Upgrade purchased. audio_manager (purchase SFX) listens. |
+| `upgrade_level_changed(upgrade_id: String, level: int)` | An upgrade level was bought; `level` is the new level. audio_manager (purchase SFX) and prep_phase (upgrade cards) listen. |
 | `reagent_count_changed(id: String, count: int)` | Reagent inventory changed. |
 | `grid_size_changed(cols: int, rows: int)` | Grid dimensions changed. Active MergeBoard listens. |
 
@@ -1297,11 +1326,15 @@ Reagents are bought in the prep phase and stored in `GameManager.reagent_invento
 | `add_blueprint(bp_id: String)` | Appends to unlocked, emits `blueprint_added`. |
 | `add_reagent(reagent_id: String, count: int)` | Updates inventory dict, emits `reagent_count_changed`. |
 | `consume_reagent(reagent_id: String) -> bool` | Deducts 1 if count > 0. Returns false if none. |
-| `add_upgrade(upgrade_id: String)` | Appends to purchased_upgrades, emits `upgrade_added`. Effect application is handled by the caller (e.g., prep_phase._buy_upgrade() applies grid_size changes). |
+| `get_upgrade_level(upgrade_id: String) -> int` | Level bought (0 if none). |
+| `raise_upgrade_level(upgrade_id: String)` | Adds one level, emits `upgrade_level_changed(upgrade_id, level)`. Charging, checks and grid growth are the caller's (`core/purchases.gd buy_upgrade`). |
 | `get_shop_level() -> int` | Returns `DefinitionLibrary.get_shop_rules().level_for_xp(shop_xp)`. |
 | `meets_level(min_shop_level: int) -> bool` | Returns `get_shop_level() >= min_shop_level`. |
-| `get_despawn_time() -> float` | `value` of a purchased `despawn_time` upgrade, else `DEFAULT_DESPAWN_TIME` (12.0). |
-| `get_crate_discount() -> float` | `value` of a purchased `crate_discount` upgrade, else 1.0. |
+| `get_despawn_time() -> float` | Bought level's `value` of the `despawn_time` track, else `DEFAULT_DESPAWN_TIME` (12.0). |
+| `get_crate_discount() -> float` | Bought level's `value` of the `crate_discount` track, else 1.0. |
+| `get_shelf_slots() -> int` | Bought level's `value` of the `shelf_slots` track, else `DEFAULT_SHELF_SLOTS` (0). |
+| `get_order_price_multiplier() -> float` | Bought level's `value` of the `order_price` track (Shop Signage), else 1.0. `SessionPlanner` passes it to the generator, which multiplies it into order gold before the one rounding. |
+| `get_forecast_customers() -> int` | Bought level's `value` of the `forecast_detail` track (Town Crier), else `ShopRulesDefinition.forecast_customers`. 0 means every customer, plus their orders. |
 | `record_session_played()` | Increments `sessions_played`. Called once, at the end of a shop session. |
 | `get_session_seed() -> int` | `hash([run_seed, sessions_played])`. Fixed for a given run and session number: previewable in prep. A crash mid-session replays the same customers unless the shop level crossed an archetype's `min_shop_level` mid-session. |
 | `serialize() -> Dictionary` | Returns all persistent state as a Dictionary for SaveManager. |
@@ -1415,7 +1448,7 @@ No signals emitted. AudioManager only listens.
 
 ### Flow Trace: SFX on Game Event
 
-**Trigger:** Any EventBus signal or GameManager signal that maps to a SFX (merge_completed, customer_fulfilled, blueprint_added, upgrade_added, etc.).
+**Trigger:** Any EventBus signal or GameManager signal that maps to a SFX (merge_completed, customer_fulfilled, blueprint_added, upgrade_level_changed, etc.).
 
 1. `audio_manager.gd` receives signal from EventBus or GameManager in connected handler
 2. Looks up SFX resource path from `sfx_map`:
@@ -1425,7 +1458,7 @@ No signals emitted. AudioManager only listens.
 | `merge_complete` | EventBus `merge_completed` | EventBus connection |
 | `customer_happy` | EventBus `customer_fulfilled` | EventBus connection |
 | `customer_reject` | EventBus `customer_rejected` | EventBus connection |
-| `purchase` | GameManager `blueprint_added` / `upgrade_added` | GameManager signal |
+| `purchase` | GameManager `blueprint_added` / `upgrade_level_changed` | GameManager signal |
 | `dungeon_clear` | EventBus `dungeon_cleared` | EventBus connection |
 | `dungeon_fail` | EventBus `dungeon_failed` | EventBus connection |
 | `item_place` | Same-scene (board_grid) | Direct call `AudioManager.play_sfx()` |
@@ -1454,7 +1487,7 @@ No signals emitted. AudioManager only listens.
 **Script:** `autoloads/audio_manager.gd`
 **Description:** Manages music crossfade and SFX playback. Connects to EventBus at startup for signal-driven SFX. Same-scene SFX (item_place, session_start, dungeon_start, ko, crate_open) use direct calls to `AudioManager.play_sfx()`.
 
-**Lifecycle:** `_ready()` connects to all relevant EventBus signals and GameManager state-change signals (`blueprint_added`, `upgrade_added`). Preloads audio streams.
+**Lifecycle:** `_ready()` connects to all relevant EventBus signals and GameManager state-change signals (`blueprint_added`, `upgrade_level_changed`). Preloads audio streams.
 
 **Properties:**
 

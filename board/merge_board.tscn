@@ -22,28 +22,23 @@ grow_horizontal = 2
 grow_vertical = 2
 
 [node name="TopPadding" type="Control" parent="VBox" unique_id=15218026]
-custom_minimum_size = Vector2(0, 120)
+custom_minimum_size = Vector2(0, 8)
 layout_mode = 2
 
-[node name="BoardArea" type="Control" parent="VBox" unique_id=630063082]
-custom_minimum_size = Vector2(0, 900)
+[node name="BoardArea" type="CenterContainer" parent="VBox" unique_id=630063082]
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="CenterContainer" type="CenterContainer" parent="VBox/BoardArea" unique_id=1122867128]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-
-[node name="BoardGrid" type="GridContainer" parent="VBox/BoardArea/CenterContainer" unique_id=746386368]
+[node name="BoardGrid" type="GridContainer" parent="VBox/BoardArea" unique_id=746386368]
 layout_mode = 2
 theme_override_constants/h_separation = 12
 theme_override_constants/v_separation = 12
 columns = 5
 script = ExtResource("2")
+
+[node name="ShelfGap" type="Control" parent="VBox"]
+custom_minimum_size = Vector2(0, 8)
+layout_mode = 2
 
 [node name="ShelfArea" type="PanelContainer" parent="VBox"]
 unique_name_in_owner = true
@@ -58,9 +53,8 @@ theme_override_constants/v_separation = 12
 script = ExtResource("2")
 
 [node name="StagingWrapper" type="Control" parent="VBox" unique_id=1984120953]
-custom_minimum_size = Vector2(0, 200)
+custom_minimum_size = Vector2(0, 160)
 layout_mode = 2
-size_flags_vertical = 2
 
 [node name="StagingBg" type="TextureRect" parent="VBox/StagingWrapper" unique_id=1709171760]
 layout_mode = 1
@@ -71,6 +65,8 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 texture = ExtResource("3")
+expand_mode = 1
+stretch_mode = 6
 
 [node name="StagingArea" type="FlowContainer" parent="VBox/StagingWrapper" unique_id=1145141524]
 layout_mode = 1

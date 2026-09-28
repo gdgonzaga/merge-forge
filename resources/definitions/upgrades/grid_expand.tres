@@ -1,11 +1,11 @@
-[gd_resource type="Resource" script_class="UpgradeDefinition" load_steps=5 format=3]
+[gd_resource type="Resource" script_class="UpgradeDefinition" load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://resources/definitions/upgrade_definition.gd" id="1_kumrm"]
 [ext_resource type="Script" path="res://resources/definitions/upgrade_level.gd" id="2_level"]
 
 [sub_resource type="Resource" id="Resource_level_1"]
 script = ExtResource("2_level")
-cost = 1500
+cost = 1000
 value = 0.0
 grid_cols = 0
 grid_rows = 1
@@ -13,19 +13,11 @@ min_shop_level = 1
 
 [sub_resource type="Resource" id="Resource_level_2"]
 script = ExtResource("2_level")
-cost = 4000
+cost = 3000
 value = 0.0
 grid_cols = 1
 grid_rows = 0
-min_shop_level = 10
-
-[sub_resource type="Resource" id="Resource_level_3"]
-script = ExtResource("2_level")
-cost = 9000
-value = 0.0
-grid_cols = 0
-grid_rows = 1
-min_shop_level = 20
+min_shop_level = 12
 
 [resource]
 script = ExtResource("1_kumrm")
@@ -33,4 +25,4 @@ id = "grid_expand"
 name = "Board Expansion"
 description = "More room on the merge board."
 effect = "grid_size"
-levels = Array[ExtResource("2_level")]([SubResource("Resource_level_1"), SubResource("Resource_level_2"), SubResource("Resource_level_3")])
+levels = Array[ExtResource("2_level")]([SubResource("Resource_level_1"), SubResource("Resource_level_2")])
