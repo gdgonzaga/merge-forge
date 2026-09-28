@@ -25,10 +25,15 @@ func setup(board_ref: Control, popup_cb: Callable, detector: RefCounted, merge_b
 	_merge_board = merge_board
 
 
+# A group with no merge options (blueprint not owned, or a final item) stays
+# on the board untouched. Queueing it, or starting processing with nothing
+# queued, would loop: process_next rescans the board via _try_chain, finds
+# the same group and enqueues it again.
 func enqueue(groups: Array[Dictionary]) -> void:
 	for group in groups:
-		merge_queue.append(group)
-	if not is_processing:
+		if not _build_options(group.get("item_id", "")).is_empty():
+			merge_queue.append(group)
+	if not is_processing and not merge_queue.is_empty():
 		process_next()
 
 
