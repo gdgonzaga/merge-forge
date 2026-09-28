@@ -57,7 +57,6 @@
 - Additional dungeons beyond the first
 - Gem and Wood material families (family keys reserved: `"gem"`, `"wood"`; no items defined yet)
 - Party Abilities / Active Skills (auto-attack only for MVP)
-- Demand Forecast / Forecast tab
 - Dungeon Mid-Exit Penalty (MVP wipes all partial progress)
 - Additional reagent types beyond Fire Essence (Ice, Shadow, Holy)
 - Equipment Durability / Repair mechanic — party equipment wears during dungeon raids, player crafts repair items (usable item type: `repair`)
@@ -79,7 +78,7 @@ The core loop has two modes: **Shop Mode** and **Dungeon Mode**.
 4. **Player fulfills order** — taps one order card to deliver the required items, earning gold and XP (more with a longer fulfil streak). Only one order per customer can be fulfilled; remaining orders are discarded. OR rejects the customer, which breaks the fulfil streak; no XP
 5. **Repeat** steps 2–4 for all 10 customers
 6. **Session summary** — shows gold and XP earned, items sold, satisfied customer portraits, and a level-up panel if a level was crossed
-7. **Prep phase** — spend gold on blueprints, reagents, upgrades; rearrange board (demand forecast tab deferred to post-MVP)
+7. **Prep phase** — Forecast tab (default) previews the next session: market modifier card, demand by item family, first 3 customers; spend gold on blueprints, reagents, upgrades (board rearrange deferred to post-MVP)
 8. **Choose** — start next session or enter dungeon (if unlocked)
 
 ### Dungeon Mode Loop
@@ -302,7 +301,7 @@ The curve is a power law: XP from level k to k+1 is `round(level_xp_base x k^lev
 - Does NOT have: Star rating, share button
 
 ### Prep Phase
-- Elements: TabContainer with tabs — Board (rearrange freely), Blueprints (buy blueprints), Upgrades (buy upgrades and reagents). Material crates are purchased during shop sessions. Forecast tab deferred to post-MVP. Locked entries are greyed with "Unlocks at level N"; the dungeon button reads "Dungeon (Lv N)" while locked.
+- Elements: TabContainer with tabs — **Forecast** (first, default tab: previews the next session exactly as the shop will deal it — a market modifier card, shown only when a modifier rolled, with its icon, name and description; demand by item family, largest share first; and portraits for the first `forecast_customers` (3) customers), Blueprints (buy blueprints), Upgrades (buy upgrades and reagents). Material crates are purchased during shop sessions. Board rearrange deferred to post-MVP. Locked entries are greyed with "Unlocks at level N"; the dungeon button reads "Dungeon (Lv N)" while locked. The forecast refreshes whenever a purchase or level-up could change what's craftable (blueprint bought, reagent count changed, level crossed).
 - **Overlay (CanvasLayer):** HUD — gold, shop level and XP bar (always visible during gameplay)
 - **Bottom:** Continue button → start next session or enter dungeon. Quit button (with confirmation) → return to Main Menu.
 - Does NOT have: Timer, limited item slots
@@ -388,6 +387,9 @@ The curve is a power law: XP from level k to k+1 is `round(level_xp_base x k^lev
 | Session size | 10 customers per session | |
 | Starting gold | 50 | |
 | Crate discount | 20% | With Crate Discount upgrade |
+| Crate cost | `max(floor(cost x modifier x discount + 0.0001), 1)` | Modifier and Crate Discount both apply, rounded down once (the epsilon stops float error losing a gold: `30 x 0.7` is `20.999...`); a crate is never free |
+| Market modifier chance | 35% | `ShopRulesDefinition.modifier_chance`; at most one modifier per session, rolled from the seed (`hash([session_seed, "modifier"])`), not the clock — see Market Modifiers below and Decisions Log |
+| Forecast customers revealed | 3 | `ShopRulesDefinition.forecast_customers`; the prep Forecast tab shows this many of the next session's dealt customers |
 | Upgrades | Data-driven | Defined in `upgrades.json` (Slow Timer, Crate Discount, Grid Expand) |
 | Crates | Data-driven | Defined in `crates.json` (whatever entries exist become buy buttons) |
 | Customers | Data-driven: level-gated archetypes | `CustomerDefinition` archetypes under `resources/definitions/customers/`, dealt each session by `shop/customer_generator.gd` (weighted draw with replacement by `weight`, no back-to-back repeats). Order price = `gold_value x quantity x price_multiplier`. |
@@ -397,6 +399,18 @@ The curve is a power law: XP from level k to k+1 is `round(level_xp_base x k^lev
 | Dungeon gold reward | 120g | Goblin Cave (MVP) |
 | Dungeon XP reward | 60 | Goblin Cave, on clear. A wipe gives none. |
 | Dungeon unlock | Level 6 | Goblin Cave's `min_shop_level` |
+
+### Market Modifiers (MVP)
+
+`SessionModifierDefinition` events under `resources/definitions/modifiers/`, at most one rolled per session (35% chance, see Fixed Values above). An empty `family` means every item (Festival); every other field defaults to "no effect" (multiplier 1.0, delta 0).
+
+| id | Name | Min level | Effect |
+|----|------|-----------|--------|
+| herb_shortage | Herb Shortage | 5 | Herb crates (Herb Crate) cost x1.5; herb-family orders pay x1.3 |
+| festival | Festival | 8 | Every order pays x1.2 (`family` empty = all items) |
+| iron_glut | Iron Glut | 12 | Metal crates (Metal Crate) cost x0.7; metal-family orders pay x0.85 |
+| knights_tournament | Knights' Tournament | 18 | Ser Roland and Ser Kaelen's archetype weight x3 |
+| caravan_day | Caravan Day | 25 | Maelys's archetype weight x3; session size +3 customers |
 
 ### Item Catalog (MVP)
 
@@ -580,6 +594,7 @@ Purchase flow:
 |----------|-------|-------|
 | Starting gold | 50 | |
 | Crate discount | 20% (multiply by 0.8) | With upgrade only |
+| Crate cost | `max(floor(cost x modifier x discount + 0.0001), 1)` | The dealt session's market modifier (if any) and the Crate Discount upgrade both apply, rounded down once; never free |
 | Crate definitions | Fully data-driven, one `.tres` per crate | Each crate has: name, cost, item_count range, weighted item pool. Whatever crate definitions exist are shown as buy buttons, cheapest first. No hardcoded crate types. |
 | Crates (current) | Basic Crate 10g, Metal Crate 25g, Herb Crate 25g | Basic: iron_ore (weight 3) / herb_leaf (weight 2), 3-5 items. Metal: iron_ore (weight 4) / iron_ingot (weight 1), 3-4 items. Herb Crate (new): herb_leaf (weight 4) / herb_bundle (weight 1), 3-4 items. |
 | Fire Essence price | 100g | 1 reagent, goes directly to inventory |
@@ -902,7 +917,7 @@ The player leaving a summary screen for the prep phase: the Session Summary's Co
 | 2026-06-04 | Party abilities deferred to post-MVP | Auto-attack only for MVP; no healer ability, no skills, no active party abilities. Usable-item buffs (buff_attack) remain in MVP |
 | 2026-06-04 | Customer generation: flat list for MVP | Algorithmic generation deferred; MVP uses hand-authored customer list |
 | 2026-06-04 | Dungeon wipe: partial progress lost on exit/fail | Post-MVP: exit penalty + anti-scumming measures |
-| 2026-06-04 | Demand forecast deferred | Forecast tab and forecast_bias not in MVP |
+| 2026-06-04 | Demand forecast deferred | Forecast tab and forecast_bias not in MVP. **Superseded 2026-09-28:** shipped — see the "Demand forecast shipped" entry below. |
 | 2026-06-04 | Premium customer tier deferred | CustomerGenerator only produces Basic and Standard for MVP |
 | 2026-06-04 | Reject penalty: reputation only, no gold cost | -2 reputation per rejected customer. **Superseded 2026-09-28:** reputation is gone; a reject now breaks the fulfil streak and earns no XP, with no other penalty. |
 | 2026-06-04 | Usable item values confirmed for v1.0 | Healing Potion: heal 30 HP; Battle Elixir: +5 ATK for 10s. Tune during playtesting |
@@ -926,6 +941,7 @@ The player leaving a summary screen for the prep phase: the Session Summary's Co
 | 2026-09-28 | Reputation replaced by shop XP and levels | `GameManager.reputation_points` and every `reputation_required`/`reputation_changed` field are gone. `shop_xp` (never decreases) drives `get_shop_level()`, 1 to `max_level` (60); every unlock a definition used to gate by reputation now uses `min_shop_level`. `SAVE_VERSION` 6, breaking: old saves are rejected as CORRUPT. |
 | 2026-09-28 | Power-law level curve, not geometric | XP from level k to k+1 is `round(level_xp_base x k^level_xp_exponent)`, not a fixed per-level multiplier. Income plateaus once content runs out (there's nothing left to sell for more gold), so a geometric curve would make each later level cost a fixed factor more sessions forever; a power law's cost grows but at a rate the sim can tune to match the content that actually exists. |
 | 2026-09-28 | Archetype weight is a real frequency weight | Supersedes the deck rule in this date's "seeded archetype sessions" entry: the generator no longer deals a deck (one guaranteed slot per pass). It now does a weighted draw with replacement, so `weight` sets how often an archetype is dealt relative to the others, not just draw order within a pass; the no-repeat-back-to-back rule is unchanged. |
+| 2026-09-28 | Demand forecast shipped: market modifiers, Forecast tab | Reverses the 2026-06-04 "Demand forecast deferred" entry. The modifier rolls on its own RNG stream (`hash([session_seed, "modifier"])`), before the customers are dealt and independent of the customer RNG (still seeded by `session_seed` alone) — the spec's "roll after dealing" would let a modifier's customer-weight and session-size effects reshuffle who gets dealt; rolling first, on a separate stream, means adding a modifier to the catalog never reshuffles a seed's customers when the rolled modifier has no customer effects. A modifier's `family` field empty means it affects every item (Festival); other modifiers name a family key such as `"herb"`. Crate cost under a modifier is `cost x modifier x discount`, rounded down once and clamped to at least 1g (`max(floor(... + 0.0001), 1)`, the epsilon guarding float error like `30 x 0.7 == 20.999...`). The Forecast tab is the first, default prep tab, since planning is what prep is for; it shows the market modifier (if any), demand by item family, and the first `forecast_customers` (3) customers of the next session exactly as the shop will deal it, refreshing whenever a purchase or level-up could change what's craftable. Five modifiers ship (Herb Shortage L5, Festival L8, Iron Glut L12, Knights' Tournament L18, Caravan Day L25), checked by the economy sim's `_print_modifiers()`: no modifier pushes an item's margin from 1.0 or more down under 1.0. |
 
 ---
 
