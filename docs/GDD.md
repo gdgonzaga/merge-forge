@@ -58,7 +58,6 @@
 - Additional dungeons beyond the first
 - Gem and Wood material families (family keys reserved: `"gem"`, `"wood"`; no items defined yet)
 - Premium customer tier
-- Algorithmic Customer Generation (MVP uses flat, hand-authored list)
 - Party Abilities / Active Skills (auto-attack only for MVP)
 - Demand Forecast / Forecast tab
 - Dungeon Mid-Exit Penalty (MVP wipes all partial progress)
@@ -76,7 +75,7 @@ The core loop has two modes: **Shop Mode** and **Dungeon Mode**.
 
 ### Shop Mode Loop
 
-1. **Session starts** — 10 customers are generated from a flat, hand-authored list (same order every session for MVP)
+1. **Session starts** — 10 customers are dealt from the reputation-unlocked archetypes, seeded per session
 2. **Customer arrives** — displays portrait and 1–3 possible orders
 3. **Player crafts** — buys crates, places materials on the board, merges them into more advanced items
 4. **Player fulfills order** — taps one order card to deliver the required items, earning gold. Only one order per customer can be fulfilled; remaining orders are discarded. OR rejects the customer (small reputation penalty)
@@ -381,7 +380,7 @@ Transitions:
 | Crate discount | 20% | With Crate Discount upgrade |
 | Upgrades | Data-driven | Defined in `upgrades.json` (Slow Timer, Crate Discount, Grid Expand) |
 | Crates | Data-driven | Defined in `crates.json` (whatever entries exist become buy buttons) |
-| Customers | Data-driven (MVP: flat list) | Defined in `customers.json`. Post-MVP: algorithmic generation. |
+| Customers | Data-driven: reputation-gated archetypes | `CustomerDefinition` archetypes under `resources/definitions/customers/`, dealt each session by `shop/customer_generator.gd`. Order price = `gold_value x quantity x price_multiplier`. |
 | Reputation fulfill reward | 10 points | Per fulfilled order |
 | Reputation reject penalty | 2 points | Per rejected customer |
 | Reputation dungeon fail | 20 points lost | On party wipe |
@@ -590,7 +589,7 @@ Purchase flow:
 ### Submodule — Reputation System
 
 **What it does:**
-Tracks reputation points and determines the player's reputation level (Low/Mid/High). Gates customer tiers and dungeon access based on thresholds.
+Tracks reputation points and determines the player's reputation level (Low/Mid/High). Gates dungeon access based on level thresholds, and gates individual customer archetypes based on each archetype's own `reputation_required`.
 
 **What triggers it:**
 Customer order fulfilled (+10 pts), customer rejected (-2 pts), dungeon cleared (+25 pts), dungeon failed (-20 pts).
@@ -603,15 +602,15 @@ Customer order fulfilled (+10 pts), customer rejected (-2 pts), dungeon cleared 
 **Outputs:**
 - Updates GameManager.reputation_points
 - Emits reputation_changed when level changes
-- Provides customer tier pool to CustomerGenerator (post-MVP; MVP uses flat list)
+- `reputation_points` is read directly by `shop/customer_generator.gd`, which gates each archetype by its own `reputation_required`
 - Provides dungeon unlock status
 
 **States / Logic:**
 ```
-Levels: [0, 100, 300]
-- Low: 0–99 pts → Basic customers only
-- Mid: 100–299 pts → Basic + Standard customers
-- High: 300+ pts → All customer tiers
+Levels: [0, 100, 300] → Low / Mid / High (drives HUD badge and dungeon unlock only)
+
+Customer archetypes are gated individually by reputation_required, not by level:
+a fresh game (0 reputation) only unlocks the archetypes with reputation_required 0.
 
 Dungeon unlock: 150 pts required
 ```
@@ -630,12 +629,12 @@ Dungeon unlock: 150 pts required
 
 **Does NOT:**
 - Decrease reputation below 0
-- Directly change customer generation (provides tier pool — post-MVP; MVP uses flat list)
+- Group customer archetypes into tiers — gating is per-archetype
 - Affect dungeon difficulty
 
 **GDD dependencies:**
 - Reads/writes GameManager.reputation_points
-- Affects CustomerGenerator (tier pool — post-MVP; MVP uses flat list)
+- Affects `shop/customer_generator.gd` (per-archetype `reputation_required` gates)
 - Affects Prep Phase (dungeon button visibility)
 
 ---
@@ -916,6 +915,8 @@ The player leaving a summary screen for the prep phase: the Session Summary's Co
 | 2026-09-28 | All content is `.tres`; `data/` is gone | Recipes, reagent variants, blueprints, crates, upgrades, reagents, customers and dungeons moved from JSON to typed definitions under `resources/definitions/`. Definitions reference each other directly, so a broken link shows up in the editor and in the integrity tests instead of as a silent id typo; references only point down the tiers because Godot can't load cyclic resources. Ids are unchanged, so saves still load (no `SAVE_VERSION` bump). Fire Essence costs 100 as specified; `reagents.json` had drifted to 75. Shop listings are ordered cheapest first. |
 | 2026-09-28 | v1.0 is ad-supported: interstitials only | AdMob interstitials at summary-to-prep breaks, with UMP consent (Submodule — Ads). No persistent banner: it would take about 130-240 px of a full portrait layout, and it would sit next to drag-and-drop input, which risks accidental clicks (an AdMob policy violation) for little revenue. No rewarded ads yet. Paid ad removal is deferred (`docs/TODO.md`). Store and account setup: `docs/ADS-COMPLIANCE.md`. |
 | 2026-09-28 | Economy baseline retune | Margins now rise with tier (price / material cost at least 1.3 / 1.6 / 2.0 at depth 2 / 3 / 4); tier-4 herbs had sold below cost. New Herb Crate (herbs cost 6.25g per leaf through the mixed crate). Merge bonus pays 25% of the *source* value per extra item; paying 50% of the result's value on refunded extras was a repeatable gold farm. Blueprint and upgrade costs scaled so buying everything takes about 12 best-case sessions instead of about 2.5. Checked by `tmp/shop-improvements/sim/economy_sim.gd`. Dungeon clear reward 400 -> 120g: runs are free and repeatable, so a bigger reward let repeated dungeon runs out-earn the shop; 120 keeps roughly the old 80g's share of a best-case session (about 11% of about 1032g). |
+| 2026-09-28 | Customers are seeded archetype sessions, not a fixed list | `CustomerDefinition` becomes an archetype (`reputation_required`, `weight`, `min_orders`/`max_orders`, `price_multiplier`, `wants: Array[OrderTemplate]`) instead of a customer with fixed orders. Each shop session deals `session_size` customers from `shop/customer_generator.gd`, seeded by `GameManager.get_session_seed()` (`run_seed` + `sessions_played`, both new save fields) so a session is reproducible and previewable. Dealing is a deck without replacement: every reputation-unlocked, currently-craftable archetype gets one slot per pass, with no archetype repeating back-to-back while another is available; `weight` only biases draw order within a pass. Every dealt customer's first order is guaranteed craftable today (`RecipeResolver.is_craftable`); remaining orders may be locked behind a blueprint the player doesn't have yet, as a teaser for what it would unlock. `SAVE_VERSION` 5 (breaking: `run_seed` and `sessions_played` are required fields, old saves are rejected as CORRUPT). |
+| 2026-09-28 | Drop archetype price premiums | The economy sim's endgame pace was 7.8 sessions against the 10-15 session target after archetypes shipped. Every archetype's `price_multiplier` was set back to 1.0 except Hilda (`cust_06`, 0.9), and Caelum's `healing_potion` want quantity was tightened from a range to a flat 1. Re-simmed pace is about 10.5 sessions. |
 
 ---
 

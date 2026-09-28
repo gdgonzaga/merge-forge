@@ -136,12 +136,11 @@ These are emitted directly on GameManager. Connect via `GameManager.gold_changed
 
 - **Demand Forecast / Forecast tab:** The prep phase Forecast tab and a customer `forecast_bias` are deferred to post-MVP. The tab should be removed from the PrepPhase TabContainer for v1.0, or hidden behind a feature flag. Do not build forecast UI or bias logic for MVP.
 - **Equipment Durability / Repair mechanic:** Party equipment wears during dungeon raids. The player must maintain item durability during the raid by crafting repair items (usable item type: `repair`). This mechanic is deferred to post-MVP — do not implement `repair` as a usable item effect type for v1.0.
-- **Algorithmic Customer Generation:** Customers should be generated algorithmically based on reputation, with weighted item demands (e.g., by gold_value or merge depth). Premium customer tier also deferred. MVP uses a flat, hand-authored customer list.
 - **Party Abilities / Healing:** All party members auto-attack only for MVP. No healer ability, no skills, no active party abilities. Usable-item buffs (buff_attack) remain in MVP. Post-MVP: add active abilities, healing, and party/enemy skill system.
 - **Dungeon Mid-Exit Penalty:** MVP wipes all partial progress on dungeon exit/fail. Post-MVP: impose a penalty for mid-dungeon exit and implement anti-scumming measures (e.g., gold cost, reputation penalty, cooldown timer).
 - **Additional dungeons:** Beyond the first dungeon (Goblin Cave).
 - **Gem and Wood material families:** Family keys reserved in data (`"gem"`, `"wood"`). Wood items defined for forward compatibility. Gem items not yet defined.
-- **Premium customer tier:** The shop only deals Basic and Standard customers for MVP.
+- **Premium customer tier:** All customer archetypes are gated individually by `reputation_required`; there is no separate "premium" tier concept.
 - **Additional reagent types:** Beyond Fire Essence (Ice, Shadow, Holy).
 - **Timed events or daily challenges.**
 - **Board themes / cosmetics.**
@@ -557,13 +556,15 @@ Each catalog is a folder of `.tres` files under `resources/definitions/`; the fi
 | `blueprints/` | `BlueprintDefinition` | `id`, `name`, `cost`, `dependencies: Array[BlueprintDefinition]` |
 | `crates/` | `CrateDefinition` | `id`, `name`, `cost`, `min_items`, `max_items`, `pool: Array[WeightedItem]` |
 | `upgrades/` | `UpgradeDefinition` | `id`, `name`, `cost`, `effect` (`grid_size`, `despawn_time` or `crate_discount`), `value` (seconds for despawn_time, price multiplier for crate_discount), `grid_cols` and `grid_rows` (grid_size) |
-| `customers/` | `CustomerDefinition` | `id`, `name`, `role`, `sprite` (portrait), `queue_order`, `orders: Array[OrderDefinition]` |
+| `customers/` | `CustomerDefinition` | A customer *archetype*, not a fixed customer: `id`, `name`, `role`, `sprite` (portrait), `reputation_required`, `weight` (draw-order bias within a dealt pass, not appearance frequency — see Shop Session), `min_orders`, `max_orders`, `price_multiplier` (scales every rolled order's price), `wants: Array[OrderTemplate]` |
+| `shop_rules/` | `ShopRulesDefinition` | One definition, id `"default"`: `id`, `session_size`, `fulfill_reputation`, `reject_reputation_penalty` |
 | `dungeons/` | `DungeonDefinition` | See the Dungeon Run subsystem. |
 | (inline) | `EffectDefinition` | `type`, `value`, `duration` (ticks, 0 = instant). The `value` meaning per type is in `effect_definition.gd`. |
 | (inline) | `MergeResult` | `result: ItemDefinition`, `blueprint: BlueprintDefinition` (null = always available) |
 | (inline) | `ReagentVariant` | `result: ItemDefinition`, `reagent: ReagentDefinition`, `blueprint` (null = always available) |
 | (inline) | `WeightedItem` | `item: ItemDefinition`, `weight: int` (relative; 0 never rolls) |
-| (inline) | `OrderDefinition` | `item: ItemDefinition`, `quantity`, `gold_reward` |
+| (inline) | `OrderTemplate` | A thing a customer archetype may ask for, on `CustomerDefinition.wants`: `item: ItemDefinition`, `weight: int`, `min_quantity`, `max_quantity`. Rolled into an `OrderDefinition` per session (see Shop Session). |
+| (inline) | `OrderDefinition` | A rolled order on a dealt `ShopCustomer`: `item: ItemDefinition`, `quantity`, `gold_reward` |
 | (inline) | `EncounterDefinition`, `EnemySpawn` | `spawns: Array[EnemySpawn]`; `enemy: EnemyDefinition`, `count` |
 
 Saves store ids only, never resources, so an id is part of the save format: renaming one needs a `SAVE_VERSION` bump.
@@ -625,7 +626,8 @@ RecipeResolver has no signals — it is queried synchronously by MergeResolver, 
 | `get_all_items() -> Dictionary`, `get_all_enemies() -> Dictionary` | The catalogs themselves (read-only). |
 | `get_all_party_members()` | Ordered by `slot_order`: index 0 is the front member. |
 | `get_all_blueprints()`, `get_all_crates()`, `get_all_upgrades()`, `get_all_reagents()` | Typed arrays, cheapest first (ties by id). |
-| `get_all_customers()` | Ordered by `queue_order`. |
+| `get_all_customers() -> Array[CustomerDefinition]` | Sorted by id: the archetype pool `shop/customer_generator.gd` deals a session from. Not a fixed order — the generator decides who's dealt. |
+| `get_shop_rules() -> ShopRulesDefinition` | The one `shop_rules` definition, id `"default"` (`session_size`, `fulfill_reputation`, `reject_reputation_penalty`). |
 | `get_all_dungeons()` | Ordered by `reputation_required` (unlock order), ties by id. PrepPhase's Enter Dungeon button targets the first. |
 
 #### RecipeResolver
@@ -653,13 +655,15 @@ RecipeResolver has no signals — it is queried synchronously by MergeResolver, 
 | File | Type | Responsibility |
 |------|------|----------------|
 | `shop/shop_session.tscn` | Scene | Top-level shop session. Layout: `HBoxContainer [CustomerDisplay | MergeBoard | CratePanel]`. CustomerDisplay and CratePanel are sub-components within this scene (no separate scene files). CratePanel is a VBoxContainer on the right with crate buy buttons populated dynamically from the crate definitions and a discard trash bin below. |
-| `shop/shop_session.gd` | Script | Orchestrates 10-customer session loop: customer display, order fulfillment, session end, crate purchasing. Does NOT own board logic or merge resolution. |
+| `shop/shop_session.gd` | Script | Orchestrates the session loop: customer display, order fulfillment, session end, crate purchasing. Does NOT own board logic or merge resolution. |
+| `shop/customer_generator.gd` | Script (`RefCounted`) | Deals a session's customers from the unlocked archetypes: filters by reputation and craftability, draws without replacement, rolls each dealt customer's orders. Deterministic from its inputs (same archetypes, reputation, seed and craftability give the same session). |
+| `shop/shop_customer.gd` | Script (`RefCounted`, `ShopCustomer`) | One customer dealt into a session: the `CustomerDefinition` archetype plus the `Array[OrderDefinition]` rolled for it. |
 | `shop/order_card.tscn` | Scene | One order display: item icon, quantity, reward. Tappable to fulfill. |
 | `shop/session_summary.tscn` | Scene | End-of-session summary. Animated gold counter, items sold, fulfilled/rejected counts, customer portraits. |
 
 ### Customers and Crates
 
-Customers are `CustomerDefinition`s and crates `CrateDefinition`s (see Content Definitions). For MVP the customer list is static and hand-authored, dealt in `queue_order` every session; post-MVP, replace it with generation based on reputation tier. Each customer has 1 to 3 orders. Whatever crates are defined are rendered as buy buttons in the shop's CratePanel, cheapest first; crate cost is multiplied by the Crate Discount upgrade.
+Customers are dealt from `CustomerDefinition` archetypes (see Content Definitions) by `shop/customer_generator.gd`, and crates are `CrateDefinition`s. The generator deals from a deck without replacement: each reputation-unlocked, currently-craftable archetype goes into the deck once per pass through the pool, and the deck is refilled and reshuffled whenever it runs out; an archetype never follows itself while another is available. `weight` biases draw order within a pass — it does not change how often an archetype appears in a session, since every eligible archetype is guaranteed one slot per pass. A fresh game only unlocks Brom, Mira and Hilda (`reputation_required` 0), so each of the three appears 3-4 times in a 10-customer session until the player's reputation clears the next threshold (Phase 3). Each dealt customer gets `min_orders` to `max_orders` orders, the first always for something the player can craft today and the rest possibly gated behind a blueprint. Whatever crates are defined are rendered as buy buttons in the shop's CratePanel, cheapest first; crate cost is multiplied by the Crate Discount upgrade.
 
 **Crate generation algorithm:** For each item slot (rolled `min_items` to `max_items` times, independently):
 1. Sum all weights in the pool
@@ -682,7 +686,7 @@ Customers are `CustomerDefinition`s and crates `CrateDefinition`s (see Content D
 
 **Trigger:** Main instances `shop_session.tscn` (from prep phase or new game).
 
-1. `shop_session.gd._ready()` takes `DefinitionLibrary.get_all_customers()`: 10 customers, each with 1–3 possible orders
+1. `shop_session.gd._ready()` asks `shop/customer_generator.gd` for `session_size` customers, seeded by `GameManager.get_session_seed()`.
 2. `shop_session.gd` displays first customer: portrait on left, 1–3 order cards stacked vertically on right, silhouette of remaining customers behind
 3. Player crafts items on the merge board (standard merge board flow) or buys crates from the CratePanel on the right (crate button → `shop_session.try_buy_crate(crate_id)` → picks random items from the crate's weighted pool, places on board via merge-safe placement, staging area as fallback). Available crates are the crate definitions — no hardcoded crate types.
 4. Player taps one of the displayed `order_card.gd` options → emits `order_tapped(index)` → `shop_session.gd.try_fulfill_order(index)`. Only one order can be fulfilled per customer — the chosen order is fulfilled, all other orders for that customer are discarded.
@@ -717,8 +721,8 @@ Customers are `CustomerDefinition`s and crates `CrateDefinition`s (see Content D
 
 | Property | Type | Description |
 |----------|------|-------------|
-| `customers: Array[CustomerDefinition]` | Array | This session's customers, in queue order |
-| `current_index: int` | int | Current customer index (0–9) |
+| `customers: Array[ShopCustomer]` | Array | This session's customers, as dealt by `customer_generator.gd` |
+| `current_index: int` | int | Current customer index (0 to `session_size - 1`) |
 | `board: Control (MergeBoard instance)` | Control | Reference to instanced merge board |
 | `summary_data: Dictionary` | Dictionary | Accumulated stats: gold_earned, items_sold, fulfilled, rejected, portraits |
 
@@ -1224,6 +1228,8 @@ Reagents are bought in the prep phase and stored in `GameManager.reagent_invento
 | `dungeon_board_state: Array` | Array | Dungeon board, same shape |
 | `grid_cols: int` | int | Board width (5 default, 6 with upgrade) |
 | `grid_rows: int` | int | Board height (always 5) |
+| `run_seed: int` | int | Rolled once per new game; combined with `sessions_played` to seed each shop session. `SAVE_VERSION` 5. |
+| `sessions_played: int` | int | Completed shop-session count. Incremented by `record_session_played()` at `end_session()`, saved right then. Also the ad grace-period counter (Submodule — Ads). `SAVE_VERSION` 5. |
 
 **Signals:**
 
@@ -1252,6 +1258,8 @@ Reagents are bought in the prep phase and stored in `GameManager.reagent_invento
 | `is_dungeon_unlocked(dungeon: DungeonDefinition) -> bool` | Returns `reputation_points >= dungeon.reputation_required`. |
 | `get_despawn_time() -> float` | `value` of a purchased `despawn_time` upgrade, else `DEFAULT_DESPAWN_TIME` (12.0). |
 | `get_crate_discount() -> float` | `value` of a purchased `crate_discount` upgrade, else 1.0. |
+| `record_session_played()` | Increments `sessions_played`. Called once, at the end of a shop session. |
+| `get_session_seed() -> int` | `hash([run_seed, sessions_played])`. Fixed for a given run and session number: previewable in prep, replays the same after a crash. |
 | `serialize() -> Dictionary` | Returns all persistent state as a Dictionary for SaveManager. |
 | `deserialize(data: Dictionary)` | Restores all state from save data. |
 
