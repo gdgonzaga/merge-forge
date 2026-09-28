@@ -72,7 +72,7 @@ The core loop has two modes: **Shop Mode** and **Dungeon Mode**.
 
 ### Shop Mode Loop
 
-1. **Session starts** — 10 customers are dealt from the level-unlocked archetypes, seeded per session
+1. **Session starts** — 10 customers are dealt from the level-unlocked archetypes, seeded per session (a market modifier can change the count, e.g. Caravan Day +3)
 2. **Customer arrives** — displays portrait and 1–3 possible orders
 3. **Player crafts** — buys crates, places materials on the board, merges them into more advanced items
 4. **Player fulfills order** — taps one order card to deliver the required items, earning gold and XP (more with a longer fulfil streak). Only one order per customer can be fulfilled; remaining orders are discarded. OR rejects the customer, which breaks the fulfil streak; no XP
@@ -384,7 +384,7 @@ The curve is a power law: XP from level k to k+1 is `round(level_xp_base x k^lev
 | Attack windup | 1 second, every unit | A crit winds up 2x as long |
 | Crit chance / damage | 15%, every unit / 4x | 2x damage per second of a normal attack |
 | Dungeon walk speed | 0.075 progress/second | Default value; configurable per dungeon definition |
-| Session size | 10 customers per session | |
+| Session size | 10 customers per session | A market modifier's `session_size_delta` can change this (e.g. Caravan Day, +3) |
 | Starting gold | 50 | |
 | Crate discount | 20% | With Crate Discount upgrade |
 | Crate cost | `max(floor(cost x modifier x discount + 0.0001), 1)` | Modifier and Crate Discount both apply, rounded down once (the epsilon stops float error losing a gold: `30 x 0.7` is `20.999...`); a crate is never free |
@@ -392,7 +392,7 @@ The curve is a power law: XP from level k to k+1 is `round(level_xp_base x k^lev
 | Forecast customers revealed | 3 | `ShopRulesDefinition.forecast_customers`; the prep Forecast tab shows this many of the next session's dealt customers |
 | Upgrades | Data-driven | Defined in `upgrades.json` (Slow Timer, Crate Discount, Grid Expand) |
 | Crates | Data-driven | Defined in `crates.json` (whatever entries exist become buy buttons) |
-| Customers | Data-driven: level-gated archetypes | `CustomerDefinition` archetypes under `resources/definitions/customers/`, dealt each session by `shop/customer_generator.gd` (weighted draw with replacement by `weight`, no back-to-back repeats). Order price = `gold_value x quantity x price_multiplier`. |
+| Customers | Data-driven: level-gated archetypes | `CustomerDefinition` archetypes under `resources/definitions/customers/`, dealt each session by `autoloads/customer_generator.gd` (weighted draw with replacement by `weight`, no back-to-back repeats). Order price = `gold_value x quantity x price_multiplier x modifier.price_multiplier(item)`. |
 | Order XP | `round(gold_reward x xp_per_gold x (1 + min(streak x streak_step, streak_cap)))` | `xp_per_gold` 0.5, `streak_step` 0.1, `streak_cap` 0.5. `streak` is the customers fulfilled in a row before this one. |
 | Shop level curve | `round(level_xp_base x level^level_xp_exponent)` | XP from level k to k+1. `level_xp_base` 70, `level_xp_exponent` 1.5. |
 | Max shop level | 60 | XP past the level-60 threshold has nowhere to go; the HUD's XP bar stays full |
@@ -628,7 +628,7 @@ Customer order fulfilled (XP per `order_xp`, streak-boosted), customer rejected 
 **Outputs:**
 - Updates `GameManager.shop_xp`, emits `shop_xp_changed`
 - Emits `shop_level_changed` once per level crossed (a gain that skips levels still fires once per level in between)
-- `GameManager.meets_level(min_shop_level)` is read directly by `core/purchases.gd`, `board/merge_board.gd` (crate purchase), `autoloads/recipe_resolver.gd` (`is_craftable`) and `core/prep_phase.gd`; `GameManager.get_shop_level()` is passed into `shop/customer_generator.gd.generate()`, which compares it to each archetype's `min_shop_level` directly
+- `GameManager.meets_level(min_shop_level)` is read directly by `core/purchases.gd`, `board/merge_board.gd` (crate purchase), `autoloads/recipe_resolver.gd` (`is_craftable`) and `core/prep_phase.gd`; `GameManager.get_shop_level()` is passed into `autoloads/customer_generator.gd.generate()`, which compares it to each archetype's `min_shop_level` directly
 - `DefinitionLibrary.get_unlocks_between(old_level, new_level)` feeds the level-up panel shown on both summaries
 
 **States / Logic:**
@@ -654,7 +654,7 @@ reagents with min_shop_level 1.
 
 **GDD dependencies:**
 - Reads/writes `GameManager.shop_xp`
-- Affects `shop/customer_generator.gd`, `core/purchases.gd`, `board/merge_board.gd`, `autoloads/recipe_resolver.gd` (per-definition `min_shop_level` gates)
+- Affects `autoloads/customer_generator.gd`, `core/purchases.gd`, `board/merge_board.gd`, `autoloads/recipe_resolver.gd` (per-definition `min_shop_level` gates)
 - Affects Prep Phase (dungeon button text/enabled state, greyed locked entries)
 
 ---

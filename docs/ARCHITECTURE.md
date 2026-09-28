@@ -704,7 +704,7 @@ Customers are dealt from `CustomerDefinition` archetypes (see Content Definition
 5. If board has required items for the chosen order: remove items, add gold to GameManager, compute XP via `order_streak.gd.fulfill(reward, rules)` (grows the streak) and add it with `GameManager.add_shop_xp`, emit `customer_fulfilled` via EventBus, discard remaining orders, advance customer
 6. If board lacks items for the chosen order: flash order card red, no action, other orders remain available to tap
 7. Player taps reject → `order_streak.gd.reject()` breaks the fulfil streak (no XP change), emit `customer_rejected` via EventBus, advance customer
-8. After the last customer (`_rules.session_size`, default 10) → compile summary data (including `xp_earned`, `level_before`, `level_after`), emit `session_ended(summary)` via EventBus → Main transitions to `session_summary.tscn`
+8. After the last customer (`customers.size()`, the dealt session's count — `_rules.session_size` defaults to 10, but a market modifier's `session_size_delta` can change it) → compile summary data (including `xp_earned`, `level_before`, `level_after`), emit `session_ended(summary)` via EventBus → Main transitions to `session_summary.tscn`
 
 **End state:** GameManager updated with gold and XP changes, SessionSummary displayed (with a `LevelUpPanel` if a level was crossed), auto-save triggered.
 
@@ -742,7 +742,7 @@ Customers are dealt from `CustomerDefinition` archetypes (see Content Definition
 
 | Function | Description |
 |----------|-------------|
-| `advance_customer()` | Displays next customer. If index >= `_rules.session_size`, ends session. |
+| `advance_customer()` | Displays next customer. If index >= `customers.size()` (the dealt session's count), ends session. |
 | `try_fulfill_order(order_index: int)` | Checks board for items for the chosen order. If met: fulfills, awards XP via `order_streak.gd`, discards remaining orders, advances customer. If not: flashes red. |
 | `reject_customer()` | Breaks the fulfil streak via `order_streak.gd.reject()` (no XP change), advances. |
 | `try_buy_crate(crate_id: String) -> bool` | Delegates to `board.buy_crate(crate_id)`. MergeBoard handles discount, pool rolling, and merge-safe placement internally, and refuses (returning false) a crate below `GameManager.meets_level(crate.min_shop_level)`. |
