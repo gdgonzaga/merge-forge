@@ -98,6 +98,46 @@ func test_freeing_the_session_drops_its_shop_level_connection() -> void:
 	assert_int(GameManager.shop_level_changed.get_connections().size()).is_equal(before)
 
 
+func test_an_order_is_filled_from_the_shelf() -> void:
+	_give_shelf(2)
+	var session := _start_session()
+	var shelf: Control = session.board.get_shelf_grid()
+	shelf.place_item(RecipeResolver.make_item(_item), Vector2i(1, 0))
+	session.try_fulfill_order(0)
+	assert_int(session.current_index).is_equal(1)
+	assert_int(shelf.count_items_on_board("__test_item")).is_equal(0)
+
+
+func test_the_shelf_is_saved_at_the_end_of_the_session() -> void:
+	set_definition(DefinitionLibrary.shop_rules, _rules(1))
+	_give_shelf(2)
+	var session := _start_session()
+	session.board.get_shelf_grid().place_item(RecipeResolver.make_item(_item), Vector2i(1, 0))
+	session.reject_customer()
+	await _await_session_end(session)
+	assert_array(GameManager.shop_shelf_state).is_equal([{"col": 1, "row": 0, "item_id": "__test_item"}])
+
+
+# Spec Task 6: the shelf survives a save round trip and is back on the shelf
+# when the next session starts.
+func test_a_saved_shelf_is_restored_after_a_reload() -> void:
+	_give_shelf(2)
+	GameManager.shop_shelf_state = [{"col": 0, "row": 0, "item_id": "__test_item"}]
+	var saved := GameManager.serialize()
+	reset_game_state()
+	GameManager.deserialize(saved)
+	var session := _start_session()
+	var shelf: Control = session.board.get_shelf_grid()
+	assert_int(shelf.grid_cols).is_equal(2)
+	assert_str(shelf.grid[0][0]["item_id"]).is_equal("__test_item")
+	assert_int(session.board.count_sellable("__test_item")).is_equal(1)
+
+
+func test_without_the_upgrade_the_shop_has_no_shelf() -> void:
+	var session := _start_session()
+	assert_int(session.board.get_shelf_grid().grid_cols).is_equal(0)
+
+
 func _start_session() -> Control:
 	var session: Control = auto_free(SHOP_SESSION.instantiate())
 	add_child(session)
@@ -198,3 +238,14 @@ func _customer(item: ItemDefinition) -> CustomerDefinition:
 	customer.name = "Tester"
 	customer.wants = [want]
 	return customer
+
+
+func _give_shelf(slots: int) -> void:
+	var shelf := UpgradeDefinition.new()
+	shelf.id = "__test_shelf"
+	shelf.effect = "shelf_slots"
+	var level := UpgradeLevel.new()
+	level.value = slots
+	shelf.levels = [level]
+	set_definition(DefinitionLibrary.upgrades, shelf)
+	GameManager.raise_upgrade_level("__test_shelf")

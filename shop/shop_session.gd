@@ -49,11 +49,12 @@ func _ready() -> void:
 		child.queue_free()
 
 	var crate_costs := {} if plan.modifier == null else plan.modifier.get_crate_cost_multipliers()
-	board.setup({"crate_cost_multipliers": crate_costs})
+	board.setup({"crate_cost_multipliers": crate_costs, "shelf_slots": GameManager.get_shelf_slots()})
 	if not GameManager.shop_board_state.is_empty():
 		var board_grid = _get_board_grid()
 		if board_grid:
 			board_grid.load_board_state(GameManager.shop_board_state)
+	board.load_shelf_state(GameManager.shop_shelf_state)
 
 	_build_crate_buttons()
 	GameManager.shop_level_changed.connect(_on_shop_level_changed)
@@ -173,22 +174,21 @@ func try_fulfill_order(order_index: int) -> void:
 	if order_index < 0 or order_index >= customer.orders.size():
 		return
 
+	if board == null or not is_instance_valid(board):
+		return
+
 	var order := customer.orders[order_index]
 	var item_id := order.item.id
 	var needed := order.quantity
-	var board_ref = _get_board_grid()
 
-	if board_ref == null:
-		return
-
-	var have: int = board_ref.count_items_on_board(item_id)
+	var have: int = board.count_sellable(item_id)
 	if have < needed:
 		for child in _orders_container.get_children():
 			if child.has_method("flash_red") and child.get("order_index") == order_index:
 				child.flash_red()
 		return
 
-	board_ref.remove_items_by_id(item_id, needed)
+	board.take_sellable(item_id, needed)
 	var reward := order.gold_reward
 	GameManager.add_gold(reward)
 	var xp: int = _streak.fulfill(reward, _rules)
@@ -235,6 +235,9 @@ func end_session() -> void:
 	var board_ref = _get_board_grid()
 	if board_ref and is_instance_valid(board_ref):
 		GameManager.shop_board_state = board_ref.get_board_state()
+
+	if board and is_instance_valid(board):
+		GameManager.shop_shelf_state = board.get_shelf_state()
 
 	summary_data["level_after"] = GameManager.get_shop_level()
 	GameManager.record_session_played()
