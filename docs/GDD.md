@@ -366,7 +366,7 @@ Transitions:
 | Merge minimum | 3 connected identical items | Orthogonally adjacent (4-directional) |
 | Merge result count | floor(count / 3) result items | Groups of 3 each produce 1 upper-tier item |
 | Merge refund | count % 3 source items | Remainder items refunded to board at former positions |
-| Merge bonus gold | (count - 3) × floor(item_value × 0.5) | Gold bonus for groups larger than 3 |
+| Merge bonus gold | (count - 3) × floor(source_value × 0.25) | Gold bonus for groups larger than 3; source = the merged item, not the result |
 | Despawn timer (default) | 12 seconds | Staging area items |
 | Despawn timer (upgraded) | 18 seconds | With Slow Timer upgrade |
 | Combat tick interval | 1.0 second | Auto-combat damage frequency |
@@ -386,7 +386,7 @@ Transitions:
 | Reputation reject penalty | 2 points | Per rejected customer |
 | Reputation dungeon fail | 20 points lost | On party wipe |
 | Reputation dungeon clear | 25 points gained | On dungeon completion |
-| Dungeon gold reward | 80g | Goblin Cave (MVP) |
+| Dungeon gold reward | 400g | Goblin Cave (MVP) |
 | Dungeon unlock threshold | 150 reputation points | |
 
 ### Item Catalog (MVP)
@@ -400,32 +400,32 @@ Effects in *italics* are defined but not applied yet: CombatEngine only runs `he
 | item_id | Name | Gold | Source | Dungeon effect (party-individual) |
 |---------|------|------|--------|------------------|
 | herb_leaf | Herb Leaf | 5 | Crates | Raw |
-| herb_bundle | Herb Bundle | 15 | 3x herb_leaf; drops | Heal 10 |
-| herbal_tonic | Herbal Tonic | 40 | 3x herb_bundle; drops | Heal 30 |
-| healing_potion | Healing Potion | 40 | 3x herbal_tonic (bp_healing_potion) | Heal 90 |
-| battle_elixir | Battle Elixir | 50 | 3x herbal_tonic (bp_battle_elixir) | *Next 3 attacks crit* |
-| phoenix_draught | Phoenix Draught | 200 | 3x herbal_tonic + fire_essence (bp_phoenix_draught) | *Revive a KO'd member at 50% HP* |
+| herb_bundle | Herb Bundle | 20 | 3x herb_leaf; drops | Heal 10 |
+| herbal_tonic | Herbal Tonic | 75 | 3x herb_bundle; drops | Heal 30 |
+| healing_potion | Healing Potion | 280 | 3x herbal_tonic (bp_healing_potion) | Heal 90 |
+| battle_elixir | Battle Elixir | 280 | 3x herbal_tonic (bp_battle_elixir) | *Next 3 attacks crit* |
+| phoenix_draught | Phoenix Draught | 480 | 3x herbal_tonic + fire_essence (bp_phoenix_draught) | *Revive a KO'd member at 50% HP* |
 
 **Metal family (buffs):**
 
 | item_id | Name | Gold | Source | Dungeon effect (party-individual) |
 |---------|------|------|--------|------------------|
 | iron_ore | Iron Ore | 5 | Crates | Raw |
-| iron_ingot | Iron Ingot | 15 | 3x iron_ore | Raw |
-| iron_plate | Iron Plate | 40 | 3x iron_ingot (bp_iron_plate); drops | *25 HP absorb shield* |
-| sword | Sword | 100 | 3x iron_plate (bp_sword) | +4 ATK for 20s |
-| iron_shield | Iron Shield | 100 | 3x iron_plate (bp_iron_shield) | *60 HP absorb shield* |
-| flame_sword | Flame Sword | 200 | 3x iron_plate + fire_essence (bp_flame_sword) | +8 ATK for 20s |
+| iron_ingot | Iron Ingot | 20 | 3x iron_ore | Raw |
+| iron_plate | Iron Plate | 75 | 3x iron_ingot (bp_iron_plate); drops | *25 HP absorb shield* |
+| sword | Sword | 280 | 3x iron_plate (bp_sword) | +4 ATK for 20s |
+| iron_shield | Iron Shield | 280 | 3x iron_plate (bp_iron_shield) | *60 HP absorb shield* |
+| flame_sword | Flame Sword | 480 | 3x iron_plate + fire_essence (bp_flame_sword) | +8 ATK for 20s |
 
 **Powder family (damage):**
 
 | item_id | Name | Gold | Source | Dungeon effect |
 |---------|------|------|--------|------------------|
 | blast_powder | Blast Powder | 5 | None yet (planned crate) | Raw |
-| firecracker | Firecracker | 15 | 3x blast_powder; drops | *15 damage to one enemy* |
-| bomb | Bomb | 40 | 3x firecracker (bp_bomb); drops | *45 damage to one enemy* |
-| cluster_bomb | Cluster Bomb | 100 | 3x bomb (bp_cluster_bomb) | *30 damage to every enemy* |
-| fire_bomb | Fire Bomb | 200 | 3x bomb + fire_essence (bp_fire_bomb) | *40 damage to every enemy* |
+| firecracker | Firecracker | 20 | 3x blast_powder; drops | *15 damage to one enemy* |
+| bomb | Bomb | 75 | 3x firecracker (bp_bomb); drops | *45 damage to one enemy* |
+| cluster_bomb | Cluster Bomb | 280 | 3x bomb (bp_cluster_bomb) | *30 damage to every enemy* |
+| fire_bomb | Fire Bomb | 480 | 3x bomb + fire_essence (bp_fire_bomb) | *40 damage to every enemy* |
 
 **Reagent:**
 
@@ -519,7 +519,7 @@ Any board change — item placed, item removed, or item swapped. Also re-trigger
 | Merge minimum | 3 items | Orthogonally connected |
 | Merge result count | floor(count / 3) result items | Each group of 3 produces 1 upper-tier item |
 | Merge refund | count % 3 source items | Remainder refunded to board at former positions |
-| Merge bonus gold | (count - 3) × floor(item_value × 0.5) | Gold bonus for groups larger than 3 |
+| Merge bonus gold | (count - 3) × floor(source_value × 0.25) | Gold bonus for groups larger than 3; source = the merged item, not the result |
 
 
 **GDD dependencies:**
@@ -571,7 +571,8 @@ Purchase flow:
 |----------|-------|-------|
 | Starting gold | 50 | |
 | Crate discount | 20% (multiply by 0.8) | With upgrade only |
-| Crate definitions | Fully data-driven in `crates.json` | Each crate has: name, cost, item_count range, weighted item pool. Whatever crates exist in the JSON are shown as buy buttons. No hardcoded crate types. |
+| Crate definitions | Fully data-driven, one `.tres` per crate | Each crate has: name, cost, item_count range, weighted item pool. Whatever crate definitions exist are shown as buy buttons, cheapest first. No hardcoded crate types. |
+| Crates (current) | Basic Crate 10g, Metal Crate 25g, Herb Crate 25g | Basic: iron_ore (weight 3) / herb_leaf (weight 2), 3-5 items. Metal: iron_ore (weight 4) / iron_ingot (weight 1), 3-4 items. Herb Crate (new): herb_leaf (weight 4) / herb_bundle (weight 1), 3-4 items. |
 | Fire Essence price | 100g | 1 reagent, goes directly to inventory |
 
 **Does NOT:**
@@ -681,18 +682,18 @@ For reagent variants (items with entries in reagent_combos.json), see Reagent Va
 
 | Blueprint | Cost | Type | Unlocks |
 |-----------|------|------|---------|
-| Iron Plate | 30g | Recipe | iron_ingot → iron_plate |
-| Sword | 50g | Recipe | iron_plate → sword |
+| Iron Plate | 150g | Recipe | iron_ingot → iron_plate |
+| Sword | 600g | Recipe | iron_plate → sword |
 | Staff | 30g | Recipe | wood_shaft → staff *(deferred — Wood family)* |
-| Healing Potion | 30g | Recipe | herbal_tonic → healing_potion |
-| Battle Elixir | 30g | Recipe | herbal_tonic → battle_elixir |
-| Iron Shield | 150g | Recipe | iron_plate → iron_shield |
-| Bomb | 100g | Recipe | firecracker → bomb |
-| Cluster Bomb | 200g | Recipe | bomb → cluster_bomb |
-| Phoenix Draught | 200g | Variant | herbal_tonic + fire_essence → phoenix_draught |
-| Fire Bomb | 250g | Variant | bomb + fire_essence → fire_bomb |
+| Healing Potion | 300g | Recipe | herbal_tonic → healing_potion |
+| Battle Elixir | 400g | Recipe | herbal_tonic → battle_elixir |
+| Iron Shield | 900g | Recipe | iron_plate → iron_shield |
+| Bomb | 500g | Recipe | firecracker → bomb |
+| Cluster Bomb | 1200g | Recipe | bomb → cluster_bomb |
+| Phoenix Draught | 1500g | Variant | herbal_tonic + fire_essence → phoenix_draught |
+| Fire Bomb | 1800g | Variant | bomb + fire_essence → fire_bomb |
 | Wand | 50g | Recipe | magic_focus → wand *(deferred — Wood family)* |
-| Flame Sword | 100g | Variant | iron_plate + fire_essence → flame_sword |
+| Flame Sword | 1500g | Variant | iron_plate + fire_essence → flame_sword |
 | Flame Staff | 100g | Variant | staff + fire_essence → flame_staff *(deferred — Wood family)* |
 
 **Does NOT:**
@@ -913,6 +914,7 @@ The player leaving a summary screen for the prep phase: the Session Summary's Co
 | 2026-09-28 | Dungeon item roles and usable-only drops | Herbs heal, metal buffs, powder (new family) damages. Tier 1 stays raw; tiers 2 to 4 are dungeon-usable, and enemy drop pools hold only usable items (Slime: herbs, Archer: powder, Goblin: plates and herbs). refined_potion renamed herbal_tonic (`SAVE_VERSION` 4). Fire essence now makes phoenix_draught from tonics instead of a Healing Potion from herb bundles, which skipped a tier and bp_healing_potion. absorb, crit_charges, revive, damage and enemy targets are defined but not implemented in CombatEngine yet. The old balance targets no longer hold (heals now drop directly); re-sim before tuning. |
 | 2026-09-28 | All content is `.tres`; `data/` is gone | Recipes, reagent variants, blueprints, crates, upgrades, reagents, customers and dungeons moved from JSON to typed definitions under `resources/definitions/`. Definitions reference each other directly, so a broken link shows up in the editor and in the integrity tests instead of as a silent id typo; references only point down the tiers because Godot can't load cyclic resources. Ids are unchanged, so saves still load (no `SAVE_VERSION` bump). Fire Essence costs 100 as specified; `reagents.json` had drifted to 75. Shop listings are ordered cheapest first. |
 | 2026-09-28 | v1.0 is ad-supported: interstitials only | AdMob interstitials at summary-to-prep breaks, with UMP consent (Submodule — Ads). No persistent banner: it would take about 130-240 px of a full portrait layout, and it would sit next to drag-and-drop input, which risks accidental clicks (an AdMob policy violation) for little revenue. No rewarded ads yet. Paid ad removal is deferred (`docs/TODO.md`). Store and account setup: `docs/ADS-COMPLIANCE.md`. |
+| 2026-09-28 | Economy baseline retune | Margins now rise with tier (price / material cost at least 1.3 / 1.6 / 2.0 at depth 2 / 3 / 4); tier-4 herbs had sold below cost. New Herb Crate (herbs cost 6.25g per leaf through the mixed crate). Merge bonus pays 25% of the *source* value per extra item; paying 50% of the result's value on refunded extras was a repeatable gold farm. Blueprint and upgrade costs scaled so buying everything takes about 12 best-case sessions instead of about 2.5. Checked by `tmp/shop-improvements/sim/economy_sim.gd`. |
 
 ---
 

@@ -443,7 +443,7 @@ The GDD lists effect types (heal, buff_attack). Party stats are confirmed (see t
 | `_try_chain()` | Rescans board grid when queue empties; enqueues new groups for chain merges. |
 | `_resolve_result_position() -> Vector2i` | Calculates actual result placement cell (simulates post-removal state). |
 | `calculate_center_of_mass(positions: Array[Vector2i]) -> Vector2i` | Returns the center cell of a merge group (average x/y, floored). |
-| `calculate_bonus_gold(count: int, item_value: int) -> int` | `(count - 3) * floor(item_value * 0.5)` |
+| `calculate_bonus_gold(count: int, source_value: int) -> int` | `(count - 3) * floor(source_value * 0.25)`; source is the merged (input) item, not the result |
 | `_spawn_results(result_data: Dictionary, count: int)` | Places count result items: first at `_result_center`, rest at nearest empty cells. |
 | `_refund_source_items(source_data: Dictionary, count: int)` | Refunds count source items at former group positions. |
 | `handle_choice(item_id: String, is_variant: bool, reagent_id: String)` | Callback from MergeChoicePopup. Places result(s), consumes reagent if variant. |
@@ -797,7 +797,7 @@ Customers are `CustomerDefinition`s and crates `CrateDefinition`s (see Content D
 | `gold_reward` | `int` | Gold awarded on clear |
 | `blueprint_reward` | `BlueprintDefinition` or null | Awarded on clear. Goblin Cave: null. |
 
-Goblin Cave (MVP): walk speed 0.075, encounters at 0.2 / 0.5 / 0.8: two Slimes; a Goblin Archer and a Goblin; two Goblins. 80 gold, no blueprint.
+Goblin Cave (MVP): walk speed 0.075, encounters at 0.2 / 0.5 / 0.8: two Slimes; a Goblin Archer and a Goblin; two Goblins. 400 gold, no blueprint.
 
 ### Definition Schema: EnemyDefinition (`resources/definitions/enemies/*.tres`)
 
