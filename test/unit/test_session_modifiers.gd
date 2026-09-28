@@ -174,10 +174,6 @@ func _archetype(id: String, wants: Array) -> CustomerDefinition:
 	return archetype
 
 
-func _ids(plan: SessionPlan) -> Array[String]:
-	return _ids_of(plan.customers)
-
-
 func _ids_of(customers: Array[ShopCustomer]) -> Array[String]:
 	var ids: Array[String] = []
 	for customer in customers:

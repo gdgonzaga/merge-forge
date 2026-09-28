@@ -28,6 +28,42 @@ func test_the_session_rolls_the_modifier_prep_forecast() -> void:
 	assert_array(_describe(_shop_plan())).is_equal(_describe(plan))
 
 
+func test_a_crate_cost_modifier_reaches_the_shop_board_and_its_button() -> void:
+	var rules: ShopRulesDefinition = DefinitionLibrary.get_shop_rules().duplicate()
+	rules.modifier_chance = 1.0
+	set_definition(DefinitionLibrary.shop_rules, rules)
+	var item := ItemDefinition.new()
+	item.id = "__test_crate_item"
+	item.name = "Test Crate Item"
+	set_definition(DefinitionLibrary.items, item)
+	var entry := WeightedItem.new()
+	entry.item = item
+	entry.weight = 1
+	var crate := CrateDefinition.new()
+	crate.id = "__test_crate"
+	crate.name = "Test Crate"
+	crate.cost = 40
+	crate.min_shop_level = 1
+	crate.pool = [entry]
+	set_definition(DefinitionLibrary.crates, crate)
+	var surge := SessionModifierDefinition.new()
+	surge.id = "__test_surge"
+	surge.name = "Test Surge"
+	surge.weight = 100000
+	surge.affected_crates = [crate]
+	surge.crate_cost_multiplier = 2.0
+	set_definition(DefinitionLibrary.modifiers, surge)
+
+	var shop: Control = auto_free(SHOP.instantiate())
+	add_child(shop)
+
+	# 40 x 2.0 x 1.0 (no discount) = 80.
+	assert_int(shop.board.get_crate_cost(crate)).is_equal(80)
+	var button := _crate_button_named(shop, "Test Crate")
+	assert_object(button).is_not_null()
+	assert_str(button.text).contains("(80g)")
+
+
 func test_buying_a_blueprint_in_prep_updates_the_forecast() -> void:
 	# A crate sells ore; the blueprint merges 3 ore into a blade; the knight
 	# wants only the blade, so he's dealt only once the blueprint is owned.
@@ -92,6 +128,13 @@ func _shop_plan() -> SessionPlan:
 	var shop: Control = auto_free(SHOP.instantiate())
 	add_child(shop)
 	return shop.plan
+
+
+func _crate_button_named(shop: Control, crate_name: String) -> Button:
+	for child: Button in shop.get_node("CustomerBox/ActionPanel/CratePanel/CrateButtonsPanel").get_children():
+		if child.text.begins_with(crate_name + " ("):
+			return child
+	return null
 
 
 func _describe(plan: SessionPlan) -> Array[String]:
