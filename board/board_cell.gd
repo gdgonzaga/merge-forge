@@ -11,6 +11,7 @@ var grid_owner: Control = null
 
 @onready var _icon: TextureRect = $Icon
 @onready var _bg: TextureRect = $BG
+@onready var _stars: Control = %QualityStars
 
 
 func set_item(item_data: Dictionary) -> void:
@@ -19,6 +20,7 @@ func set_item(item_data: Dictionary) -> void:
 		return
 	if item_data.is_empty():
 		_icon.visible = false
+		_stars.set_quality(0)
 		return
 	_apply_icon()
 
@@ -27,6 +29,8 @@ func clear_item() -> void:
 	item = {}
 	if _icon != null:
 		_icon.visible = false
+	if _stars != null:
+		_stars.set_quality(0)
 
 
 func get_icon_texture() -> Texture2D:
@@ -46,6 +50,7 @@ func flash() -> void:
 func _apply_icon() -> void:
 	_icon.texture = item["definition"].sprite
 	_icon.visible = true
+	_stars.set_quality(item["quality"])
 
 
 func _get_drag_data(at_position: Vector2) -> Variant:

@@ -8,6 +8,7 @@ var time_remaining: float = 12.0
 
 @onready var _icon: TextureRect = $Icon
 @onready var _timer_bar: ColorRect = $TimerBar
+@onready var _stars: Control = %QualityStars
 
 
 func _ready() -> void:
@@ -27,6 +28,7 @@ func _apply_icon() -> void:
 		return
 	_icon.texture = item_data["definition"].sprite
 	_icon.visible = true
+	_stars.set_quality(item_data["quality"])
 
 
 func _process(delta: float) -> void:

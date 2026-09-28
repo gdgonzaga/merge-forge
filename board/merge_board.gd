@@ -5,6 +5,7 @@ const MERGE_BURST_TIME: float = 0.20
 const MERGE_CONVERGE_TIME: float = 0.25
 const MOVE_ANIM_TIME: float = 0.15
 const MOVE_ARC_HEIGHT: float = -40.0
+const QUALITY_STARS := preload("res://ui/quality_stars.tscn")
 
 @onready var _shelf: GridContainer = %ShelfGrid
 @onready var _shelf_area: Control = %ShelfArea
@@ -220,6 +221,24 @@ func show_gold_text(amount: int, grid_pos: Vector2i) -> void:
 	, 0.0, 1.0, 0.8)
 	tween.parallel().tween_property(label, "modulate:a", 0.0, 0.3).set_delay(0.5)
 	tween.tween_callback(label.queue_free)
+
+
+# A Fine or Masterwork result pops its stars over the cell, so a quality
+# upgrade is never silent.
+func show_quality_sparkle(quality: int, grid_pos: Vector2i) -> void:
+	if _anim_overlay == null or _board == null or quality <= 0:
+		return
+	var stars: Control = QUALITY_STARS.instantiate()
+	_anim_overlay.add_child(stars)
+	stars.set_quality(quality)
+	stars.size = stars.custom_minimum_size
+	stars.pivot_offset = stars.size / 2.0
+	stars.position = _get_cell_screen_center(_board, grid_pos) - _anim_overlay.global_position - stars.size / 2.0
+	stars.scale = Vector2(0.4, 0.4)
+	var tween := _anim_overlay.create_tween()
+	tween.tween_property(stars, "scale", Vector2(1.6, 1.6), 0.25)
+	tween.tween_property(stars, "modulate:a", 0.0, 0.35)
+	tween.tween_callback(stars.queue_free)
 
 
 func _get_cell_texture(grid: Control, pos: Vector2i) -> Texture2D:

@@ -1,0 +1,8 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" uid="uid://cti5aga0om8y2" path="res://ui/quality_stars.gd" id="1"]
+
+[node name="QualityStars" type="Control"]
+mouse_filter = 2
+visible = false
+script = ExtResource("1")
