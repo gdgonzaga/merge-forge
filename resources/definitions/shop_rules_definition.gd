@@ -9,6 +9,10 @@ class_name ShopRulesDefinition
 # How many of the next session's customers the prep forecast reveals.
 @export var forecast_customers: int = 3
 
+# Order price multiplier per required quality, indexed by min_quality
+# (Normal, Fine, Masterwork).
+@export var quality_price_multipliers: Array[float] = [1.0, 1.0, 1.0]
+
 # Order XP = gold reward x xp_per_gold, raised by the fulfil streak: each
 # customer fulfilled in a row adds streak_step, up to streak_cap.
 @export var xp_per_gold: float = 0.5

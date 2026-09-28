@@ -3,6 +3,7 @@
 [ext_resource type="Script" uid="uid://dmqurb2pqexoj" path="res://shop/order_card.gd" id="1"]
 [ext_resource type="StyleBox" uid="uid://di32cxyt2hjgl" path="res://resources/themes/button_secondary.tres" id="1_7du84"]
 [ext_resource type="FontFile" uid="uid://di5l3rf27vxbh" path="res://resources/fonts/RobotoCondensed-VariableFont_wght.ttf" id="3_font"]
+[ext_resource type="PackedScene" path="res://ui/quality_stars.tscn" id="4_stars"]
 
 [node name="OrderCard" type="PanelContainer" unique_id=1243468917]
 custom_minimum_size = Vector2(0, 56)
@@ -18,6 +19,11 @@ custom_minimum_size = Vector2(48, 48)
 layout_mode = 2
 size_flags_vertical = 4
 stretch_mode = 5
+
+[node name="QualityStars" parent="HBox" instance=ExtResource("4_stars")]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 4
 
 [node name="QtyLabel" type="Label" parent="HBox" unique_id=617014729]
 layout_mode = 2

@@ -133,6 +133,38 @@ func test_order_price_multiplier_scales_every_order() -> void:
 	assert_int(_generator.generate(archetypes, 1, 1, 1, _all_craftable, null, 1.1)[0].orders[0].gold_reward).is_equal(66)
 
 
+func test_a_fine_order_is_priced_with_the_fine_multiplier() -> void:
+	var want := _want(_ingot, 1, 2, 2)
+	want.min_quality = 1
+	var archetypes: Array[CustomerDefinition] = [_archetype("__a", 1, [want], 1, 1)]
+	var dealt: Array[ShopCustomer] = _generator.generate(archetypes, 1, 1, 7, _all_craftable, null, 1.0, [1.0, 1.6, 2.8] as Array[float])
+	var order: OrderDefinition = dealt[0].orders[0]
+	# round(20 x 2 x 1.6) = 64
+	assert_int(order.gold_reward).is_equal(64)
+	assert_int(order.min_quality).is_equal(1)
+
+
+func test_a_masterwork_order_is_priced_with_the_masterwork_multiplier() -> void:
+	var want := _want(_ingot, 1, 1, 1)
+	want.min_quality = 2
+	var archetypes: Array[CustomerDefinition] = [_archetype("__a", 1, [want], 1, 1)]
+	var dealt: Array[ShopCustomer] = _generator.generate(archetypes, 1, 1, 7, _all_craftable, null, 1.0, [1.0, 1.6, 2.8] as Array[float])
+	# round(20 x 1 x 2.8) = 56
+	assert_int(dealt[0].orders[0].gold_reward).is_equal(56)
+
+
+func test_plan_prices_quality_from_the_shop_rules() -> void:
+	var want := _want(_ingot, 1, 2, 2)
+	want.min_quality = 1
+	var rules := ShopRulesDefinition.new()
+	rules.session_size = 1
+	rules.quality_price_multipliers = [1.0, 1.5, 3.0] as Array[float]
+	var archetypes: Array[CustomerDefinition] = [_archetype("__a", 1, [want], 1, 1)]
+	var session: SessionPlan = _generator.plan(archetypes, [] as Array[SessionModifierDefinition], rules, 1, 7, _all_craftable)
+	# round(20 x 2 x 1.5) = 60
+	assert_int(session.customers[0].orders[0].gold_reward).is_equal(60)
+
+
 func test_pick_weighted_never_picks_a_zero_weight() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 11

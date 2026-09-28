@@ -6,6 +6,7 @@ var order: OrderDefinition
 var order_index: int = -1
 
 @onready var _icon: TextureRect = $HBox/Icon
+@onready var _stars: Control = %QualityStars
 @onready var _qty_label: Label = $HBox/QtyLabel
 @onready var _reward_label: Label = $HBox/RewardLabel
 
@@ -30,6 +31,7 @@ func _ready() -> void:
 
 func _apply_data() -> void:
 	_icon.texture = order.item.sprite
+	_stars.set_quality(order.min_quality)
 	_qty_label.text = "x%d" % order.quantity
 	_reward_label.text = "%dg" % order.gold_reward
 

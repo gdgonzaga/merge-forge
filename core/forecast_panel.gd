@@ -64,12 +64,18 @@ func _show_customers(customers: Array[ShopCustomer], show_orders: bool) -> void:
 		column.add_child(name_label)
 		if show_orders:
 			for order in customer.orders:
-				var order_label := _label("%dx %s" % [order.quantity, order.item.name], ORDER_FONT_SIZE)
+				var order_label := _label("%dx %s" % [order.quantity, _order_name(order)], ORDER_FONT_SIZE)
 				order_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 				order_label.custom_minimum_size.x = PORTRAIT_SIZE
 				order_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 				column.add_child(order_label)
 		_portraits.add_child(column)
+
+
+func _order_name(order: OrderDefinition) -> String:
+	if order.min_quality <= 0:
+		return order.item.name
+	return "%s %s" % [ItemDefinition.QUALITY_NAMES[order.min_quality], order.item.name]
 
 
 func _label(text: String, font_size: int) -> Label:

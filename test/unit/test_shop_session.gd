@@ -138,6 +138,27 @@ func test_without_the_upgrade_the_shop_has_no_shelf() -> void:
 	assert_int(session.board.get_shelf_grid().grid_cols).is_equal(0)
 
 
+func test_a_fine_order_refuses_a_normal_item() -> void:
+	set_definition(DefinitionLibrary.customers, _customer(_item, 1))
+	var session := _start_session()
+	session.board.get_board_grid().place_or_stage(RecipeResolver.make_item(_item, 0))
+	session.try_fulfill_order(0)
+	assert_int(session.current_index).is_equal(0)
+	assert_int(session.board.count_sellable("__test_item")).is_equal(1)
+
+
+func test_a_fine_order_takes_the_fine_item_and_keeps_the_masterwork() -> void:
+	set_definition(DefinitionLibrary.customers, _customer(_item, 1))
+	var session := _start_session()
+	var grid: Control = session.board.get_board_grid()
+	grid.grid[0][0] = RecipeResolver.make_item(_item, 2)
+	grid.grid[2][2] = RecipeResolver.make_item(_item, 1)
+	session.try_fulfill_order(0)
+	assert_int(session.current_index).is_equal(1)
+	assert_int(session.board.count_sellable("__test_item", 2)).is_equal(1)
+	assert_int(session.board.count_sellable("__test_item")).is_equal(1)
+
+
 func _start_session() -> Control:
 	var session: Control = auto_free(SHOP_SESSION.instantiate())
 	add_child(session)
@@ -230,9 +251,10 @@ func _crate(id: String, crate_name: String, level: int, item: ItemDefinition) ->
 	return crate
 
 
-func _customer(item: ItemDefinition) -> CustomerDefinition:
+func _customer(item: ItemDefinition, min_quality: int = 0) -> CustomerDefinition:
 	var want := OrderTemplate.new()
 	want.item = item
+	want.min_quality = min_quality
 	var customer := CustomerDefinition.new()
 	customer.id = "__test_customer"
 	customer.name = "Tester"

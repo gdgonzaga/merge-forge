@@ -10,11 +10,11 @@ extends RefCounted
 # modifiers to the catalog never reshuffles the customers a seed deals.
 # Shop Signage's order_price multiplier is applied alongside the archetype
 # and market multipliers, so the order card, the forecast and the payout
-# always agree.
+# always agree. Quality orders are priced from rules.quality_price_multipliers.
 func plan(archetypes: Array[CustomerDefinition], modifiers: Array[SessionModifierDefinition], rules: ShopRulesDefinition, level: int, session_seed: int, is_craftable: Callable, order_price: float = 1.0) -> SessionPlan:
 	var modifier := roll_modifier(modifiers, rules.modifier_chance, level, session_seed)
 	var count := rules.session_size if modifier == null else modifier.session_size(rules.session_size)
-	return SessionPlan.new().setup(generate(archetypes, count, level, session_seed, is_craftable, modifier, order_price), modifier)
+	return SessionPlan.new().setup(generate(archetypes, count, level, session_seed, is_craftable, modifier, order_price, rules.quality_price_multipliers), modifier)
 
 
 func roll_modifier(modifiers: Array[SessionModifierDefinition], chance: float, level: int, session_seed: int) -> SessionModifierDefinition:
@@ -37,8 +37,9 @@ func roll_modifier(modifiers: Array[SessionModifierDefinition], chance: float, l
 	return unlocked[pick_weighted(weights, rng)]
 
 
-# `is_craftable` is Callable(ItemDefinition) -> bool.
-func generate(archetypes: Array[CustomerDefinition], count: int, level: int, session_seed: int, is_craftable: Callable, modifier: SessionModifierDefinition = null, order_price: float = 1.0) -> Array[ShopCustomer]:
+# `is_craftable` is Callable(ItemDefinition) -> bool. `quality_prices` is
+# indexed by an order template's min_quality; empty means x1 for every quality.
+func generate(archetypes: Array[CustomerDefinition], count: int, level: int, session_seed: int, is_craftable: Callable, modifier: SessionModifierDefinition = null, order_price: float = 1.0, quality_prices: Array[float] = []) -> Array[ShopCustomer]:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = session_seed
 	var dealt: Array[ShopCustomer] = []
@@ -48,7 +49,7 @@ func generate(archetypes: Array[CustomerDefinition], count: int, level: int, ses
 	var previous: CustomerDefinition = null
 	for _i in range(count):
 		var archetype := _draw(pool, previous, modifier, rng)
-		dealt.append(ShopCustomer.new().setup(archetype, _roll_orders(archetype, modifier, rng, is_craftable, order_price)))
+		dealt.append(ShopCustomer.new().setup(archetype, _roll_orders(archetype, modifier, rng, is_craftable, order_price, quality_prices)))
 		previous = archetype
 	return dealt
 
@@ -108,10 +109,10 @@ func _weight(archetype: CustomerDefinition, modifier: SessionModifierDefinition)
 
 # The first order is always one the player can make today; the rest may not
 # be, which shows what a blueprint would open up. No item appears twice.
-func _roll_orders(archetype: CustomerDefinition, modifier: SessionModifierDefinition, rng: RandomNumberGenerator, is_craftable: Callable, order_price: float) -> Array[OrderDefinition]:
+func _roll_orders(archetype: CustomerDefinition, modifier: SessionModifierDefinition, rng: RandomNumberGenerator, is_craftable: Callable, order_price: float, quality_prices: Array[float]) -> Array[OrderDefinition]:
 	var orders: Array[OrderDefinition] = []
 	var first := _pick_template(_craftable_wants(archetype, is_craftable), rng)
-	orders.append(_make_order(first, archetype.price_multiplier, modifier, order_price, rng))
+	orders.append(_make_order(first, archetype.price_multiplier, modifier, order_price, rng, quality_prices))
 	var remaining: Array[OrderTemplate] = []
 	for want in archetype.wants:
 		if want.item != first.item:
@@ -120,7 +121,7 @@ func _roll_orders(archetype: CustomerDefinition, modifier: SessionModifierDefini
 	while orders.size() < target and not remaining.is_empty():
 		var template := _pick_template(remaining, rng)
 		remaining = remaining.filter(func(want: OrderTemplate) -> bool: return want.item != template.item)
-		orders.append(_make_order(template, archetype.price_multiplier, modifier, order_price, rng))
+		orders.append(_make_order(template, archetype.price_multiplier, modifier, order_price, rng, quality_prices))
 	return orders
 
 
@@ -131,10 +132,12 @@ func _pick_template(templates: Array[OrderTemplate], rng: RandomNumberGenerator)
 	return templates[pick_weighted(weights, rng)]
 
 
-static func _make_order(template: OrderTemplate, price_multiplier: float, modifier: SessionModifierDefinition, order_price: float, rng: RandomNumberGenerator) -> OrderDefinition:
+static func _make_order(template: OrderTemplate, price_multiplier: float, modifier: SessionModifierDefinition, order_price: float, rng: RandomNumberGenerator, quality_prices: Array[float]) -> OrderDefinition:
 	var order := OrderDefinition.new()
 	order.item = template.item
 	order.quantity = rng.randi_range(template.min_quantity, template.max_quantity)
+	order.min_quality = template.min_quality
 	var market := 1.0 if modifier == null else modifier.price_multiplier(template.item)
-	order.gold_reward = roundi(template.item.gold_value * order.quantity * price_multiplier * market * order_price)
+	var quality_price := 1.0 if quality_prices.is_empty() else quality_prices[template.min_quality]
+	order.gold_reward = roundi(template.item.gold_value * order.quantity * price_multiplier * market * order_price * quality_price)
 	return order

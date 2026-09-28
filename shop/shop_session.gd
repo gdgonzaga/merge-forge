@@ -181,14 +181,14 @@ func try_fulfill_order(order_index: int) -> void:
 	var item_id := order.item.id
 	var needed := order.quantity
 
-	var have: int = board.count_sellable(item_id)
+	var have: int = board.count_sellable(item_id, order.min_quality)
 	if have < needed:
 		for child in _orders_container.get_children():
 			if child.has_method("flash_red") and child.get("order_index") == order_index:
 				child.flash_red()
 		return
 
-	board.take_sellable(item_id, needed)
+	board.take_sellable(item_id, needed, order.min_quality)
 	var reward := order.gold_reward
 	GameManager.add_gold(reward)
 	var xp: int = _streak.fulfill(reward, _rules)

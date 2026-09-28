@@ -7,3 +7,7 @@ class_name OrderTemplate
 @export var weight: int = 1
 @export var min_quantity: int = 1
 @export var max_quantity: int = 1
+# 0 any quality, 1 Fine or better, 2 Masterwork. Only on items at least this
+# many merges deep (a crate item can never be Fine). Priced by
+# ShopRulesDefinition.quality_price_multipliers.
+@export var min_quality: int = 0

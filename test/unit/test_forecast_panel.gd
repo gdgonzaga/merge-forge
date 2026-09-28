@@ -74,6 +74,29 @@ func test_revealing_everyone_shows_every_customer_with_their_orders() -> void:
 	assert_array(_labels_in(columns[4])).contains(["1x Test Herb"])
 
 
+func test_revealed_orders_name_the_required_quality() -> void:
+	var sword := _item("__test_sword", "weapon")
+	sword.name = "Sword"
+	var fine_order := OrderDefinition.new()
+	fine_order.item = sword
+	fine_order.quantity = 2
+	fine_order.min_quality = 1
+	var normal_order := OrderDefinition.new()
+	normal_order.item = sword
+	normal_order.quantity = 2
+	var archetype := CustomerDefinition.new()
+	archetype.name = "Test"
+	var customers: Array[ShopCustomer] = [
+		ShopCustomer.new().setup(archetype, [fine_order]),
+		ShopCustomer.new().setup(archetype, [normal_order]),
+	]
+	_panel.setup(SessionPlan.new().setup(customers, null), 0)
+	await get_tree().process_frame
+	var columns: Array[Node] = _panel.get_node("%CustomerPortraits").get_children()
+	assert_array(_labels_in(columns[0])).contains(["2x Fine Sword"])
+	assert_array(_labels_in(columns[1])).contains(["2x Sword"])
+
+
 func test_a_partial_reveal_shows_no_orders() -> void:
 	var herb := _item("__test_herb", "herb")
 	herb.name = "Test Herb"
