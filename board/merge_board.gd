@@ -307,15 +307,21 @@ func get_shelf_grid() -> Control:
 	return _shelf
 
 
-func count_sellable(item_id: String) -> int:
-	return _board.count_items_on_board(item_id) + _shelf.count_items_on_board(item_id)
+func count_sellable(item_id: String, min_quality: int = 0) -> int:
+	return _board.count_items_on_board(item_id, min_quality) + _shelf.count_items_on_board(item_id, min_quality)
 
 
-# Shelf first: shelf stock is what the player set aside to sell.
-func take_sellable(item_id: String, count: int) -> void:
-	var from_shelf := mini(count, _shelf.count_items_on_board(item_id))
-	_shelf.remove_items_by_id(item_id, from_shelf)
-	_board.remove_items_by_id(item_id, count - from_shelf)
+# The lowest qualifying quality goes first, so a Masterwork is never spent on
+# a Normal order. Within one quality the shelf goes first: shelf stock is what
+# the player set aside to sell.
+func take_sellable(item_id: String, count: int, min_quality: int = 0) -> void:
+	var remaining := count
+	for quality in range(min_quality, ItemDefinition.MAX_QUALITY + 1):
+		for grid: Control in [_shelf, _board]:
+			var available: int = grid.count_items_on_board(item_id, quality) - grid.count_items_on_board(item_id, quality + 1)
+			var taken := mini(remaining, available)
+			grid.remove_items_by_id(item_id, taken, quality)
+			remaining -= taken
 
 
 func get_shelf_state() -> Array:

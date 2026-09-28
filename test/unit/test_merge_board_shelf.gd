@@ -192,6 +192,55 @@ func test_shelf_state_round_trips() -> void:
 	assert_str(reloaded.get_shelf_grid().grid[0][2]["item_id"]).is_equal("__test_gem")
 
 
+func test_count_and_take_respect_the_minimum_quality() -> void:
+	var grid: Control = _board.get_board_grid()
+	grid.grid[0][0] = RecipeResolver.make_item(_gem, 0)
+	grid.grid[1][1] = RecipeResolver.make_item(_gem, 1)
+	grid.grid[2][2] = RecipeResolver.make_item(_gem, 2)
+	assert_int(_board.count_sellable("__test_gem", 1)).is_equal(2)
+	_board.take_sellable("__test_gem", 1, 1)
+	assert_int(_board.count_sellable("__test_gem", 1)).is_equal(1)
+	assert_int(grid.grid[2][2]["quality"]).is_equal(2)
+	assert_int(grid.grid[0][0]["quality"]).is_equal(0)
+
+
+func test_only_a_higher_quality_is_taken_when_nothing_matches_exactly() -> void:
+	var grid: Control = _board.get_board_grid()
+	grid.grid[0][0] = RecipeResolver.make_item(_gem, 2)
+	assert_int(_board.count_sellable("__test_gem", 1)).is_equal(1)
+	_board.take_sellable("__test_gem", 1, 1)
+	assert_int(_board.count_sellable("__test_gem")).is_equal(0)
+
+
+func test_a_normal_on_the_board_is_sold_before_a_fine_on_the_shelf() -> void:
+	var grid: Control = _board.get_board_grid()
+	var shelf: Control = _board.get_shelf_grid()
+	shelf.grid[0][0] = RecipeResolver.make_item(_gem, 1)
+	grid.grid[0][0] = RecipeResolver.make_item(_gem, 0)
+	_board.take_sellable("__test_gem", 1)
+	assert_int(shelf.count_items_on_board("__test_gem")).is_equal(1)
+	assert_int(grid.count_items_on_board("__test_gem")).is_equal(0)
+
+
+func test_within_one_quality_the_shelf_sells_first() -> void:
+	var grid: Control = _board.get_board_grid()
+	var shelf: Control = _board.get_shelf_grid()
+	shelf.grid[0][0] = RecipeResolver.make_item(_gem, 1)
+	grid.grid[0][0] = RecipeResolver.make_item(_gem, 1)
+	_board.take_sellable("__test_gem", 1, 1)
+	assert_int(shelf.count_items_on_board("__test_gem")).is_equal(0)
+	assert_int(grid.count_items_on_board("__test_gem")).is_equal(1)
+
+
+func test_a_move_to_the_shelf_keeps_quality() -> void:
+	var shelf: Control = _board.get_shelf_grid()
+	var grid: Control = _board.get_board_grid()
+	grid.place_item(RecipeResolver.make_item(_gem, 1), Vector2i(0, 0))
+	_drop(grid, Vector2i(0, 0), shelf, Vector2i(0, 0))
+	await _await_cell_item(shelf, Vector2i(0, 0), "__test_gem")
+	assert_int(shelf.grid[0][0]["quality"]).is_equal(1)
+
+
 func _make_board(config: Dictionary) -> Control:
 	var board: Control = auto_free(MERGE_BOARD.instantiate())
 	add_child(board)

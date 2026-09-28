@@ -158,30 +158,30 @@ func place_or_stage(item: Dictionary) -> bool:
 	return false
 
 
-func count_items_on_board(item_id: String) -> int:
+func count_items_on_board(item_id: String, min_quality: int = 0) -> int:
 	var count := 0
 	for r in range(grid_rows):
 		for c in range(grid_cols):
 			var cell = grid[r][c]
-			if cell != null and cell is Dictionary and cell.get("item_id", "") == item_id:
+			if cell != null and cell is Dictionary and cell.get("item_id", "") == item_id and cell["quality"] >= min_quality:
 				count += 1
 	return count
 
 
-func remove_items_by_id(item_id: String, count: int) -> void:
+# Lowest quality first, so a Masterwork is never spent where a Normal would do.
+func remove_items_by_id(item_id: String, count: int, min_quality: int = 0) -> void:
 	var removed := 0
-	for r in range(grid_rows):
-		if removed >= count:
-			break
-		for c in range(grid_cols):
-			if removed >= count:
-				break
-			var cell = grid[r][c]
-			if cell != null and cell is Dictionary and cell.get("item_id", "") == item_id:
-				grid[r][c] = null
-				refresh_cell(Vector2i(c, r))
-				item_removed.emit(Vector2i(c, r))
-				removed += 1
+	for quality in range(min_quality, ItemDefinition.MAX_QUALITY + 1):
+		for r in range(grid_rows):
+			for c in range(grid_cols):
+				if removed >= count:
+					return
+				var cell = grid[r][c]
+				if cell != null and cell is Dictionary and cell.get("item_id", "") == item_id and cell["quality"] == quality:
+					grid[r][c] = null
+					refresh_cell(Vector2i(c, r))
+					item_removed.emit(Vector2i(c, r))
+					removed += 1
 
 
 func clear_board() -> void:
