@@ -53,6 +53,23 @@ func test_crate_refused_when_gold_is_short() -> void:
 	assert_int(_placed_count("__test_item")).is_equal(0)
 
 
+func test_crate_refused_below_its_level() -> void:
+	set_definition(DefinitionLibrary.shop_rules, _level_rules())
+	DefinitionLibrary.get_crate("__test_crate").min_shop_level = 2
+	assert_bool(_board.buy_crate("__test_crate")).is_false()
+	assert_int(GameManager.gold).is_equal(50)
+	assert_int(_placed_count("__test_item")).is_equal(0)
+
+
+func _level_rules() -> ShopRulesDefinition:
+	var rules := ShopRulesDefinition.new()
+	rules.id = "default"
+	rules.level_xp_base = 100
+	rules.level_xp_exponent = 1.0
+	rules.max_level = 5
+	return rules
+
+
 # Items on the grid plus items waiting in the staging area.
 func _placed_count(item_id: String) -> int:
 	var count: int = _board.get_board_grid().count_items_on_board(item_id)

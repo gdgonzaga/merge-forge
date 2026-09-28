@@ -8,4 +8,5 @@ script = ExtResource("1_47sxb")
 id = "bp_iron_shield"
 name = "Iron Shield Blueprint"
 cost = 900
+min_shop_level = 10
 dependencies = Array[ExtResource("1_47sxb")]([ExtResource("2_6qy1p")])

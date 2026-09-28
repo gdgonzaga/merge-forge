@@ -19,6 +19,7 @@ script = ExtResource("4_ab6ln")
 id = "themed_metal"
 name = "Metal Crate"
 cost = 25
+min_shop_level = 3
 min_items = 3
 max_items = 4
 pool = Array[ExtResource("1_vfy4x")]([SubResource("Resource_rgade"), SubResource("Resource_y53qj")])

@@ -8,4 +8,5 @@ script = ExtResource("1_o22xh")
 id = "bp_phoenix_draught"
 name = "Phoenix Draught Blueprint"
 cost = 1500
+min_shop_level = 14
 dependencies = Array[ExtResource("1_o22xh")]([ExtResource("2_gi33a")])

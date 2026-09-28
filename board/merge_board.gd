@@ -48,6 +48,8 @@ func buy_crate(crate_id: String) -> bool:
 	var crate := DefinitionLibrary.get_crate(crate_id)
 	if crate == null:
 		return false
+	if not GameManager.meets_level(crate.min_shop_level):
+		return false
 	var cost: int = int(crate.cost * GameManager.get_crate_discount())
 	if not GameManager.deduct_gold(cost):
 		return false

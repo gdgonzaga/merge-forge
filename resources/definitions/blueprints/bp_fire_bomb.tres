@@ -8,4 +8,5 @@ script = ExtResource("1_j4gp2")
 id = "bp_fire_bomb"
 name = "Fire Bomb Blueprint"
 cost = 1800
+min_shop_level = 16
 dependencies = Array[ExtResource("1_j4gp2")]([ExtResource("2_j6luh")])

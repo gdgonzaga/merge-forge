@@ -11,6 +11,8 @@ func buy_blueprint(bp_id: String) -> bool:
 	var blueprint := DefinitionLibrary.get_blueprint(bp_id)
 	if blueprint == null or blueprint.cost <= 0:
 		return false
+	if not GameManager.meets_level(blueprint.min_shop_level):
+		return false
 	if not RecipeResolver.are_dependencies_met(blueprint):
 		return false
 	if not GameManager.deduct_gold(blueprint.cost):
@@ -40,6 +42,8 @@ func buy_upgrade(upgrade_id: String) -> bool:
 func buy_reagent(reagent_id: String) -> bool:
 	var reagent := DefinitionLibrary.get_reagent(reagent_id)
 	if reagent == null:
+		return false
+	if not GameManager.meets_level(reagent.min_shop_level):
 		return false
 	if not GameManager.deduct_gold(reagent.cost):
 		return false

@@ -6,5 +6,6 @@ class_name ReagentDefinition
 @export var id: String = ""
 @export var name: String = ""
 @export var cost: int = 0
+@export var min_shop_level: int = 1
 @export_multiline var description: String = ""
 @export var sprite: Texture2D

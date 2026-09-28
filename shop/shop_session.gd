@@ -52,8 +52,6 @@ func _ready() -> void:
 		if child == _reject_btn:
 			continue
 		child.queue_free()
-	for child in _crate_buttons.get_children():
-		child.queue_free()
 
 	board.setup({})
 	if not GameManager.shop_board_state.is_empty():
@@ -62,6 +60,7 @@ func _ready() -> void:
 			board_grid.load_board_state(GameManager.shop_board_state)
 
 	_build_crate_buttons()
+	GameManager.shop_level_changed.connect(_on_shop_level_changed)
 	_reject_btn.pressed.connect(reject_customer)
 	# PendingCustomers lays out after _ready, so its Content.size.x is 0 here.
 	# The resized signal fires once layout assigns a real width, and again on
@@ -73,13 +72,21 @@ func _ready() -> void:
 
 
 func _build_crate_buttons() -> void:
+	for child in _crate_buttons.get_children():
+		child.queue_free()
 	var crate_scene: PackedScene = load("res://shop/crate_button.tscn")
 	for crate in DefinitionLibrary.get_all_crates():
+		if not GameManager.meets_level(crate.min_shop_level):
+			continue
 		var btn: Button = crate_scene.instantiate()
 		var cost: int = int(crate.cost * GameManager.get_crate_discount())
 		btn.text = "%s (%dg)" % [crate.name, cost]
 		btn.pressed.connect(try_buy_crate.bind(crate.id))
 		_crate_buttons.add_child(btn)
+
+
+func _on_shop_level_changed(_level: int) -> void:
+	_build_crate_buttons()
 
 
 func advance_customer() -> void:

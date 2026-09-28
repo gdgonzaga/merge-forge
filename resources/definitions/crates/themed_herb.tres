@@ -19,6 +19,7 @@ script = ExtResource("4_c")
 id = "themed_herb"
 name = "Herb Crate"
 cost = 25
+min_shop_level = 2
 min_items = 3
 max_items = 4
 pool = Array[ExtResource("1_w")]([SubResource("Resource_leaf"), SubResource("Resource_bundle")])

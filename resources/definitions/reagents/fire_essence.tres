@@ -8,5 +8,6 @@ script = ExtResource("1_a1cum")
 id = "fire_essence"
 name = "Fire Essence"
 cost = 100
+min_shop_level = 12
 description = "A crackling ember used to forge flame-infused weapons."
 sprite = ExtResource("2_h7gtd")

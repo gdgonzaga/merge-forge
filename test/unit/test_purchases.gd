@@ -89,6 +89,31 @@ func test_upgrade_second_purchase_is_refused() -> void:
 	assert_array(GameManager.purchased_upgrades).is_equal(["__test_grid"])
 
 
+func test_blueprint_refused_below_its_level() -> void:
+	set_definition(DefinitionLibrary.shop_rules, _level_rules())
+	var blueprint := _blueprint("__test_bp", 30)
+	blueprint.min_shop_level = 3
+	set_definition(DefinitionLibrary.blueprints, blueprint)
+	GameManager.shop_xp = 299  # level 2
+	assert_bool(_purchases.buy_blueprint("__test_bp")).is_false()
+	assert_int(GameManager.gold).is_equal(50)
+	GameManager.shop_xp = 300  # level 3
+	assert_bool(_purchases.buy_blueprint("__test_bp")).is_true()
+	assert_int(GameManager.gold).is_equal(20)
+
+
+func test_reagent_refused_below_its_level() -> void:
+	set_definition(DefinitionLibrary.shop_rules, _level_rules())
+	var reagent := ReagentDefinition.new()
+	reagent.id = "__test_reagent"
+	reagent.cost = 15
+	reagent.min_shop_level = 2
+	set_definition(DefinitionLibrary.reagents, reagent)
+	assert_bool(_purchases.buy_reagent("__test_reagent")).is_false()
+	assert_int(GameManager.gold).is_equal(50)
+	assert_int(GameManager.reagent_inventory.get("__test_reagent", 0)).is_equal(0)
+
+
 func test_reagent_adds_one_and_charges_its_cost() -> void:
 	var reagent := ReagentDefinition.new()
 	reagent.id = "__test_reagent"
@@ -97,6 +122,15 @@ func test_reagent_adds_one_and_charges_its_cost() -> void:
 	assert_bool(_purchases.buy_reagent("__test_reagent")).is_true()
 	assert_int(GameManager.gold).is_equal(35)
 	assert_int(GameManager.reagent_inventory.get("__test_reagent", 0)).is_equal(1)
+
+
+func _level_rules() -> ShopRulesDefinition:
+	var rules := ShopRulesDefinition.new()
+	rules.id = "default"
+	rules.level_xp_base = 100
+	rules.level_xp_exponent = 1.0
+	rules.max_level = 5
+	return rules
 
 
 func _blueprint(id: String, cost: int) -> BlueprintDefinition:

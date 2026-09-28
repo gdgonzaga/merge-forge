@@ -50,9 +50,10 @@ func are_dependencies_met(blueprint: BlueprintDefinition) -> bool:
 	return true
 
 
-# True when the player can make `item` today: a crate sells it, or a merge they
-# hold the blueprint for makes it from something craftable. A reagent variant
-# counts when the reagent is for sale or in stock.
+# True when the player can make `item` today: a crate open at the player's
+# level sells it, or a merge they hold the blueprint for makes it from
+# something craftable. A reagent variant counts when the reagent is for sale
+# at their level or in stock.
 func is_craftable(item: ItemDefinition) -> bool:
 	return _is_craftable(item, {})
 
@@ -73,6 +74,8 @@ func _is_craftable(item: ItemDefinition, visited: Dictionary) -> bool:
 
 func _sold_in_a_crate(item: ItemDefinition) -> bool:
 	for crate in DefinitionLibrary.get_all_crates():
+		if not GameManager.meets_level(crate.min_shop_level):
+			continue
 		for entry in crate.pool:
 			if entry.item != null and entry.item.id == item.id:
 				return true
@@ -91,7 +94,8 @@ func _makes(source: ItemDefinition, target: ItemDefinition) -> bool:
 
 
 func _can_get_reagent(reagent: ReagentDefinition) -> bool:
-	return reagent.cost > 0 or GameManager.reagent_inventory.get(reagent.id, 0) > 0
+	return (reagent.cost > 0 and GameManager.meets_level(reagent.min_shop_level)) \
+		or GameManager.reagent_inventory.get(reagent.id, 0) > 0
 
 
 static func roll_weighted_pool(pool: Array[WeightedItem], min_rolls: int, max_rolls: int) -> Array[ItemDefinition]:

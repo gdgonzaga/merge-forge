@@ -167,6 +167,52 @@ func test_a_fresh_game_deals_a_full_session() -> void:
 	assert_int(dealt.size()).is_equal(size)
 
 
+# Every catalog whose definitions carry min_shop_level.
+func _gated() -> Array[Resource]:
+	var gated: Array[Resource] = []
+	for catalog: Dictionary in DefinitionLibrary.get_catalogs().values():
+		for definition: Resource in catalog.values():
+			if "min_shop_level" in definition:
+				gated.append(definition)
+	return gated
+
+
+func test_level_gates_are_within_the_curve() -> void:
+	var max_level := DefinitionLibrary.get_shop_rules().max_level
+	for definition in _gated():
+		assert_bool(definition.min_shop_level >= 1 and definition.min_shop_level <= max_level) \
+			.override_failure_message("%s unlocks at level %d" % [definition.id, definition.min_shop_level]).is_true()
+
+
+func test_a_blueprint_never_unlocks_before_its_dependencies() -> void:
+	for blueprint in DefinitionLibrary.get_all_blueprints():
+		for dep in blueprint.dependencies:
+			assert_bool(dep.min_shop_level <= blueprint.min_shop_level) \
+				.override_failure_message("%s (Lv %d) needs %s (Lv %d)" % [blueprint.id, blueprint.min_shop_level, dep.id, dep.min_shop_level]).is_true()
+
+
+# A dungeon must never open before the player can make something that heals.
+func test_a_healing_item_is_craftable_when_each_dungeon_opens() -> void:
+	var rules := DefinitionLibrary.get_shop_rules()
+	for dungeon in DefinitionLibrary.get_all_dungeons():
+		reset_game_state()
+		GameManager.shop_xp = rules.xp_for_level(dungeon.min_shop_level)
+		for blueprint in DefinitionLibrary.get_all_blueprints():
+			if blueprint.min_shop_level <= dungeon.min_shop_level:
+				GameManager.add_blueprint(blueprint.id)
+		var heals := false
+		for item: ItemDefinition in DefinitionLibrary.get_all_items().values():
+			if item.dungeon_usable and item.effect != null and item.effect.type == "heal" and RecipeResolver.is_craftable(item):
+				heals = true
+		assert_bool(heals).override_failure_message("%s opens with nothing craftable that heals" % dungeon.id).is_true()
+
+
+func test_some_archetype_is_open_at_level_1() -> void:
+	var open := DefinitionLibrary.get_all_customers().filter(
+		func(customer: CustomerDefinition) -> bool: return customer.min_shop_level == 1)
+	assert_bool(open.is_empty()).is_false()
+
+
 # Party members and enemies share the combat stat fields CombatEngine reads.
 func _assert_unit_stats(unit: Resource) -> void:
 	var id: String = unit.id

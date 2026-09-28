@@ -171,6 +171,47 @@ func test_variant_with_a_reagent_for_sale_is_craftable_with_none_in_stock() -> v
 	assert_bool(RecipeResolver.is_craftable(fancy)).is_true()
 
 
+func test_crate_above_the_level_does_not_make_an_item_craftable() -> void:
+	set_definition(DefinitionLibrary.shop_rules, _level_rules())
+	var raw := _item("__test_raw")
+	var crate := _crate("__test_crate", [raw])
+	crate.min_shop_level = 2
+	set_definition(DefinitionLibrary.items, raw)
+	set_definition(DefinitionLibrary.crates, crate)
+	assert_bool(RecipeResolver.is_craftable(raw)).is_false()
+	GameManager.shop_xp = 100  # level 2
+	assert_bool(RecipeResolver.is_craftable(raw)).is_true()
+
+
+func test_reagent_for_sale_above_the_level_does_not_count() -> void:
+	set_definition(DefinitionLibrary.shop_rules, _level_rules())
+	var raw := _item("__test_raw")
+	var fancy := _item("__test_fancy")
+	_reagent.cost = 100
+	_reagent.min_shop_level = 2
+	var variant := ReagentVariant.new()
+	variant.result = fancy
+	variant.reagent = _reagent
+	variant.blueprint = _blueprint
+	raw.reagent_variants.append(variant)
+	set_definition(DefinitionLibrary.items, raw)
+	set_definition(DefinitionLibrary.items, fancy)
+	set_definition(DefinitionLibrary.crates, _crate("__test_crate", [raw]))
+	GameManager.add_blueprint(_blueprint.id)
+	assert_bool(RecipeResolver.is_craftable(fancy)).is_false()
+	GameManager.shop_xp = 100  # level 2
+	assert_bool(RecipeResolver.is_craftable(fancy)).is_true()
+
+
+func _level_rules() -> ShopRulesDefinition:
+	var rules := ShopRulesDefinition.new()
+	rules.id = "default"
+	rules.level_xp_base = 100
+	rules.level_xp_exponent = 1.0
+	rules.max_level = 5
+	return rules
+
+
 func _weighted(item: ItemDefinition, weight: int) -> WeightedItem:
 	var entry := WeightedItem.new()
 	entry.item = item

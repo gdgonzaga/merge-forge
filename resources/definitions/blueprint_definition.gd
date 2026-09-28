@@ -7,4 +7,5 @@ class_name BlueprintDefinition
 @export var id: String = ""
 @export var name: String = ""
 @export var cost: int = 0
+@export var min_shop_level: int = 1
 @export var dependencies: Array[BlueprintDefinition] = []
