@@ -16,4 +16,5 @@ func plan_next_session() -> SessionPlan:
 		GameManager.get_shop_level(),
 		GameManager.get_session_seed(),
 		RecipeResolver.is_craftable,
+		GameManager.get_order_price_multiplier(),
 	)

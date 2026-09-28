@@ -67,6 +67,22 @@ func test_crossing_a_level_mid_session_adds_its_crate_button_once() -> void:
 	assert_int(_crate_buttons(session).get_child_count()).is_equal(2)
 
 
+func test_shop_signage_raises_what_an_order_pays() -> void:
+	var signage := UpgradeDefinition.new()
+	signage.id = "__test_signage"
+	signage.effect = "order_price"
+	var level := UpgradeLevel.new()
+	level.value = 1.5
+	signage.levels = [level]
+	set_definition(DefinitionLibrary.upgrades, signage)
+	GameManager.raise_upgrade_level("__test_signage")
+	var session := _start_session()
+	var gold_before := GameManager.gold
+	await _fulfil_next(session)
+	# 60 x 1.5
+	assert_int(GameManager.gold - gold_before).is_equal(90)
+
+
 func test_freeing_the_session_drops_its_shop_level_connection() -> void:
 	var before := GameManager.shop_level_changed.get_connections().size()
 	var session: Control = SHOP_SESSION.instantiate()

@@ -108,7 +108,7 @@ func _refresh_all() -> void:
 
 func _refresh_forecast() -> void:
 	_plan = SessionPlanner.plan_next_session()
-	_forecast_panel.setup(_plan, DefinitionLibrary.get_shop_rules().forecast_customers)
+	_forecast_panel.setup(_plan, GameManager.get_forecast_customers())
 
 
 func _refresh_blueprints() -> void:

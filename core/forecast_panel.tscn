@@ -56,15 +56,17 @@ layout_mode = 2
 theme_override_constants/separation = 8
 
 [node name="CustomersTitle" type="Label" parent="."]
+unique_name_in_owner = true
 layout_mode = 2
 theme_override_fonts/font = ExtResource("2_medieval")
 theme_override_font_sizes/font_size = 40
 text = "First customers"
 
-[node name="CustomerPortraits" type="HBoxContainer" parent="."]
+[node name="CustomerPortraits" type="HFlowContainer" parent="."]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_constants/separation = 24
+theme_override_constants/h_separation = 24
+theme_override_constants/v_separation = 24
 
 [node name="EmptyLabel" type="Label" parent="."]
 unique_name_in_owner = true

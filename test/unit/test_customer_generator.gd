@@ -125,6 +125,14 @@ func test_order_price_is_value_times_quantity_times_multiplier() -> void:
 	assert_int(_generator.generate(archetypes, 1, 1, 1, _all_craftable)[0].orders[0].gold_reward).is_equal(60)
 
 
+func test_order_price_multiplier_scales_every_order() -> void:
+	var archetype := _archetype("__a", 1, [_want(_ingot, 1, 2, 2)], 1, 1)
+	archetype.price_multiplier = 1.5
+	var archetypes: Array[CustomerDefinition] = [archetype]
+	# 20 gold x 2 x 1.5 x 1.1 = 66
+	assert_int(_generator.generate(archetypes, 1, 1, 1, _all_craftable, null, 1.1)[0].orders[0].gold_reward).is_equal(66)
+
+
 func test_pick_weighted_never_picks_a_zero_weight() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 11

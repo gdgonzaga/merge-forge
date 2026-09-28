@@ -59,6 +59,37 @@ func test_empty_plan_shows_the_empty_message() -> void:
 	assert_int(_panel.get_node("%DemandList").get_child_count()).is_equal(0)
 
 
+func test_revealing_everyone_shows_every_customer_with_their_orders() -> void:
+	var herb := _item("__test_herb", "herb")
+	herb.name = "Test Herb"
+	var customers: Array[ShopCustomer] = []
+	for _i in range(5):
+		customers.append(_customer_wanting([herb]))
+	customers[0].orders[0].quantity = 2
+	_panel.setup(SessionPlan.new().setup(customers, null), 0)
+	await get_tree().process_frame
+	var columns: Array[Node] = _panel.get_node("%CustomerPortraits").get_children()
+	assert_int(columns.size()).is_equal(5)
+	assert_array(_labels_in(columns[0])).contains(["2x Test Herb"])
+	assert_array(_labels_in(columns[4])).contains(["1x Test Herb"])
+
+
+func test_a_partial_reveal_shows_no_orders() -> void:
+	var herb := _item("__test_herb", "herb")
+	herb.name = "Test Herb"
+	_panel.setup(SessionPlan.new().setup([_customer_wanting([herb])], null), 3)
+	await get_tree().process_frame
+	var column: Node = _panel.get_node("%CustomerPortraits").get_child(0)
+	assert_array(_labels_in(column)).not_contains(["1x Test Herb"])
+
+
+func _labels_in(node: Node) -> Array[String]:
+	var texts: Array[String] = []
+	for label in node.find_children("*", "Label", true, false):
+		texts.append((label as Label).text)
+	return texts
+
+
 func _item(id: String, family: String) -> ItemDefinition:
 	var item := ItemDefinition.new()
 	item.id = id
