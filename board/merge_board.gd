@@ -13,6 +13,7 @@ var _staging_container: FlowContainer
 var _popup: PopupPanel
 var _choice_callback: Callable
 var _anim_overlay: Control
+var _crate_cost_multipliers: Dictionary = {}
 
 
 func _ready() -> void:
@@ -32,6 +33,7 @@ func _ready() -> void:
 func setup(config: Dictionary) -> void:
 	var cell_scene: PackedScene = config.get("cell_scene", load("res://board/board_cell.tscn"))
 	var despawn: float = config.get("despawn_time", GameManager.get_despawn_time())
+	_crate_cost_multipliers = config.get("crate_cost_multipliers", {})
 	if _board:
 		if cell_scene:
 			_board.set_cell_scene(cell_scene)
@@ -50,7 +52,7 @@ func buy_crate(crate_id: String) -> bool:
 		return false
 	if not GameManager.meets_level(crate.min_shop_level):
 		return false
-	var cost: int = int(crate.cost * GameManager.get_crate_discount())
+	var cost := get_crate_cost(crate)
 	if not GameManager.deduct_gold(cost):
 		return false
 	AudioManager.play_sfx("crate_open")
@@ -58,6 +60,14 @@ func buy_crate(crate_id: String) -> bool:
 		place_drop(RecipeResolver.make_item(item))
 	EventBus.save_requested.emit()
 	return true
+
+
+# Market modifier x crate discount, rounded down once. The epsilon keeps float
+# error from losing a gold (30 x 0.7 is 20.999... in floats), and a crate is
+# never free.
+func get_crate_cost(crate: CrateDefinition) -> int:
+	var multiplier: float = _crate_cost_multipliers.get(crate.id, 1.0)
+	return maxi(floori(crate.cost * multiplier * GameManager.get_crate_discount() + 0.0001), 1)
 
 
 func place_drop(item_data: Dictionary) -> void:

@@ -36,14 +36,38 @@ func test_crate_charges_its_cost_and_places_its_items() -> void:
 
 
 func test_crate_discount_lowers_the_price() -> void:
-	var discount := UpgradeDefinition.new()
-	discount.id = "__test_discount"
-	discount.effect = "crate_discount"
-	discount.value = 0.5
-	set_definition(DefinitionLibrary.upgrades, discount)
-	GameManager.add_upgrade("__test_discount")
+	_give_discount(0.5)
 	assert_bool(_board.buy_crate("__test_crate")).is_true()
 	assert_int(GameManager.gold).is_equal(30)
+
+
+func test_a_market_multiplier_stacks_with_the_crate_discount() -> void:
+	DefinitionLibrary.get_crate("__test_crate").cost = 25
+	_give_discount(0.8)
+	_board.setup({"cols": 3, "rows": 3, "crate_cost_multipliers": {"__test_crate": 1.5}})
+	# 25 x 1.5 x 0.8 = 30, rounded down once.
+	assert_int(_board.get_crate_cost(DefinitionLibrary.get_crate("__test_crate"))).is_equal(30)
+	assert_bool(_board.buy_crate("__test_crate")).is_true()
+	assert_int(GameManager.gold).is_equal(20)
+
+
+func test_float_error_does_not_lose_a_gold() -> void:
+	DefinitionLibrary.get_crate("__test_crate").cost = 30
+	_board.setup({"cols": 3, "rows": 3, "crate_cost_multipliers": {"__test_crate": 0.7}})
+	# 30 x 0.7 = 21 exactly, though floats make it 20.999...
+	assert_int(_board.get_crate_cost(DefinitionLibrary.get_crate("__test_crate"))).is_equal(21)
+
+
+func test_a_crate_never_costs_less_than_one_gold() -> void:
+	DefinitionLibrary.get_crate("__test_crate").cost = 1
+	_give_discount(0.5)
+	_board.setup({"cols": 3, "rows": 3, "crate_cost_multipliers": {"__test_crate": 0.5}})
+	assert_int(_board.get_crate_cost(DefinitionLibrary.get_crate("__test_crate"))).is_equal(1)
+
+
+func test_a_multiplier_for_another_crate_leaves_this_one_alone() -> void:
+	_board.setup({"cols": 3, "rows": 3, "crate_cost_multipliers": {"__other_crate": 2.0}})
+	assert_int(_board.get_crate_cost(DefinitionLibrary.get_crate("__test_crate"))).is_equal(40)
 
 
 func test_crate_refused_when_gold_is_short() -> void:
@@ -77,3 +101,12 @@ func _placed_count(item_id: String) -> int:
 		if child.item_data.get("item_id", "") == item_id:
 			count += 1
 	return count
+
+
+func _give_discount(value: float) -> void:
+	var discount := UpgradeDefinition.new()
+	discount.id = "__test_discount"
+	discount.effect = "crate_discount"
+	discount.value = value
+	set_definition(DefinitionLibrary.upgrades, discount)
+	GameManager.add_upgrade("__test_discount")

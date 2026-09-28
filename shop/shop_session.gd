@@ -48,7 +48,8 @@ func _ready() -> void:
 			continue
 		child.queue_free()
 
-	board.setup({})
+	var crate_costs := {} if plan.modifier == null else plan.modifier.get_crate_cost_multipliers()
+	board.setup({"crate_cost_multipliers": crate_costs})
 	if not GameManager.shop_board_state.is_empty():
 		var board_grid = _get_board_grid()
 		if board_grid:
@@ -74,7 +75,7 @@ func _build_crate_buttons() -> void:
 		if not GameManager.meets_level(crate.min_shop_level):
 			continue
 		var btn: Button = crate_scene.instantiate()
-		var cost: int = int(crate.cost * GameManager.get_crate_discount())
+		var cost: int = board.get_crate_cost(crate)
 		btn.text = "%s (%dg)" % [crate.name, cost]
 		btn.pressed.connect(try_buy_crate.bind(crate.id))
 		_crate_buttons.add_child(btn)
