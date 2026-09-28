@@ -151,6 +151,12 @@ func test_shop_rules_are_defined() -> void:
 	var rules := DefinitionLibrary.get_shop_rules()
 	assert_object(rules).is_not_null()
 	assert_int(rules.session_size).is_greater(0)
+	assert_int(rules.level_xp_base).is_greater(0)
+	assert_float(rules.level_xp_exponent).is_greater_equal(0.0)
+	assert_int(rules.max_level).is_greater(1)
+	assert_float(rules.xp_per_gold).is_greater(0.0)
+	assert_float(rules.streak_step).is_greater_equal(0.0)
+	assert_float(rules.streak_cap).is_greater_equal(0.0)
 
 
 # A new player (no blueprints, no reputation) must be dealt a full session.
