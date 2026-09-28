@@ -1203,7 +1203,7 @@ Reagents are bought in the prep phase and stored in `GameManager.reagent_invento
 | Function | Description |
 |----------|-------------|
 | `try_purchase(type: String, id: String) -> bool` | Delegates a blueprint, upgrade or reagent purchase to its `core/purchases.gd` helper. Returns true on success. |
-| `_debug_unlock_all()` | Debug: sets debug_mode, grants 2000g, 1000 rep, all blueprints, 5 of every reagent. |
+| `_debug_unlock_all()` | Debug: sets debug_mode, grants 20000g, 1000 rep, all blueprints, 5 of every reagent. |
 
 #### GameManager
 
