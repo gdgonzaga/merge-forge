@@ -13,7 +13,8 @@ func test_default_state() -> void:
 	assert_int(GameManager.shop_xp).is_equal(0)
 	assert_array(GameManager.unlocked_blueprints).is_empty()
 	assert_dict(GameManager.reagent_inventory).is_empty()
-	assert_array(GameManager.purchased_upgrades).is_empty()
+	assert_dict(GameManager.upgrade_levels).is_empty()
+	assert_array(GameManager.shop_shelf_state).is_empty()
 	assert_int(GameManager.grid_cols).is_equal(5)
 	assert_int(GameManager.grid_rows).is_equal(5)
 	assert_bool(GameManager.seen_intro).is_false()
@@ -163,27 +164,71 @@ func test_consume_reagent_at_zero_returns_false() -> void:
 	assert_bool(ok).is_false()
 
 
-# --- upgrade-driven getters ---
+# --- upgrade tracks ---
 
-func test_despawn_time_default_then_upgrade() -> void:
-	set_definition(DefinitionLibrary.upgrades, _upgrade("__test_patience", "despawn_time", 20.0))
+func test_an_unbought_track_gives_the_default() -> void:
+	set_definition(DefinitionLibrary.upgrades, _track("__test_patience", "despawn_time", [15.0, 18.0, 22.0]))
+	assert_int(GameManager.get_upgrade_level("__test_patience")).is_equal(0)
 	assert_float(GameManager.get_despawn_time()).is_equal(GameManager.DEFAULT_DESPAWN_TIME)
-	GameManager.add_upgrade("__test_patience")
-	assert_float(GameManager.get_despawn_time()).is_equal(20.0)
 
 
-func test_crate_discount_default_then_upgrade() -> void:
-	set_definition(DefinitionLibrary.upgrades, _upgrade("__test_bulk", "crate_discount", 0.5))
-	assert_float(GameManager.get_crate_discount()).is_equal(GameManager.DEFAULT_CRATE_COST_MULTIPLIER)
-	GameManager.add_upgrade("__test_bulk")
-	assert_float(GameManager.get_crate_discount()).is_equal(0.5)
+func test_a_bought_level_gives_that_levels_value() -> void:
+	set_definition(DefinitionLibrary.upgrades, _track("__test_patience", "despawn_time", [15.0, 18.0, 22.0]))
+	GameManager.raise_upgrade_level("__test_patience")
+	GameManager.raise_upgrade_level("__test_patience")
+	assert_int(GameManager.get_upgrade_level("__test_patience")).is_equal(2)
+	assert_float(GameManager.get_despawn_time()).is_equal(18.0)
 
 
-# An upgrade with another effect leaves the value alone.
+func test_raising_a_level_announces_the_new_level() -> void:
+	set_definition(DefinitionLibrary.upgrades, _track("__test_bulk", "crate_discount", [0.9, 0.8]))
+	var seen: Array = []
+	var on_level := func(id: String, level: int) -> void: seen.append([id, level])
+	GameManager.upgrade_level_changed.connect(on_level)
+	GameManager.raise_upgrade_level("__test_bulk")
+	GameManager.raise_upgrade_level("__test_bulk")
+	GameManager.upgrade_level_changed.disconnect(on_level)
+	assert_array(seen).is_equal([["__test_bulk", 1], ["__test_bulk", 2]])
+	assert_float(GameManager.get_crate_discount()).is_equal(0.8)
+
+
+# A track with another effect leaves the value alone.
 func test_upgrade_value_only_comes_from_its_effect() -> void:
-	set_definition(DefinitionLibrary.upgrades, _upgrade("__test_bulk", "crate_discount", 0.5))
-	GameManager.add_upgrade("__test_bulk")
+	set_definition(DefinitionLibrary.upgrades, _track("__test_bulk", "crate_discount", [0.5]))
+	GameManager.raise_upgrade_level("__test_bulk")
 	assert_float(GameManager.get_despawn_time()).is_equal(GameManager.DEFAULT_DESPAWN_TIME)
+
+
+func test_new_effects_default_until_bought() -> void:
+	var rules := ShopRulesDefinition.new()
+	rules.id = "default"
+	rules.forecast_customers = 4
+	set_definition(DefinitionLibrary.shop_rules, rules)
+	set_definition(DefinitionLibrary.upgrades, _track("__test_shelf", "shelf_slots", [2.0]))
+	set_definition(DefinitionLibrary.upgrades, _track("__test_signage", "order_price", [1.05]))
+	set_definition(DefinitionLibrary.upgrades, _track("__test_crier", "forecast_detail", [5.0, 0.0]))
+	assert_int(GameManager.get_shelf_slots()).is_equal(0)
+	assert_float(GameManager.get_order_price_multiplier()).is_equal(1.0)
+	assert_int(GameManager.get_forecast_customers()).is_equal(4)
+	GameManager.raise_upgrade_level("__test_shelf")
+	GameManager.raise_upgrade_level("__test_signage")
+	GameManager.raise_upgrade_level("__test_crier")
+	assert_int(GameManager.get_shelf_slots()).is_equal(2)
+	assert_float(GameManager.get_order_price_multiplier()).is_equal(1.05)
+	assert_int(GameManager.get_forecast_customers()).is_equal(5)
+	GameManager.raise_upgrade_level("__test_crier")
+	assert_int(GameManager.get_forecast_customers()).is_equal(0)
+
+
+func _track(id: String, effect: String, values: Array[float]) -> UpgradeDefinition:
+	var upgrade := UpgradeDefinition.new()
+	upgrade.id = id
+	upgrade.effect = effect
+	for value in values:
+		var level := UpgradeLevel.new()
+		level.value = value
+		upgrade.levels.append(level)
+	return upgrade
 
 
 # --- save/load round-trip ---
@@ -193,7 +238,9 @@ func test_serialize_deserialize_round_trip() -> void:
 	GameManager.add_shop_xp(120)
 	GameManager.add_blueprint("bp_x")
 	GameManager.add_reagent("fire", 4)
-	GameManager.add_upgrade("slow_timer")
+	set_definition(DefinitionLibrary.upgrades, _track("__test_patience", "despawn_time", [15.0, 18.0]))
+	GameManager.raise_upgrade_level("__test_patience")
+	GameManager.shop_shelf_state = [{"col": 1, "row": 0, "item_id": "ore"}]
 	GameManager.record_session_played()
 
 	var saved := GameManager.serialize()
@@ -203,14 +250,6 @@ func test_serialize_deserialize_round_trip() -> void:
 
 	# Round-trip invariant: the deserialized state must re-serialize identically.
 	assert_dict(resaved).is_equal(saved)
-
-
-func _upgrade(id: String, effect: String, value: float) -> UpgradeDefinition:
-	var upgrade := UpgradeDefinition.new()
-	upgrade.id = id
-	upgrade.effect = effect
-	upgrade.value = value
-	return upgrade
 
 
 # --- sessions ---

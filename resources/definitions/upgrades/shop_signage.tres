@@ -1,0 +1,52 @@
+[gd_resource type="Resource" script_class="UpgradeDefinition" load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/upgrade_definition.gd" id="1_signage"]
+[ext_resource type="Script" path="res://resources/definitions/upgrade_level.gd" id="2_level"]
+
+[sub_resource type="Resource" id="Resource_level_1"]
+script = ExtResource("2_level")
+cost = 1000
+value = 1.05
+grid_cols = 0
+grid_rows = 0
+min_shop_level = 5
+
+[sub_resource type="Resource" id="Resource_level_2"]
+script = ExtResource("2_level")
+cost = 2500
+value = 1.1
+grid_cols = 0
+grid_rows = 0
+min_shop_level = 10
+
+[sub_resource type="Resource" id="Resource_level_3"]
+script = ExtResource("2_level")
+cost = 5000
+value = 1.15
+grid_cols = 0
+grid_rows = 0
+min_shop_level = 18
+
+[sub_resource type="Resource" id="Resource_level_4"]
+script = ExtResource("2_level")
+cost = 8000
+value = 1.2
+grid_cols = 0
+grid_rows = 0
+min_shop_level = 28
+
+[sub_resource type="Resource" id="Resource_level_5"]
+script = ExtResource("2_level")
+cost = 12000
+value = 1.25
+grid_cols = 0
+grid_rows = 0
+min_shop_level = 38
+
+[resource]
+script = ExtResource("1_signage")
+id = "shop_signage"
+name = "Shop Signage"
+description = "Every order pays more."
+effect = "order_price"
+levels = Array[ExtResource("2_level")]([SubResource("Resource_level_1"), SubResource("Resource_level_2"), SubResource("Resource_level_3"), SubResource("Resource_level_4"), SubResource("Resource_level_5")])

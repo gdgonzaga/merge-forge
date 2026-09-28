@@ -135,9 +135,17 @@ func get_upgrade(id: String) -> UpgradeDefinition:
 	return upgrades.get(id, null)
 
 
+# Cheapest first level first; ties by id so the order is stable.
 func get_all_upgrades() -> Array[UpgradeDefinition]:
 	var result: Array[UpgradeDefinition] = []
-	result.assign(_by_cost(upgrades))
+	result.assign(upgrades.values())
+	result.sort_custom(func(a: UpgradeDefinition, b: UpgradeDefinition) -> bool:
+		var cost_a := 0 if a.levels.is_empty() else a.levels[0].cost
+		var cost_b := 0 if b.levels.is_empty() else b.levels[0].cost
+		if cost_a != cost_b:
+			return cost_a < cost_b
+		return a.id < b.id
+	)
 	return result
 
 

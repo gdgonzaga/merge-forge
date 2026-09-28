@@ -5,7 +5,7 @@ extends TestBase
 
 
 const USE_TARGETS: Array[String] = ["party-individual", "enemy-individual", "enemy-all"]
-const UPGRADE_EFFECTS: Array[String] = ["grid_size", "despawn_time", "crate_discount"]
+const UPGRADE_EFFECTS: Array[String] = ["grid_size", "despawn_time", "crate_discount", "shelf_slots", "forecast_detail", "order_price"]
 const ATTACK_TYPES: Array[String] = ["melee", "missile"]
 
 
@@ -77,6 +77,16 @@ func test_upgrades_have_a_known_effect() -> void:
 	for upgrade in DefinitionLibrary.get_all_upgrades():
 		assert_bool(upgrade.effect in UPGRADE_EFFECTS) \
 			.override_failure_message("%s has effect '%s'" % [upgrade.id, upgrade.effect]).is_true()
+
+
+func test_upgrade_tracks_have_levels_with_rising_costs() -> void:
+	for upgrade in DefinitionLibrary.get_all_upgrades():
+		assert_bool(upgrade.levels.is_empty()).override_failure_message("%s has no levels" % upgrade.id).is_false()
+		var previous := 0
+		for level in upgrade.levels:
+			assert_object(level).override_failure_message("%s has an empty level" % upgrade.id).is_not_null()
+			assert_int(level.cost).override_failure_message("%s level costs do not rise" % upgrade.id).is_greater(previous)
+			previous = level.cost
 
 
 func test_party_members_have_valid_stats() -> void:

@@ -107,6 +107,8 @@ func _give_discount(value: float) -> void:
 	var discount := UpgradeDefinition.new()
 	discount.id = "__test_discount"
 	discount.effect = "crate_discount"
-	discount.value = value
+	var level := UpgradeLevel.new()
+	level.value = value
+	discount.levels = [level]
 	set_definition(DefinitionLibrary.upgrades, discount)
-	GameManager.add_upgrade("__test_discount")
+	GameManager.raise_upgrade_level("__test_discount")

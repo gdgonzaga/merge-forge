@@ -35,7 +35,7 @@ func _ready() -> void:
 	# its connection would outlive the screen.
 	GameManager.gold_changed.connect(_on_gold_changed)
 	GameManager.blueprint_added.connect(_on_blueprint_added)
-	GameManager.upgrade_added.connect(_on_upgrade_added)
+	GameManager.upgrade_level_changed.connect(_on_upgrade_level_changed)
 	GameManager.reagent_count_changed.connect(_on_reagent_count_changed)
 	GameManager.shop_level_changed.connect(_on_shop_level_changed)
 	_refresh_all()
@@ -63,8 +63,9 @@ func _on_blueprint_added(_id: String) -> void:
 	_refresh_forecast()
 
 
-func _on_upgrade_added(_id: String) -> void:
+func _on_upgrade_level_changed(_id: String, _level: int) -> void:
 	_refresh_upgrades()
+	_refresh_forecast()
 
 
 func _on_reagent_count_changed(_id: String, _count: int) -> void:
@@ -151,13 +152,45 @@ func _refresh_upgrades() -> void:
 		child.queue_free()
 	var card_scene: PackedScene = load("res://shop/purchase_card.tscn")
 	for upgrade in DefinitionLibrary.get_all_upgrades():
-		var owned: bool = upgrade.id in GameManager.purchased_upgrades
-		var cost := upgrade.cost
-		var name_mod := Color(0.5, 1, 0.5) if owned else Color.WHITE
+		var level := GameManager.get_upgrade_level(upgrade.id)
+		var next := upgrade.next_level(level)
+		var level_ok := next != null and GameManager.meets_level(next.min_shop_level)
 		var card: PanelContainer = card_scene.instantiate()
 		_upgrade_scroll.add_child(card)
-		card.setup(upgrade.name, _describe_upgrade(upgrade), Color(0.7, 0.7, 0.7), "Owned" if owned else "%dg" % cost, owned or GameManager.gold < cost, Callable() if owned else try_purchase.bind("upgrade", upgrade.id))
-		card.name_label.modulate = name_mod
+		card.setup(
+			"%s (%d/%d)" % [upgrade.name, level, upgrade.max_level()],
+			"%s\n%s" % [upgrade.description, _describe_next_level(upgrade, next)],
+			Color(0.7, 0.7, 0.7),
+			"Max" if next == null else "%dg" % next.cost,
+			not level_ok or GameManager.gold < next.cost,
+			Callable() if next == null else try_purchase.bind("upgrade", upgrade.id),
+		)
+		card.name_label.modulate = Color(0.5, 1, 0.5) if next == null else Color.WHITE
+
+
+func _describe_next_level(upgrade: UpgradeDefinition, next: UpgradeLevel) -> String:
+	if next == null:
+		return "Max level"
+	if not GameManager.meets_level(next.min_shop_level):
+		return "Unlocks at level %d" % next.min_shop_level
+	return "Next: %s" % _describe_value(upgrade.effect, next)
+
+
+func _describe_value(effect: String, level: UpgradeLevel) -> String:
+	match effect:
+		"grid_size":
+			return "%dx%d board" % [GameManager.grid_cols + level.grid_cols, GameManager.grid_rows + level.grid_rows]
+		"despawn_time":
+			return "%.0fs" % level.value
+		"crate_discount":
+			return "crates x%d%%" % roundi(level.value * 100.0)
+		"shelf_slots":
+			return "%d shelf slots" % int(level.value)
+		"forecast_detail":
+			return "every customer and order" if int(level.value) <= 0 else "%d customers" % int(level.value)
+		"order_price":
+			return "orders x%d%%" % roundi(level.value * 100.0)
+	return effect
 
 
 func _refresh_reagents() -> void:
@@ -172,17 +205,6 @@ func _refresh_reagents() -> void:
 		var card: PanelContainer = card_scene.instantiate()
 		_reagent_scroll.add_child(card)
 		card.setup("%s (x%d)" % [reagent.name, owned_count], desc, Color(0.7, 0.7, 0.7), "%dg" % reagent.cost, disabled, try_purchase.bind("reagent", reagent.id), 72)
-
-
-func _describe_upgrade(upgrade: UpgradeDefinition) -> String:
-	match upgrade.effect:
-		"grid_size":
-			return "+%d cols, +%d rows" % [upgrade.grid_cols, upgrade.grid_rows]
-		"despawn_time":
-			return "Despawn time: %.0fs" % upgrade.value
-		"crate_discount":
-			return "Crate prices x%.0f%%" % (upgrade.value * 100)
-	return upgrade.effect
 
 
 func _debug_unlock_all() -> void:

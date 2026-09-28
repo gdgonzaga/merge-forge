@@ -62,31 +62,67 @@ func test_blueprint_refused_for_an_unknown_id() -> void:
 	assert_int(GameManager.gold).is_equal(50)
 
 
-func test_grid_size_upgrade_grows_the_grid() -> void:
-	set_definition(DefinitionLibrary.upgrades, _grid_upgrade("__test_grid", 30, 1, 2))
+func test_upgrade_charges_each_levels_cost_in_turn() -> void:
+	set_definition(DefinitionLibrary.upgrades, _track("__test_track", "despawn_time", [_level(10), _level(20)]))
+	assert_bool(_purchases.buy_upgrade("__test_track")).is_true()
+	assert_int(GameManager.gold).is_equal(40)
+	assert_int(GameManager.get_upgrade_level("__test_track")).is_equal(1)
+	assert_bool(_purchases.buy_upgrade("__test_track")).is_true()
+	assert_int(GameManager.gold).is_equal(20)
+	assert_int(GameManager.get_upgrade_level("__test_track")).is_equal(2)
+
+
+func test_upgrade_refused_past_its_max_level() -> void:
+	set_definition(DefinitionLibrary.upgrades, _track("__test_track", "despawn_time", [_level(10), _level(20)]))
+	_purchases.buy_upgrade("__test_track")
+	_purchases.buy_upgrade("__test_track")
+	assert_bool(_purchases.buy_upgrade("__test_track")).is_false()
+	assert_int(GameManager.gold).is_equal(20)
+	assert_int(GameManager.get_upgrade_level("__test_track")).is_equal(2)
+
+
+func test_upgrade_level_refused_below_its_shop_level() -> void:
+	set_definition(DefinitionLibrary.shop_rules, _level_rules())
+	var second := _level(20)
+	second.min_shop_level = 3
+	set_definition(DefinitionLibrary.upgrades, _track("__test_track", "despawn_time", [_level(10), second]))
+	GameManager.shop_xp = 299  # level 2
+	assert_bool(_purchases.buy_upgrade("__test_track")).is_true()
+	assert_bool(_purchases.buy_upgrade("__test_track")).is_false()
+	assert_int(GameManager.gold).is_equal(40)
+	assert_int(GameManager.get_upgrade_level("__test_track")).is_equal(1)
+	GameManager.shop_xp = 300  # level 3
+	assert_bool(_purchases.buy_upgrade("__test_track")).is_true()
+	assert_int(GameManager.gold).is_equal(20)
+
+
+func test_upgrade_refused_when_gold_is_short() -> void:
+	set_definition(DefinitionLibrary.upgrades, _track("__test_track", "despawn_time", [_level(51)]))
+	assert_bool(_purchases.buy_upgrade("__test_track")).is_false()
+	assert_int(GameManager.gold).is_equal(50)
+	assert_int(GameManager.get_upgrade_level("__test_track")).is_equal(0)
+
+
+func test_upgrade_refused_for_an_unknown_id() -> void:
+	assert_bool(_purchases.buy_upgrade("__test_missing")).is_false()
+	assert_int(GameManager.gold).is_equal(50)
+
+
+# 5x5, then +0/+1 and +1/+0: each level adds its growth to the board.
+func test_grid_levels_add_up() -> void:
+	set_definition(DefinitionLibrary.upgrades, _track("__test_grid", "grid_size", [_level(10, 0, 1), _level(10, 1, 0)]))
 	GameManager.grid_cols = 5
 	GameManager.grid_rows = 5
 	var sizes: Array[Vector2i] = []
 	var on_size := func(cols: int, rows: int) -> void: sizes.append(Vector2i(cols, rows))
 	GameManager.grid_size_changed.connect(on_size)
-	var bought: bool = _purchases.buy_upgrade("__test_grid")
+	_purchases.buy_upgrade("__test_grid")
+	_purchases.buy_upgrade("__test_grid")
 	GameManager.grid_size_changed.disconnect(on_size)
-	assert_bool(bought).is_true()
-	assert_int(GameManager.gold).is_equal(20)
 	assert_int(GameManager.grid_cols).is_equal(6)
-	assert_int(GameManager.grid_rows).is_equal(7)
-	assert_array(sizes).is_equal([Vector2i(6, 7)])
-
-
-func test_upgrade_second_purchase_is_refused() -> void:
-	set_definition(DefinitionLibrary.upgrades, _grid_upgrade("__test_grid", 20, 1, 1))
-	GameManager.grid_cols = 5
-	GameManager.grid_rows = 5
-	assert_bool(_purchases.buy_upgrade("__test_grid")).is_true()
-	assert_bool(_purchases.buy_upgrade("__test_grid")).is_false()
+	assert_int(GameManager.grid_rows).is_equal(6)
+	assert_array(sizes).is_equal([Vector2i(5, 6), Vector2i(6, 6)])
 	assert_int(GameManager.gold).is_equal(30)
-	assert_int(GameManager.grid_cols).is_equal(6)
-	assert_array(GameManager.purchased_upgrades).is_equal(["__test_grid"])
 
 
 func test_blueprint_refused_below_its_level() -> void:
@@ -140,11 +176,17 @@ func _blueprint(id: String, cost: int) -> BlueprintDefinition:
 	return blueprint
 
 
-func _grid_upgrade(id: String, cost: int, cols: int, rows: int) -> UpgradeDefinition:
+func _track(id: String, effect: String, levels: Array[UpgradeLevel]) -> UpgradeDefinition:
 	var upgrade := UpgradeDefinition.new()
 	upgrade.id = id
-	upgrade.cost = cost
-	upgrade.effect = "grid_size"
-	upgrade.grid_cols = cols
-	upgrade.grid_rows = rows
+	upgrade.effect = effect
+	upgrade.levels = levels
 	return upgrade
+
+
+func _level(cost: int, grid_cols: int = 0, grid_rows: int = 0) -> UpgradeLevel:
+	var level := UpgradeLevel.new()
+	level.cost = cost
+	level.grid_cols = grid_cols
+	level.grid_rows = grid_rows
+	return level

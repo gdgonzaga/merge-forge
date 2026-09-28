@@ -11,7 +11,7 @@ func test_leaving_prep_phase_drops_its_game_manager_connections() -> void:
 	var signals: Array[Signal] = [
 		GameManager.gold_changed,
 		GameManager.blueprint_added,
-		GameManager.upgrade_added,
+		GameManager.upgrade_level_changed,
 		GameManager.reagent_count_changed,
 		GameManager.shop_level_changed,
 	]
@@ -56,10 +56,66 @@ func test_blueprint_below_its_level_shows_its_unlock_level_and_cannot_be_bought(
 	set_definition(DefinitionLibrary.blueprints, blueprint)
 	var prep: Control = auto_free(PREP_PHASE.instantiate())
 	add_child(prep)
-	var card: PanelContainer = _card_named(prep, "Test Blueprint")
+	var card: PanelContainer = _card_named(prep, "VBox/TabContainer/Blueprints/BpContent", "Test Blueprint")
 	assert_object(card).is_not_null()
 	assert_str(card.desc_label.text).is_equal("Unlocks at level 9000")
 	assert_bool(card.buy_btn.disabled).is_true()
+
+
+const UPGRADE_CONTENT := "VBox/TabContainer/Upgrades/UpgradeContent"
+
+
+func test_upgrade_card_shows_its_level_next_value_and_next_cost() -> void:
+	set_definition(DefinitionLibrary.upgrades, _patience_track())
+	GameManager.gold = 100
+	GameManager.raise_upgrade_level("__test_patience")
+	var prep: Control = auto_free(PREP_PHASE.instantiate())
+	add_child(prep)
+	var card: PanelContainer = _card_named(prep, UPGRADE_CONTENT, "Test Patience (1/2)")
+	assert_object(card).is_not_null()
+	assert_str(card.desc_label.text).is_equal("Items wait longer.\nNext: 18s")
+	assert_str(card.buy_btn.text).is_equal("20g")
+	assert_bool(card.buy_btn.disabled).is_false()
+
+
+func test_a_maxed_upgrade_card_cannot_be_bought() -> void:
+	set_definition(DefinitionLibrary.upgrades, _patience_track())
+	GameManager.gold = 100
+	GameManager.raise_upgrade_level("__test_patience")
+	GameManager.raise_upgrade_level("__test_patience")
+	var prep: Control = auto_free(PREP_PHASE.instantiate())
+	add_child(prep)
+	var card: PanelContainer = _card_named(prep, UPGRADE_CONTENT, "Test Patience (2/2)")
+	assert_object(card).is_not_null()
+	assert_str(card.desc_label.text).is_equal("Items wait longer.\nMax level")
+	assert_str(card.buy_btn.text).is_equal("Max")
+	assert_bool(card.buy_btn.disabled).is_true()
+
+
+func test_an_upgrade_level_below_its_shop_level_shows_its_unlock_level() -> void:
+	var track := _patience_track()
+	track.levels[0].min_shop_level = 9000
+	set_definition(DefinitionLibrary.upgrades, track)
+	GameManager.gold = 100
+	var prep: Control = auto_free(PREP_PHASE.instantiate())
+	add_child(prep)
+	var card: PanelContainer = _card_named(prep, UPGRADE_CONTENT, "Test Patience (0/2)")
+	assert_str(card.desc_label.text).is_equal("Items wait longer.\nUnlocks at level 9000")
+	assert_bool(card.buy_btn.disabled).is_true()
+
+
+func _patience_track() -> UpgradeDefinition:
+	var track := UpgradeDefinition.new()
+	track.id = "__test_patience"
+	track.name = "Test Patience"
+	track.description = "Items wait longer."
+	track.effect = "despawn_time"
+	for pair: Array in [[10, 15.0], [20, 18.0]]:
+		var level := UpgradeLevel.new()
+		level.cost = pair[0]
+		level.value = pair[1]
+		track.levels.append(level)
+	return track
 
 
 func _connection_counts(signals: Array[Signal]) -> Array[int]:
@@ -76,8 +132,8 @@ func _plus_one(counts: Array[int]) -> Array[int]:
 	return result
 
 
-func _card_named(prep: Control, card_name: String) -> PanelContainer:
-	var content: VBoxContainer = prep.get_node("VBox/TabContainer/Blueprints/BpContent")
+func _card_named(prep: Control, content_path: String, card_name: String) -> PanelContainer:
+	var content: VBoxContainer = prep.get_node(content_path)
 	for child in content.get_children():
 		if child.is_queued_for_deletion():
 			continue

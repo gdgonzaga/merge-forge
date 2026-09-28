@@ -82,6 +82,42 @@ func test_load_board_entry_with_non_numeric_position_returns_CORRUPT() -> void:
 	assert_int(r["status"]).is_equal(SaveManager.LoadStatus.CORRUPT)
 
 
+func test_load_upgrade_level_that_is_not_a_number_returns_CORRUPT() -> void:
+	var bad := GameManager.serialize()
+	bad["upgrade_levels"] = {"__test_track": "two"}
+	_write_save_file(JSON.stringify(bad))
+	var r: Dictionary = SaveManager.load_game_ex()
+	assert_int(r["status"]).is_equal(SaveManager.LoadStatus.CORRUPT)
+
+
+func test_load_upgrade_levels_that_are_not_a_dictionary_returns_CORRUPT() -> void:
+	var bad := GameManager.serialize()
+	bad["upgrade_levels"] = ["__test_track"]
+	_write_save_file(JSON.stringify(bad))
+	var r: Dictionary = SaveManager.load_game_ex()
+	assert_int(r["status"]).is_equal(SaveManager.LoadStatus.CORRUPT)
+
+
+func test_load_shelf_entry_without_item_id_returns_CORRUPT() -> void:
+	var bad := GameManager.serialize()
+	bad["shop_shelf_state"] = [{"col": 0, "row": 0}]
+	_write_save_file(JSON.stringify(bad))
+	var r: Dictionary = SaveManager.load_game_ex()
+	assert_int(r["status"]).is_equal(SaveManager.LoadStatus.CORRUPT)
+
+
+# JSON turns the level into a float; it must come back as the same level.
+func test_upgrade_levels_and_shelf_survive_save_and_load() -> void:
+	GameManager.upgrade_levels = {"__test_track": 2}
+	GameManager.shop_shelf_state = [{"col": 1, "row": 0, "item_id": "ore"}]
+	SaveManager.save_game()
+	var r: Dictionary = SaveManager.load_game_ex()
+	assert_int(r["status"]).is_equal(SaveManager.LoadStatus.OK)
+	GameManager.deserialize(r["data"])
+	assert_int(GameManager.get_upgrade_level("__test_track")).is_equal(2)
+	assert_str(GameManager.shop_shelf_state[0]["item_id"]).is_equal("ore")
+
+
 func test_board_state_entries_survive_save_and_load() -> void:
 	GameManager.shop_board_state = [{"col": 1, "row": 2, "item_id": "ore"}]
 	SaveManager.save_game()

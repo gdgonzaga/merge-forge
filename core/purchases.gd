@@ -22,19 +22,24 @@ func buy_blueprint(bp_id: String) -> bool:
 	return true
 
 
+# Buys the track's next level. Refused at the max level and below that
+# level's min_shop_level, without charging.
 func buy_upgrade(upgrade_id: String) -> bool:
-	if upgrade_id in GameManager.purchased_upgrades:
-		return false
 	var upgrade := DefinitionLibrary.get_upgrade(upgrade_id)
 	if upgrade == null:
 		return false
-	if not GameManager.deduct_gold(upgrade.cost):
+	var next := upgrade.next_level(GameManager.get_upgrade_level(upgrade_id))
+	if next == null:
+		return false
+	if not GameManager.meets_level(next.min_shop_level):
+		return false
+	if not GameManager.deduct_gold(next.cost):
 		return false
 	if upgrade.effect == "grid_size":
-		GameManager.grid_cols += upgrade.grid_cols
-		GameManager.grid_rows += upgrade.grid_rows
+		GameManager.grid_cols += next.grid_cols
+		GameManager.grid_rows += next.grid_rows
 		GameManager.grid_size_changed.emit(GameManager.grid_cols, GameManager.grid_rows)
-	GameManager.add_upgrade(upgrade_id)
+	GameManager.raise_upgrade_level(upgrade_id)
 	EventBus.save_requested.emit()
 	return true
 

@@ -1,36 +1,36 @@
 [gd_resource type="Resource" script_class="UpgradeDefinition" load_steps=5 format=3]
 
-[ext_resource type="Script" path="res://resources/definitions/upgrade_definition.gd" id="1_83b82"]
+[ext_resource type="Script" path="res://resources/definitions/upgrade_definition.gd" id="1_crier"]
 [ext_resource type="Script" path="res://resources/definitions/upgrade_level.gd" id="2_level"]
 
 [sub_resource type="Resource" id="Resource_level_1"]
 script = ExtResource("2_level")
-cost = 1200
-value = 0.9
+cost = 800
+value = 5.0
 grid_cols = 0
 grid_rows = 0
 min_shop_level = 3
 
 [sub_resource type="Resource" id="Resource_level_2"]
 script = ExtResource("2_level")
-cost = 3000
-value = 0.8
+cost = 2500
+value = 8.0
 grid_cols = 0
 grid_rows = 0
 min_shop_level = 12
 
 [sub_resource type="Resource" id="Resource_level_3"]
 script = ExtResource("2_level")
-cost = 7000
-value = 0.7
+cost = 6000
+value = 0.0
 grid_cols = 0
 grid_rows = 0
-min_shop_level = 24
+min_shop_level = 22
 
 [resource]
-script = ExtResource("1_83b82")
-id = "crate_discount"
-name = "Bulk Deal"
-description = "Crates cost less."
-effect = "crate_discount"
+script = ExtResource("1_crier")
+id = "town_crier"
+name = "Town Crier"
+description = "The forecast reveals more of tomorrow's customers."
+effect = "forecast_detail"
 levels = Array[ExtResource("2_level")]([SubResource("Resource_level_1"), SubResource("Resource_level_2"), SubResource("Resource_level_3")])

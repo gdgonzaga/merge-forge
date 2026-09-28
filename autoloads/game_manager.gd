@@ -4,14 +4,16 @@ signal gold_changed(new_amount: int)
 signal shop_xp_changed(xp: int)
 signal shop_level_changed(level: int)
 signal blueprint_added(bp_id: String)
-signal upgrade_added(upgrade_id: String)
+signal upgrade_level_changed(upgrade_id: String, level: int)
 signal reagent_count_changed(id: String, count: int)
 signal grid_size_changed(cols: int, rows: int)
 
 const DEFAULT_GOLD := 50
-const SAVE_VERSION := 6
+const SAVE_VERSION := 7
 const DEFAULT_DESPAWN_TIME := 12.0
 const DEFAULT_CRATE_COST_MULTIPLIER := 1.0
+const DEFAULT_SHELF_SLOTS := 0
+const DEFAULT_ORDER_PRICE_MULTIPLIER := 1.0
 
 var debug_mode: bool = false
 var gold: int = DEFAULT_GOLD
@@ -19,8 +21,10 @@ var gold: int = DEFAULT_GOLD
 var shop_xp: int = 0
 var unlocked_blueprints: Array[String] = []
 var reagent_inventory: Dictionary = {}
-var purchased_upgrades: Array[String] = []
+# Upgrade id -> level bought; an id that's absent is level 0.
+var upgrade_levels: Dictionary = {}
 var shop_board_state: Array = []
+var shop_shelf_state: Array = []
 var dungeon_board_state: Array = []
 var grid_cols: int = 5
 var grid_rows: int = 5
@@ -82,9 +86,14 @@ func consume_reagent(reagent_id: String) -> bool:
 	return true
 
 
-func add_upgrade(upgrade_id: String) -> void:
-	purchased_upgrades.append(upgrade_id)
-	upgrade_added.emit(upgrade_id)
+func get_upgrade_level(upgrade_id: String) -> int:
+	return int(upgrade_levels.get(upgrade_id, 0))
+
+
+func raise_upgrade_level(upgrade_id: String) -> void:
+	var level := get_upgrade_level(upgrade_id) + 1
+	upgrade_levels[upgrade_id] = level
+	upgrade_level_changed.emit(upgrade_id, level)
 
 
 func record_session_played() -> void:
@@ -115,12 +124,28 @@ func get_crate_discount() -> float:
 	return _purchased_upgrade_value("crate_discount", DEFAULT_CRATE_COST_MULTIPLIER)
 
 
-# The value of the first purchased upgrade with this effect, else the default.
+func get_shelf_slots() -> int:
+	return int(_purchased_upgrade_value("shelf_slots", DEFAULT_SHELF_SLOTS))
+
+
+func get_order_price_multiplier() -> float:
+	return _purchased_upgrade_value("order_price", DEFAULT_ORDER_PRICE_MULTIPLIER)
+
+
+# How many customers the prep forecast reveals; 0 means every one.
+func get_forecast_customers() -> int:
+	return int(_purchased_upgrade_value("forecast_detail", DefinitionLibrary.get_shop_rules().forecast_customers))
+
+
+# The value at the bought level of the track with this effect, else the
+# default. The level is capped at the track's length in case content shrank.
 func _purchased_upgrade_value(effect: String, default: float) -> float:
-	for upgrade_id in purchased_upgrades:
-		var upgrade := DefinitionLibrary.get_upgrade(upgrade_id)
-		if upgrade != null and upgrade.effect == effect:
-			return upgrade.value
+	for upgrade in DefinitionLibrary.get_all_upgrades():
+		if upgrade.effect != effect:
+			continue
+		var level := mini(get_upgrade_level(upgrade.id), upgrade.max_level())
+		if level > 0:
+			return upgrade.levels[level - 1].value
 	return default
 
 
@@ -131,8 +156,9 @@ func serialize() -> Dictionary:
 		"shop_xp": shop_xp,
 		"unlocked_blueprints": unlocked_blueprints,
 		"reagent_inventory": reagent_inventory,
-		"purchased_upgrades": purchased_upgrades,
+		"upgrade_levels": upgrade_levels,
 		"shop_board_state": shop_board_state,
+		"shop_shelf_state": shop_shelf_state,
 		"dungeon_board_state": dungeon_board_state,
 		"grid_cols": grid_cols,
 		"grid_rows": grid_rows,
@@ -153,13 +179,24 @@ func is_valid_save(data: Dictionary) -> bool:
 	if not _is_number(data.get("shop_xp")): return false
 	if not (data.get("unlocked_blueprints") is Array): return false
 	if not (data.get("reagent_inventory") is Dictionary): return false
-	if not (data.get("purchased_upgrades") is Array): return false
+	if not _is_valid_upgrade_levels(data.get("upgrade_levels")): return false
 	if not _is_valid_board_state(data.get("shop_board_state")): return false
+	if not _is_valid_board_state(data.get("shop_shelf_state")): return false
 	if not _is_valid_board_state(data.get("dungeon_board_state")): return false
 	if not _is_number(data.get("grid_cols")): return false
 	if not _is_number(data.get("grid_rows")): return false
 	if not _is_number(data.get("run_seed")): return false
 	if not _is_number(data.get("sessions_played")): return false
+	return true
+
+
+# Upgrade id -> level; the level is a number (JSON makes it a float).
+static func _is_valid_upgrade_levels(value: Variant) -> bool:
+	if not value is Dictionary:
+		return false
+	for level: Variant in value.values():
+		if not _is_number(level):
+			return false
 	return true
 
 
@@ -190,8 +227,12 @@ func deserialize(data: Dictionary) -> void:
 	shop_xp = int(data.get("shop_xp", 0))
 	unlocked_blueprints.assign(data.get("unlocked_blueprints", []))
 	reagent_inventory = data.get("reagent_inventory", {})
-	purchased_upgrades.assign(data.get("purchased_upgrades", []))
+	upgrade_levels = {}
+	var saved_levels: Dictionary = data.get("upgrade_levels", {})
+	for upgrade_id: String in saved_levels:
+		upgrade_levels[upgrade_id] = int(saved_levels[upgrade_id])
 	shop_board_state = data.get("shop_board_state", [])
+	shop_shelf_state = data.get("shop_shelf_state", [])
 	dungeon_board_state = data.get("dungeon_board_state", [])
 	grid_cols = data.get("grid_cols", 5)
 	grid_rows = data.get("grid_rows", 5)

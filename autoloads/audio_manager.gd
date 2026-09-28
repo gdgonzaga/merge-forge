@@ -42,7 +42,7 @@ func _ready() -> void:
 	EventBus.dungeon_cleared.connect(func(_r): play_sfx("dungeon_clear"))
 	EventBus.dungeon_failed.connect(func(_s): play_sfx("dungeon_fail"))
 	GameManager.blueprint_added.connect(func(_id): play_sfx("purchase"))
-	GameManager.upgrade_added.connect(func(_id): play_sfx("purchase"))
+	GameManager.upgrade_level_changed.connect(func(_id, _level): play_sfx("purchase"))
 	GameManager.gold_changed.connect(_on_gold_changed)
 
 	_prev_gold = GameManager.gold

@@ -1,13 +1,28 @@
 extends Resource
 class_name UpgradeDefinition
 
+# A leveled upgrade track. Buying it raises its level by one, up to
+# max_level(); level k uses levels[k - 1].
 @export var id: String = ""
 @export var name: String = ""
-@export var cost: int = 0
-# grid_size adds grid_cols and grid_rows to the board. despawn_time sets the
-# staging despawn time to `value` seconds. crate_discount multiplies crate
-# prices by `value`.
-@export_enum("grid_size", "despawn_time", "crate_discount") var effect: String = ""
-@export var value: float = 0.0
-@export var grid_cols: int = 0
-@export var grid_rows: int = 0
+@export_multiline var description: String = ""
+# grid_size: each level adds its grid_cols and grid_rows to the board.
+# despawn_time: staging items last `value` seconds.
+# crate_discount: crate prices x `value`.
+# shelf_slots: the shop's display shelf holds `value` items.
+# forecast_detail: the prep forecast reveals `value` customers; 0 reveals
+# every customer and their orders.
+# order_price: every order pays x `value`.
+@export_enum("grid_size", "despawn_time", "crate_discount", "shelf_slots", "forecast_detail", "order_price") var effect: String = ""
+@export var levels: Array[UpgradeLevel] = []
+
+
+func max_level() -> int:
+	return levels.size()
+
+
+# The level bought after `level`, or null at the max.
+func next_level(level: int) -> UpgradeLevel:
+	if level < 0 or level >= levels.size():
+		return null
+	return levels[level]
