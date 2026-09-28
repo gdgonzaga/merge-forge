@@ -56,7 +56,7 @@ No autoload uses `class_name` — globally accessible by registration name only 
 
 | Signal | Emitted by | Listeners | Purpose |
 |--------|-----------|-----------|---------|
-| `merge_completed(result_id: String, bonus_gold: int)` | `merge_resolver.gd` | `audio_manager.gd` | A merge produced a result item |
+| `merge_completed(result_id: String, result_quality: int)` | `merge_resolver.gd` | `audio_manager.gd` | A merge produced a result item, at `result_quality` (0 Normal, 1 Fine, 2 Masterwork) |
 | `customer_fulfilled(order_id: String)` | `shop_session.gd` | `save_manager.gd` | Order delivered to customer |
 | `customer_rejected(customer_id: String)` | `shop_session.gd` | `save_manager.gd` | Customer was skipped |
 | `session_ended(summary: Dictionary)` | `shop_session.gd` | `main.gd` | 10th customer done, transition to summary. Summary: `{gold_earned: int, items_sold: int, fulfilled: int, rejected: int, portraits: Array, xp_earned: int, level_before: int, level_after: int}` |
@@ -282,6 +282,8 @@ The GDD lists effect types (heal, buff_attack). Party stats are confirmed (see t
 | `board/merge_choice_popup.tscn` | Scene  | Non-blocking popup with 2–4 choice buttons. Instanced and owned by MergeBoard. Receives options from MergeResolver, emits choice. Does NOT own recipe data.                                                                                                                                                            |
 | `board/merge_detector.gd`       | Script | Flood-fill scan for connected groups of 3+ identical items. Stateless. Does NOT resolve merges.                                                                                                                                                                                                                        |
 | `board/merge_resolver.gd`       | Script | Processes merge groups: queries RecipeResolver, manages choice popup, triggers merge animation (via MergeBoard), places results, handles chain merges via rescan. Does NOT detect groups.                                                                                                                              |
+| `board/quality_rules.gd`        | Script | Pure static helper (`RefCounted`, no instance state): `resolve(qualities: Array[int], count: int) -> Dictionary` decides a merge result's quality and which source items are refunded. Does NOT touch the board or RecipeResolver. |
+| `ui/quality_stars.tscn`, `.gd`  | Scene (shared, `ui/`) | Draws 0/1/2 stars in code (`draw_colored_polygon`, no star art or font glyph) with a dark outline so the count carries the meaning, not color. `set_quality(quality: int)`. Used by `board/board_cell.tscn`, `board/floating_item.tscn` and `shop/order_card.tscn`. |
 
 ### Signals
 
@@ -293,7 +295,7 @@ The GDD lists effect types (heal, buff_attack). Party stats are confirmed (see t
 | `staging_item_placed(item: Dictionary, pos: Vector2i)` | `board_grid.gd` (`finalize_move`, only when the move's `from_grid` was null) | `merge_board.gd` (`_on_staging_item_placed`) | No | Staging Placement |
 | `item_removed(pos: Vector2i)` | `board_grid.gd` | `merge_detector.gd` (via parent callback) | No | Chain Merge |
 | `merge_detected(groups: Array)` | `merge_detector.gd` | `merge_resolver.gd` | No | Merge Resolution |
-| `merge_completed(result_id: String, bonus_gold: int)` | `merge_resolver.gd` | EventBus | Yes | Merge Resolution |
+| `merge_completed(result_id: String, result_quality: int)` | `merge_resolver.gd` | EventBus | Yes | Merge Resolution |
 | `merge_choice_requested(options: Array, callback: Callable)` | `merge_resolver.gd` | `merge_choice_popup.tscn` | No | Merge with Choice |
 | `choice_made(item_id: String, is_variant: bool, reagent_id: String)` | `merge_choice_popup.gd` | `merge_resolver.gd` (via callback) | No | Merge with Choice |
 | `despawn_timeout()` | `floating_item.gd` | `board_grid.gd` (staging handler) | No | Staging Despawn |
@@ -315,13 +317,13 @@ The GDD lists effect types (heal, buff_attack). Party stats are confirmed (see t
 8. `merge_resolver.gd` resolves the result placement position (`_resolve_result_position()`) — simulates post-removal state to find exact cell where result will go
 9. `merge_resolver.gd` calls `merge_board.animate_merge(positions, result_center, callback)` — cells cleared visually, floating icon copies burst 30px outward then converge to result position (0.4s total: 0.15s burst + 0.25s converge)
 10. Animation completes → `merge_resolver.gd` calls `board_grid.remove_items(positions)` to consume the group
-11. `merge_resolver.gd` calls `RecipeResolver.get_options(item_id)` to get filtered results
-12. If 1 option → auto-place floor(count/3) result items (first at `_result_center`, rest at nearby empty cells), refund (count%3) source items at former positions, award bonus gold, emit `merge_completed` via EventBus
-13. If 2+ options → set `is_processing = true`, emit `merge_choice_requested(options, callback)` → `merge_choice_popup` shows buttons (non-blocking; combat continues if in dungeon). Merge queue is paused — no new scans run until the player picks an option **or dismisses the popup**. Choice (or dismissal fallback) applies to all result items.
-14. Player taps choice → callback fires → `merge_resolver.gd` places floor(count/3) result items, refunds (count%3) source items, awards bonus gold, consumes reagent if variant, emits `merge_completed` via EventBus, sets `is_processing = false`. **Dismissal fallback:** if the popup is closed without a pick (Esc / tap-outside), the popup re-emits `choice_made` with the first option, so the merge resolves identically — the queue can't deadlock, and the merge cannot be safely undone because the source items were already removed in step 10.
+11. `merge_resolver.gd` reads the group's quality from the board (`_group_qualities`, so a chain merge sees the quality a previous merge just placed) and calls `board/quality_rules.gd.resolve(qualities, count)` for `{result_quality, refund_qualities}`, then `RecipeResolver.get_options(item_id)` to get filtered results
+12. If 1 option → auto-place floor(count/3) result items at `result_quality` (first at `_result_center`, rest at nearby empty cells; `RecipeResolver.make_item(result_def, result_quality)`), refund `refund_qualities` (the group's lowest qualities, count%3 of them) as source items at former positions, show a star sparkle if `result_quality > 0`, emit `merge_completed(result_id, result_quality)` via EventBus
+13. If 2+ options → set `is_processing = true`, emit `merge_choice_requested(options, callback)` → `merge_choice_popup` shows buttons labeled with the predicted quality (for example "Sword (Fine)") so a mixed-quality group's result is never a surprise (non-blocking; combat continues if in dungeon). Merge queue is paused — no new scans run until the player picks an option **or dismisses the popup**. Choice (or dismissal fallback) applies to all result items.
+14. Player taps choice → callback fires → `merge_resolver.gd` places floor(count/3) result items at `result_quality`, refunds `refund_qualities` source items, consumes reagent if variant, shows the sparkle if `result_quality > 0`, emits `merge_completed(result_id, result_quality)` via EventBus, sets `is_processing = false`. **Dismissal fallback:** if the popup is closed without a pick (Esc / tap-outside), the popup re-emits `choice_made` with the first option, so the merge resolves identically — the queue can't deadlock, and the merge cannot be safely undone because the source items were already removed in step 10.
 15. `merge_resolver.gd` calls `_try_chain()` — rescans grid for new groups formed by result items → if found, go to step 7 with next group (another animation plays)
 
-**End state:** floor(count/3) result items placed on grid, (count%3) source items refunded at former positions, bonus gold added to GameManager, chain merges fully resolved with animations between each, merge SFX played.
+**End state:** floor(count/3) result items placed on grid at the resolved quality, (count%3) lowest-quality source items refunded at former positions, a star sparkle shown for a Fine or Masterwork result (no gold paid for a merge), chain merges fully resolved with animations between each, merge SFX played.
 
 ### Flow Trace: Staging Area Despawn
 
@@ -371,9 +373,9 @@ Fits a 6x6 board of 128 px cells plus a 6-slot shelf on the shop screen at 1080x
 | Function | Description |
 |----------|-------------|
 | `get_shelf_grid() -> Control` | The shelf BoardGrid (for tests and animations; the shop doesn't use it). |
-| `count_sellable(item_id: String) -> int` | Items with this id on the board plus the shelf. Used by order fulfilment. |
-| `take_sellable(item_id: String, count: int)` | Removes `count` items, from the shelf first (shelf stock is what the player set aside to sell), then the board. |
-| `get_shelf_state() -> Array` | The shelf's `{col, row, item_id}` entries, saved as `GameManager.shop_shelf_state`. |
+| `count_sellable(item_id: String, min_quality: int = 0) -> int` | Items with this id at `min_quality` or above, on the board plus the shelf. Used by order fulfilment. |
+| `take_sellable(item_id: String, count: int, min_quality: int = 0)` | Removes `count` items at the lowest qualifying quality first (never spends a Masterwork on a Normal order); within one quality, the shelf goes first (shelf stock is what the player set aside to sell), then the board. |
+| `get_shelf_state() -> Array` | The shelf's `{col, row, item_id, quality}` entries, saved as `GameManager.shop_shelf_state`. |
 | `load_shelf_state(state: Array)` | Restores the shelf. Saved items past the shelf's end (a shelf with fewer slots) go through `place_drop` to the board, else staging, so nothing is lost. |
 
 **Animation constants:**
@@ -429,11 +431,11 @@ Fits a 6x6 board of 128 px cells plus a 6-slot shelf on the shop screen at 1080x
 | `discard_item(pos: Vector2i)` | Removes item at pos permanently. |
 | `find_safe_cell(item_id: String) -> Vector2i` | Returns an empty cell where placing this item would NOT create a group of 3+ orthogonally connected identical items. Returns `Vector2i(-1, -1)` if no safe cell exists. |
 | `place_or_stage(item: Dictionary) -> bool` | Merge-safe placement: calls `find_safe_cell(item.item_id)`. If found, places on board directly (returns true). If not, adds to staging area (returns false). Used by crate opening and enemy drops — not player drag placement. |
-| `count_items_on_board(item_id: String) -> int` | Counts how many of a given item are on this grid. Order fulfilment goes through `MergeBoard.count_sellable`, which adds the board and the shelf. |
-| `remove_items_by_id(item_id: String, count: int)` | Removes N items matching item_id. Used by order fulfillment. |
+| `count_items_on_board(item_id: String, min_quality: int = 0) -> int` | Counts how many of a given item at `min_quality` or above are on this grid. Order fulfilment goes through `MergeBoard.count_sellable`, which adds the board and the shelf. |
+| `remove_items_by_id(item_id: String, count: int, min_quality: int = 0)` | Removes N items matching item_id, lowest quality (at or above `min_quality`) first. Used by order fulfillment. |
 | `clear_board()` | Removes all items. Used for dungeon cleanup. |
-| `get_board_state() -> Array` | Serializes grid for save/load. Returns array of `{col, row, item_id}` dicts: ids only, since item data (and its sprite texture) can't round-trip through JSON. |
-| `load_board_state(state: Array) -> Array[Dictionary]` | Restores grid from save data, rebuilding each item with `RecipeResolver.make_item(DefinitionLibrary.get_item(item_id))`. Ids missing from the catalog are skipped with an error. Returns the items that fall outside this grid (a smaller shelf) instead of dropping them. Updates BoardCell visuals. |
+| `get_board_state() -> Array` | Serializes grid for save/load. Returns array of `{col, row, item_id, quality}` dicts: ids and quality only, since item data (and its sprite texture) can't round-trip through JSON. |
+| `load_board_state(state: Array) -> Array[Dictionary]` | Restores grid from save data, rebuilding each item with `RecipeResolver.make_item(DefinitionLibrary.get_item(item_id), entry.quality)`. Ids missing from the catalog are skipped with an error. Returns the items that fall outside this grid (a smaller shelf) instead of dropping them. Updates BoardCell visuals. |
 
 #### MergeDetector
 
@@ -451,7 +453,7 @@ Fits a 6x6 board of 128 px cells plus a 6-slot shelf on the shop screen at 1080x
 
 **Extends:** RefCounted
 **Script:** `board/merge_resolver.gd`
-**Description:** Processes merge groups one at a time. For each group, triggers a merge animation (burst outward + converge inward via MergeBoard), then produces floor(count/3) result items and refunds count%3 source items. Queries RecipeResolver for options, manages the choice popup, places results at the pre-resolved result position, handles chain merges via rescan. When a choice popup is open, the merge queue is blocked — no new detection scans run and no further groups are processed until the player picks an option or dismisses the popup (dismissal resolves to the first option; see MergeChoicePopup). This keeps things simple: one popup at a time, no stacking, and the queue can never deadlock on an unanswered popup. The choice applies to all result items in the group. Held as a member instance by MergeBoard, not added to the scene tree.
+**Description:** Processes merge groups one at a time. For each group, triggers a merge animation (burst outward + converge inward via MergeBoard), then produces floor(count/3) result items and refunds count%3 source items. Detection ignores quality, so a group may mix qualities; `board/quality_rules.gd.resolve()` decides the result's quality (`min(2, floor(mean quality) + 1 for a group of 5+)`) and which source items (the group's lowest-quality ones) come back as refunds. No gold is paid for a merge; a Fine or Masterwork result shows a star sparkle instead. Queries RecipeResolver for options, manages the choice popup (button labels include the predicted quality, e.g. "Sword (Fine)"), places results at the pre-resolved result position, handles chain merges via rescan (reading quality straight from the board, so a chain merge sees what a previous merge just placed). When a choice popup is open, the merge queue is blocked — no new detection scans run and no further groups are processed until the player picks an option or dismisses the popup (dismissal resolves to the first option; see MergeChoicePopup). This keeps things simple: one popup at a time, no stacking, and the queue can never deadlock on an unanswered popup. The choice applies to all result items in the group. Held as a member instance by MergeBoard, not added to the scene tree.
 
 **Properties:**
 
@@ -464,6 +466,7 @@ Fits a 6x6 board of 128 px cells plus a 6-slot shelf on the shop screen at 1080x
 | `_merge_board: Control` | Control | MergeBoard reference for triggering animations |
 | `_result_center: Vector2i` | Vector2i | Pre-resolved placement position (animation target matches result placement) |
 | `_pending_options: Array[Dictionary]` | Array | Stored merge options for use after animation completes |
+| `_pending_quality: Dictionary` | Dictionary | `{result_quality, refund_qualities}` from `quality_rules.resolve()`, computed when the group starts processing |
 
 **Functions:**
 
@@ -474,9 +477,9 @@ Fits a 6x6 board of 128 px cells plus a 6-slot shelf on the shop screen at 1080x
 | `_try_chain()` | Rescans board grid when queue empties; enqueues new groups for chain merges. |
 | `_resolve_result_position() -> Vector2i` | Calculates actual result placement cell (simulates post-removal state). |
 | `calculate_center_of_mass(positions: Array[Vector2i]) -> Vector2i` | Returns the center cell of a merge group (average x/y, floored). |
-| `calculate_bonus_gold(count: int, source_value: int) -> int` | `(count - 3) * floor(source_value * 0.25)`; source is the merged (input) item, not the result |
-| `_spawn_results(result_data: Dictionary, count: int)` | Places count result items: first at `_result_center`, rest at nearest empty cells. |
-| `_refund_source_items(source_data: Dictionary, count: int)` | Refunds count source items at former group positions. |
+| `_group_qualities(positions: Array[Vector2i]) -> Array[int]` | Reads the quality of each item currently on the board at these positions, for `quality_rules.resolve()`. |
+| `_spawn_results(result_data: Dictionary, count: int)` | Places count result items (already carrying `result_quality`): first at `_result_center`, rest at nearest empty cells. |
+| `_refund_source_items(source_def: ItemDefinition, qualities: Array)` | Refunds one source item per entry in `qualities` (the group's lowest-quality items) at former group positions. |
 | `handle_choice(item_id: String, is_variant: bool, reagent_id: String)` | Callback from MergeChoicePopup. Places result(s), consumes reagent if variant. |
 
 #### BoardCell
@@ -601,8 +604,8 @@ Each catalog is a folder of `.tres` files under `resources/definitions/`; the fi
 | (inline) | `ReagentVariant` | `result: ItemDefinition`, `reagent: ReagentDefinition`, `blueprint` (null = always available) |
 | (inline) | `UpgradeLevel` | One level of an upgrade track: `cost`, `value` (the absolute value at this level, not a step: seconds for despawn_time, price multiplier for crate_discount and order_price, slots for shelf_slots, customers revealed for forecast_detail with 0 meaning every customer plus their orders), `grid_cols` and `grid_rows` (what this level adds to the board, for grid_size), `min_shop_level` (default 1). Costs rise within a track (checked by `test_definition_library`). |
 | (inline) | `WeightedItem` | `item: ItemDefinition`, `weight: int` (relative; 0 never rolls) |
-| (inline) | `OrderTemplate` | A thing a customer archetype may ask for, on `CustomerDefinition.wants`: `item: ItemDefinition`, `weight: int`, `min_quantity`, `max_quantity`. Rolled into an `OrderDefinition` per session (see Shop Session). |
-| (inline) | `OrderDefinition` | A rolled order on a dealt `ShopCustomer`: `item: ItemDefinition`, `quantity`, `gold_reward` |
+| (inline) | `OrderTemplate` | A thing a customer archetype may ask for, on `CustomerDefinition.wants`: `item: ItemDefinition`, `weight: int`, `min_quantity`, `max_quantity`, `min_quality: int` (0 any, 1 Fine or better, 2 Masterwork; only meaningful on an item at least `min_quality` merges deep — a crate item can never be Fine). Rolled into an `OrderDefinition` per session (see Shop Session). |
+| (inline) | `OrderDefinition` | A rolled order on a dealt `ShopCustomer`: `item: ItemDefinition`, `quantity`, `gold_reward`, `min_quality: int` (copied from the template; priced by `ShopRulesDefinition.quality_price_multipliers[min_quality]`) |
 | (inline) | `EncounterDefinition`, `EnemySpawn` | `spawns: Array[EnemySpawn]`; `enemy: EnemyDefinition`, `count` |
 
 Saves store ids only, never resources, so an id is part of the save format: renaming one needs a `SAVE_VERSION` bump.
@@ -614,7 +617,7 @@ Saves store ids only, never resources, so an id is part of the save format: rena
 | `id` | `String` | Unique identifier, required. e.g. "iron_ore", "sword" |
 | `name` | `String` | Display name |
 | `family` | `String` | Item family for grouping. e.g. "metal", "herb", "powder" |
-| `gold_value` | `int` | Base gold value (used for bonus gold calc and selling) |
+| `gold_value` | `int` | Base gold value (used for order pricing and selling) |
 | `dungeon_usable` | `bool` | Whether this item can be used during dungeon runs |
 | `dungeon_use_target` | `String` | If dungeon_usable: `"party-individual"`, `"enemy-individual"`, or `"enemy-all"`. `""` if not. |
 | `effect` | `EffectDefinition` or null | Null if not dungeon_usable. |
@@ -622,7 +625,7 @@ Saves store ids only, never resources, so an id is part of the save format: rena
 | `merge_results` | `Array[MergeResult]` | What three of this item merge into. More than one available result opens the choice popup. |
 | `reagent_variants` | `Array[ReagentVariant]` | Extra merge results that cost one reagent. |
 
-**Board item:** a board cell holds `RecipeResolver.make_item(def)`, a dictionary `{item_id, definition}`. `item_id` is what merge detection, order fulfillment and saves read; views read `definition.sprite`. Drag and drop copies it and adds transient `_source_pos` / `_source_grid` / `_source_screen` keys.
+**Board item:** a board cell holds `RecipeResolver.make_item(def, quality)`, a dictionary `{item_id, definition, quality}`. `quality` is 0 Normal, 1 Fine or 2 Masterwork (`ItemDefinition.MAX_QUALITY` and `.QUALITY_NAMES` are the single source for the limit and display names). `item_id` and `quality` are what merge detection (ignores quality; groups form by `item_id` alone), order fulfillment and saves read; views read `definition.sprite` and draw `quality` as stars (`ui/quality_stars.tscn`). Drag and drop copies it and adds transient `_source_pos` / `_source_grid` / `_source_screen` keys. Crates and drops give Normal (`quality = 0`) items.
 
 ### Signals
 
@@ -665,7 +668,7 @@ RecipeResolver has no signals — it is queried synchronously by MergeResolver, 
 | `get_all_party_members()` | Ordered by `slot_order`: index 0 is the front member. |
 | `get_all_blueprints()`, `get_all_crates()`, `get_all_upgrades()`, `get_all_reagents()` | Typed arrays, cheapest first (ties by id). |
 | `get_all_customers() -> Array[CustomerDefinition]` | Sorted by id: the archetype pool `autoloads/customer_generator.gd` deals a session from. Not a fixed order — the generator decides who's dealt. |
-| `get_shop_rules() -> ShopRulesDefinition` | The one `shop_rules` definition, id `"default"` (`session_size`, `modifier_chance`, `forecast_customers`, `xp_per_gold`, `streak_step`, `streak_cap`, `level_xp_base`, `level_xp_exponent`, `max_level`). |
+| `get_shop_rules() -> ShopRulesDefinition` | The one `shop_rules` definition, id `"default"` (`session_size`, `modifier_chance`, `forecast_customers`, `quality_price_multipliers` (default `[1.0, 1.6, 2.8]`, indexed by `min_quality`), `xp_per_gold`, `streak_step`, `streak_cap`, `level_xp_base`, `level_xp_exponent`, `max_level`). |
 | `get_all_dungeons()` | Ordered by `min_shop_level` (unlock order), ties by id. PrepPhase's Enter Dungeon button targets the first. |
 | `get_all_modifiers() -> Array[SessionModifierDefinition]` | Sorted by id, so a seeded modifier roll can't depend on catalog load order. |
 | `get_unlocks_between(old_level: int, new_level: int) -> Array[Resource]` | Every definition across every catalog whose `min_shop_level` is above `old_level` and at or below `new_level` (exclusive below, inclusive above). Sorted by level, then folder, then id. Used by `LevelUpPanel` to list what a level-up opened. |
@@ -678,7 +681,7 @@ RecipeResolver has no signals — it is queried synchronously by MergeResolver, 
 
 | Function | Description |
 |----------|-------------|
-| `make_item(def: ItemDefinition) -> Dictionary` | The board item dictionary `{item_id, definition}`. |
+| `make_item(def: ItemDefinition, quality: int = 0) -> Dictionary` | The board item dictionary `{item_id, definition, quality}`. |
 | `get_options(item_id: String) -> Array[MergeResult]` | Available merge results, filtered by blueprint ownership. Empty for an unknown id. |
 | `get_variant_options(item_id: String) -> Array[ReagentVariant]` | Available reagent variants, filtered by blueprint and reagent inventory. |
 | `is_unlocked(blueprint: BlueprintDefinition) -> bool` | True for null or an owned blueprint. |
@@ -697,7 +700,7 @@ RecipeResolver has no signals — it is queried synchronously by MergeResolver, 
 |------|------|----------------|
 | `shop/shop_session.tscn` | Scene | Top-level shop session. Layout: `HBoxContainer [CustomerDisplay | MergeBoard | CratePanel]`. CustomerDisplay and CratePanel are sub-components within this scene (no separate scene files). CratePanel is a VBoxContainer on the right with crate buy buttons populated dynamically from the crate definitions and a discard trash bin below. |
 | `shop/shop_session.gd` | Script | Orchestrates the session loop: customer display, order fulfillment, session end, crate purchasing. Does NOT own board logic or merge resolution. Gets its `plan: SessionPlan` (and `customers`, `= plan.customers`) from `SessionPlanner.plan_next_session()`. |
-| `shop/order_card.tscn` | Scene | One order display: item icon, quantity, reward. Tappable to fulfill. |
+| `shop/order_card.tscn` | Scene | One order display: item icon, quantity, reward, and a `ui/quality_stars.tscn` badge (`_stars.set_quality(order.min_quality)`) for a Fine or Masterwork order. Tappable to fulfill. |
 | `shop/order_streak.gd` | Script (`RefCounted`) | Tracks the fulfil streak for the current session (`count`, not saved). `fulfill(gold_reward, rules)` returns the order's XP via `ShopRulesDefinition.order_xp` and then grows the streak; `reject()` resets it to 0. A rejection breaks the streak and earns no XP. |
 | `shop/session_summary.tscn` | Scene | End-of-session summary. Animated gold counter, XP earned, items sold, fulfilled/rejected counts, customer portraits, and a `LevelUpPanel` if a level was crossed. |
 | `ui/level_up_panel.tscn`, `.gd` | Scene (shared, `ui/`) | The "Level N!" banner plus "Unlocked: X" lines. `setup(old_level: int, new_level: int)`: visible only when `new_level > old_level`; lists `DefinitionLibrary.get_unlocks_between(old_level, new_level)` by `definition.name`. Used by both `session_summary.tscn` and `dungeon/dungeon_summary.tscn` — a shared `ui/` widget, not owned by either subsystem. |
@@ -743,9 +746,9 @@ Customers are dealt from `CustomerDefinition` archetypes (see Content Definition
 **Trigger:** Player taps one order card from the current customer's 1–3 displayed orders.
 
 1. `order_card.gd` emits `order_tapped(order_index)` → `shop_session.gd.try_fulfill_order(index)`
-2. `shop_session.gd` reads the chosen order's requirements: `{item_id: quantity}`
-3. Calls `board.count_sellable(item_id)` for each required item (board plus display shelf)
-4. If all requirements met: `board.take_sellable(item_id, qty)` for each (shelf first, then board), `GameManager.add_gold(reward)`, `GameManager.add_shop_xp(_streak.fulfill(reward, _rules))` (`ShopRulesDefinition.order_xp`: `round(gold x xp_per_gold x (1 + min(streak x streak_step, streak_cap)))`), emit `customer_fulfilled`, discard all other unfulfilled orders for this customer
+2. `shop_session.gd` reads the chosen order's requirements: `{item_id: quantity}` plus `order.min_quality`
+3. Calls `board.count_sellable(item_id, order.min_quality)` for each required item (board plus display shelf, counting only items at `min_quality` or above)
+4. If all requirements met: `board.take_sellable(item_id, qty, order.min_quality)` for each (the lowest qualifying quality first, so a Masterwork is never spent on a Normal order; within one quality, shelf first, then board), `GameManager.add_gold(reward)`, `GameManager.add_shop_xp(_streak.fulfill(reward, _rules))` (`ShopRulesDefinition.order_xp`: `round(gold x xp_per_gold x (1 + min(streak x streak_step, streak_cap)))`), emit `customer_fulfilled`, discard all other unfulfilled orders for this customer
 5. Advance to next customer (or end session if last)
 
 **End state:** Chosen order fulfilled, remaining orders discarded, items removed from the shelf and board, gold and XP added, customer replaced. At session end ShopSession saves the board to `GameManager.shop_board_state` and the shelf to `GameManager.shop_shelf_state`.
@@ -1287,7 +1290,7 @@ Reagents are bought in the prep phase and stored in `GameManager.reagent_invento
 
 **Extends:** Node
 **Script:** `autoloads/game_manager.gd`
-**Description:** Singleton data store for all persistent game state. No game logic — getters, setters, and change signals only. `SAVE_VERSION` is 7: `upgrade_levels` replaced `purchased_upgrades` and `shop_shelf_state` is new, and older saves are rejected as CORRUPT.
+**Description:** Singleton data store for all persistent game state. No game logic — getters, setters, and change signals only. `SAVE_VERSION` is 8: every board entry (`shop_board_state`, `shop_shelf_state`, `dungeon_board_state`) gained `quality`, validated as a number in 0..`ItemDefinition.MAX_QUALITY`; a missing or out-of-range `quality` makes that entry, and the save, CORRUPT. Older saves are rejected as CORRUPT.
 
 **Properties:**
 
@@ -1298,9 +1301,9 @@ Reagents are bought in the prep phase and stored in `GameManager.reagent_invento
 | `unlocked_blueprints: Array[String]` | Array | Blueprint IDs owned |
 | `reagent_inventory: Dictionary` | Dictionary | String → int (reagent_id → count) |
 | `upgrade_levels: Dictionary` | Dictionary | String → int (upgrade id → level bought). `SAVE_VERSION` 7. |
-| `shop_board_state: Array` | Array | Shop board as `{col, row, item_id}` entries (see BoardGrid.get_board_state) |
-| `shop_shelf_state: Array` | Array | Display shelf, same shape (see MergeBoard.get_shelf_state). `SAVE_VERSION` 7. |
-| `dungeon_board_state: Array` | Array | Dungeon board, same shape |
+| `shop_board_state: Array` | Array | Shop board as `{col, row, item_id, quality}` entries (see BoardGrid.get_board_state). `quality` added `SAVE_VERSION` 8. |
+| `shop_shelf_state: Array` | Array | Display shelf, same shape (see MergeBoard.get_shelf_state). `SAVE_VERSION` 7, `quality` added `SAVE_VERSION` 8. |
+| `dungeon_board_state: Array` | Array | Dungeon board, same shape. Quality forms here too (the resolver is shared) but has no dungeon effect yet; drops are always Normal. `quality` added `SAVE_VERSION` 8. |
 | `grid_cols: int` | int | Board width (5 default; Board Expansion adds its levels' `grid_cols`) |
 | `grid_rows: int` | int | Board height (5 default; Board Expansion adds its levels' `grid_rows`) |
 | `run_seed: int` | int | Rolled once per new game; combined with `sessions_played` to seed each shop session. `SAVE_VERSION` 5. |

@@ -269,7 +269,10 @@ The curve is a power law: XP from level k to k+1 is `round(level_xp_base x k^lev
 | 12 | Blueprint: Cluster Bomb. Reagent: Fire Essence |
 | 14 | Customers: Ser Kaelen, Veska. Blueprints: Flame Sword, Phoenix Draught |
 | 16 | Blueprint: Fire Bomb |
-| 17–60 | Empty until Phases 4–8 of `tmp/shop-improvements/` fill them in |
+| 18 | Customer: Odile (Connoisseur) — Fine metal |
+| 24 | Customer: Borin (Guild Quartermaster) — bulk Fine |
+| 32 | Customer: Lady Maren (Royal Armorer) — Masterwork, rare, `price_multiplier` 1.3 |
+| 17–60 (except 18, 24, 32 above) | Empty until Phases 4–8 of `tmp/shop-improvements/` fill them in |
 
 ### What Persists Between Sessions
 
@@ -375,7 +378,9 @@ The curve is a power law: XP from level k to k+1 is `round(level_xp_base x k^lev
 | Merge minimum | 3 connected identical items | Orthogonally adjacent (4-directional) |
 | Merge result count | floor(count / 3) result items | Groups of 3 each produce 1 upper-tier item |
 | Merge refund | count % 3 source items | Remainder items refunded to board at former positions |
-| Merge bonus gold | (count - 3) × floor(source_value × 0.25) | Gold bonus for groups larger than 3; source = the merged item, not the result |
+| Merge quality | `min(2, floor(mean quality of the group) + 1 if count >= 5)` | 0 Normal, 1 Fine, 2 Masterwork. Detection ignores quality, so a group can mix qualities |
+| Quality refunds | count % 3 source items, lowest quality first | The upgrade is paid for with the best inputs |
+| Quality order prices | x1.0 / x1.6 / x2.8 (Normal / Fine / Masterwork) | `ShopRulesDefinition.quality_price_multipliers`, applied to `gold_value x quantity x price_multiplier` |
 | Despawn timer (default) | 12 seconds | Staging area items |
 | Despawn timer (upgraded) | 15 / 18 / 22 seconds | Patience Clock (`slow_timer`) levels 1 / 2 / 3 |
 | Combat tick interval | 1.0 second | Auto-combat damage frequency |
@@ -396,7 +401,7 @@ The curve is a power law: XP from level k to k+1 is `round(level_xp_base x k^lev
 | Forecast customers revealed | 3 | `ShopRulesDefinition.forecast_customers`; the prep Forecast tab shows this many of the next session's dealt customers |
 | Upgrades | Data-driven leveled tracks | One `UpgradeDefinition` per track under `resources/definitions/upgrades/`, each with `levels: Array[UpgradeLevel]` (cost, value, grid growth, `min_shop_level`). Level costs (gold, unlock level): Board Expansion 1000 (L1), 3000 (L12); Patience Clock 400 (L1), 1200 (L8), 3000 (L24); Town Crier 600 (L3), 1800 (L15), 4500 (L32); Bulk Deal 800 (L4), 2400 (L22), 5000 (L50); Display Shelf 700 (L5), 2500 (L20), 5500 (L42); Shop Signage 700 (L6), 1800 (L14), 3500 (L28), 5500 (L40), 7500 (L55). Upgrades total 51400g. Gold for every blueprint and every upgrade level arrives in about 52 best-case sessions, but the unlock levels, not gold, set when every upgrade can be maxed: level 50 comes around session 330 and level 55 around session 418 under best play |
 | Crates | Data-driven | Defined in `crates.json` (whatever entries exist become buy buttons) |
-| Customers | Data-driven: level-gated archetypes | `CustomerDefinition` archetypes under `resources/definitions/customers/`, dealt each session by `autoloads/customer_generator.gd` (weighted draw with replacement by `weight`, no back-to-back repeats). Order price = `round(gold_value x quantity x price_multiplier x modifier.price_multiplier(item) x signage)`, rounded once; `signage` is Shop Signage's level value (1.0 without it). |
+| Customers | Data-driven: level-gated archetypes | `CustomerDefinition` archetypes under `resources/definitions/customers/`, dealt each session by `autoloads/customer_generator.gd` (weighted draw with replacement by `weight`, no back-to-back repeats). An `OrderTemplate.min_quality` (0 any, 1 Fine or better, 2 Masterwork) is only ever put on an item at least that many merges deep, so a crate item can never be asked for at Fine. Order price = `round(gold_value x quantity x price_multiplier x quality_price_multipliers[min_quality] x modifier.price_multiplier(item) x signage)`, rounded once; `signage` is Shop Signage's level value (1.0 without it). The order card shows a Fine or Masterwork star badge next to its icon. Fulfillment takes the lowest *qualifying* quality first (shelf before board within one quality), so a Masterwork is never spent on a Normal order and a Fine order never fails just because only a Masterwork is in stock. |
 | Order XP | `round(gold_reward x xp_per_gold x (1 + min(streak x streak_step, streak_cap)))` | `xp_per_gold` 0.5, `streak_step` 0.1, `streak_cap` 0.5. `streak` is the customers fulfilled in a row before this one. |
 | Shop level curve | `round(level_xp_base x level^level_xp_exponent)` | XP from level k to k+1. `level_xp_base` 70, `level_xp_exponent` 1.5. |
 | Max shop level | 60 | XP past the level-60 threshold has nowhere to go; the HUD's XP bar stays full |
@@ -481,7 +486,7 @@ Effects in *italics* are defined but not applied yet: CombatEngine only runs `he
 - **Target Android API:** 36, which Google Play requires for new apps and updates from 2026-08-31. The export preset is still at 33 and must be raised before release.
 - **Ad integration:** AdMob interstitials only (see Submodule — Ads). Requires the INTERNET permission (currently off in the export preset) and a Gradle build (already on).
 - **Consent (UMP/TCF):** Yes. Google's UMP consent message runs on launch before any ad request, and there's an in-game "Privacy choices" entry point. Store and account setup is in `docs/ADS-COMPLIANCE.md`.
-- **Save system:** Yes — single JSON file (`user://save_data.json`), auto-save at checkpoints. `SAVE_VERSION` 7: `upgrade_levels` (upgrade id to level bought) replaced `purchased_upgrades`, and `shop_shelf_state` holds the display shelf; older saves load as CORRUPT
+- **Save system:** Yes — single JSON file (`user://save_data.json`), auto-save at checkpoints. `SAVE_VERSION` 8: every board entry (shop board, shelf, dungeon board) carries `quality` (0 Normal, 1 Fine, 2 Masterwork); a missing or out-of-range `quality` makes that save CORRUPT. Older saves load as CORRUPT
 - **In-app purchases:** Not for v1.0 (paid ad removal is in `docs/TODO.md`)
 - **Performance targets:** 60fps on mid-range Android devices
 - **Rendering:** 2D, mobile renderer
@@ -506,7 +511,7 @@ Effects in *italics* are defined but not applied yet: CombatEngine only runs `he
 ### Submodule — Merge System
 
 **What it does:**
-Detects when 3+ identical items are orthogonally connected on the grid, automatically triggers a merge, resolves the result through the recipe tree, and places output items at the group's center of mass and nearby cells. Every group of 3 produces 1 upper-tier item (so a group of 6 produces 2). Remainder items (count % 3) are refunded as source items at former positions. Bonus gold is awarded for oversized groups. Supports chain merges.
+Detects when 3+ identical items are orthogonally connected on the grid, automatically triggers a merge, resolves the result through the recipe tree, and places output items at the group's center of mass and nearby cells. Every group of 3 produces 1 upper-tier item (so a group of 6 produces 2). Remainder items (count % 3) are refunded as source items at former positions, the group's **lowest**-quality items first — the upgrade is paid for with the best inputs. Detection ignores quality, so a mixed-quality group still merges as one group. The result's quality is `min(2, floor(mean quality of the group) + 1 if the group is 5 or more)`; a group of 5 Normal items makes a Fine result (and refunds 2 Normal), a group of 5 Fine items makes a Masterwork result. No gold is awarded for a merge any more — a Fine or Masterwork result instead pops a star sparkle at the result cell. Supports chain merges, which read the quality actually on the board (so a Fine result that immediately joins an adjacent Fine group resolves correctly).
 
 **What triggers it:**
 Any board change — item placed, item removed, or item swapped. Also re-triggers after a merge completes (chain merge).
@@ -519,9 +524,9 @@ Any board change — item placed, item removed, or item swapped. Also re-trigger
 
 **Outputs:**
 - Removes consumed items from the grid
-- Places floor(count / 3) result items at center of mass and nearby empty cells
-- Refunds (count % 3) source items at former group positions
-- Awards bonus gold
+- Places floor(count / 3) result items, at the resolved quality, at center of mass and nearby empty cells
+- Refunds (count % 3) source items — the group's lowest-quality items — at former group positions
+- Shows a star sparkle at the result cell for a Fine or Masterwork result
 - Triggers chain rescan
 
 **States / Logic:**
@@ -533,9 +538,9 @@ Any board change — item placed, item removed, or item swapped. Also re-trigger
    a. Remove all items in group from grid
    b. Get available recipes from unlocked blueprints
    c. If the result has reagent combo definitions in reagent_combos.json: also populate variant options from reagent inventory (see Reagent Variants submodule)
-   d. If 1 option (no variants) → auto-place floor(count / 3) result items
-   e. If 2+ options (or base + variants) → show merge choice popup (choice applies to all result items)
-   f. On choice → place floor(count / 3) result items, refund (count % 3) source items at former positions, add bonus gold, consume reagent if variant chosen, emit signal
+   d. If 1 option (no variants) → auto-place floor(count / 3) result items at the resolved quality
+   e. If 2+ options (or base + variants) → show merge choice popup, labeling each option with its predicted quality (for example "Sword (Fine)") so the result is never a surprise (choice applies to all result items)
+   f. On choice → place floor(count / 3) result items at the resolved quality, refund (count % 3) lowest-quality source items at former positions, consume reagent if variant chosen, show a star sparkle for a Fine or Masterwork result, emit signal
    g. Rescan grid for chain merges
 ```
 
@@ -546,7 +551,9 @@ Any board change — item placed, item removed, or item swapped. Also re-trigger
 | Merge minimum | 3 items | Orthogonally connected |
 | Merge result count | floor(count / 3) result items | Each group of 3 produces 1 upper-tier item |
 | Merge refund | count % 3 source items | Remainder refunded to board at former positions |
-| Merge bonus gold | (count - 3) × floor(source_value × 0.25) | Gold bonus for groups larger than 3; source = the merged item, not the result |
+| Merge quality | `min(2, floor(mean quality of the group) + 1 if count >= 5)` | 0 Normal, 1 Fine, 2 Masterwork. Detection ignores quality, so a group can mix qualities |
+| Quality refunds | count % 3 source items, lowest quality first | The upgrade is paid for with the best inputs |
+| Quality order prices | x1.0 / x1.6 / x2.8 (Normal / Fine / Masterwork) | `ShopRulesDefinition.quality_price_multipliers`, applied to `gold_value x quantity x price_multiplier` |
 
 
 **GDD dependencies:**
@@ -947,6 +954,7 @@ The player leaving a summary screen for the prep phase: the Session Summary's Co
 | 2026-09-28 | Archetype weight is a real frequency weight | Supersedes the deck rule in this date's "seeded archetype sessions" entry: the generator no longer deals a deck (one guaranteed slot per pass). It now does a weighted draw with replacement, so `weight` sets how often an archetype is dealt relative to the others, not just draw order within a pass; the no-repeat-back-to-back rule is unchanged. |
 | 2026-09-28 | Demand forecast shipped: market modifiers, Forecast tab | Reverses the 2026-06-04 "Demand forecast deferred" entry. The modifier rolls on its own RNG stream (`hash([session_seed, "modifier"])`), before the customers are dealt and independent of the customer RNG (still seeded by `session_seed` alone) — the spec's "roll after dealing" would let a modifier's customer-weight and session-size effects reshuffle who gets dealt; rolling first, on a separate stream, means adding a modifier to the catalog never reshuffles a seed's customers when the rolled modifier has no customer effects. A modifier's `family` field empty means it affects every item (Festival); other modifiers name a family key such as `"herb"`. Crate cost under a modifier is `cost x modifier x discount`, rounded down once and clamped to at least 1g (`max(floor(... + 0.0001), 1)`, the epsilon guarding float error like `30 x 0.7 == 20.999...`). The Forecast tab is the first, default prep tab, since planning is what prep is for; it shows the market modifier (if any), demand by item family, and the first `forecast_customers` (3) customers of the next session exactly as the shop will deal it, refreshing whenever a purchase or level-up could change what's craftable. Five modifiers ship (Herb Shortage L5, Festival L8, Iron Glut L12, Knights' Tournament L18, Caravan Day L25), checked by the economy sim's `_print_modifiers()`: no modifier pushes an item's margin from 1.0 or more down under 1.0. |
 | 2026-09-28 | Leveled upgrade tracks and the display shelf | Upgrades are tracks of levels (`UpgradeDefinition.levels: Array[UpgradeLevel]`), so they keep absorbing gold for the long haul; buying an upgrade buys its next level, and `GameManager.upgrade_levels` replaces `purchased_upgrades` (`SAVE_VERSION` 7, breaking: old saves load as CORRUPT). Three new tracks: Display Shelf, Town Crier and Shop Signage. The shelf is a second `BoardGrid` inside `MergeBoard` with merges off (a spike beat a custom shelf widget), so drag and drop between board and shelf reuses the board's code; the shop only talks to `MergeBoard`. A shrinking shelf never loses items: saved items past its end go to the board, else staging. Town Crier starts at 5, not the spec's 3, because the free forecast already shows 3; a level value of 0 means every customer, and revealing every customer also shows their orders, so no "top level" flag is needed in data. Shop Signage multiplies inside the customer generator, where order gold is computed and rounded once, so the order card, the forecast and the payout agree. The level-up panel doesn't list upgrade levels: it lists catalog entries with a top-level `min_shop_level`, and upgrades gate per level. Layout: with a 6-slot shelf and a 3-order customer the shop screen leaves the merge board 1202 px at 1080x1920, and a 6x7 board (968 px tall) plus the shelf, staging and padding needs 1332 (still over 1202 with the padding cut to nothing), so Board Expansion stops at 6x6 (its 6x7 level was cut). `merge_board.tscn` padding was trimmed and the board area now sizes to its grid; 6x6 with a 6-slot shelf fits at 1080x1920 and 1080x2520 with 128 px cells. Sim: level costs retuned so buying every blueprint and every upgrade level takes about 52 best-case sessions (target 40-60, was about 72), with unlock levels spread from 1 to 55. That pace is gold only: the level curve, not gold, sets when every upgrade can be maxed, since best play reaches level 50 around session 330 and level 55 around session 418; the gates are kept on purpose so something still unlocks through the 50s. |
+| 2026-09-29 | Item quality replaces the merge gold bonus | The free-gold bonus loop (`calculate_bonus_gold`, bonus coins, the merge "+N" float) is gone for good. A board item is `{item_id, definition, quality}` (0 Normal, 1 Fine, 2 Masterwork; `ItemDefinition.MAX_QUALITY`/`QUALITY_NAMES`), made by `RecipeResolver.make_item(def, quality = 0)`; crates and drops still give Normal items. Merge detection ignores quality, so a mixed-quality group still merges as one; `board/quality_rules.gd.resolve()` sets the result to `min(2, floor(mean quality) + 1 if count >= 5)` and refunds the group's lowest-quality items (count % 3 of them) — the upgrade is paid for with the best inputs, closing the old seed-pair farm. A Fine or Masterwork result pops a star sparkle instead of gold; the merge-choice popup names the predicted quality so a mixed group's result is never a surprise. Skill now pays through premium orders instead of free gold: `OrderTemplate.min_quality` and `ShopRulesDefinition.quality_price_multipliers` (`[1.0, 1.6, 2.8]`) price a quality want, and fulfillment (`BoardGrid.count_items_on_board`/`remove_items_by_id`, `MergeBoard.count_sellable`/`take_sellable`, all gaining `min_quality`) takes the lowest *qualifying* quality first, shelf before board within one quality. Three new archetypes ship at levels 18-32 (Odile the Connoisseur, Borin the Guild Quartermaster, Lady Maren the Royal Armorer), reusing existing customer portraits as placeholder art since no new art was commissioned for this phase. `SAVE_VERSION` 8, breaking: every board entry (shop board, shelf, dungeon board) now requires `quality`; old saves load as CORRUPT. Quality has no dungeon effect yet (dungeon drops stay Normal; quality still forms on the dungeon board since the resolver is shared, but a shop Fine potion can't reach the dungeon today) — see the deferred item in `docs/TODO.md`. Checked by `tmp/shop-improvements/sim/economy_sim.gd`: pace stayed at 46.9 best-case sessions (target 40-60) with the shipped archetype levels and weights, no retune needed. |
 
 ---
 

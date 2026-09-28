@@ -1,0 +1,39 @@
+[gd_resource type="Resource" script_class="CustomerDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/order_template.gd" id="1_tpl"]
+[ext_resource type="Resource" path="res://resources/definitions/items/iron_ingot.tres" id="2_ingot"]
+[ext_resource type="Resource" path="res://resources/definitions/items/iron_plate.tres" id="3_plate"]
+[ext_resource type="Resource" path="res://resources/definitions/items/sword.tres" id="4_sword"]
+[ext_resource type="Script" path="res://resources/definitions/customer_definition.gd" id="5_cust"]
+[ext_resource type="Texture2D" path="res://resources/sprites/portraits/customer_03.png" id="6_sprite"]
+
+[sub_resource type="Resource" id="Resource_ingot"]
+script = ExtResource("1_tpl")
+item = ExtResource("2_ingot")
+min_quantity = 2
+max_quantity = 3
+min_quality = 1
+
+[sub_resource type="Resource" id="Resource_plate"]
+script = ExtResource("1_tpl")
+item = ExtResource("3_plate")
+weight = 2
+min_quantity = 1
+max_quantity = 2
+min_quality = 1
+
+[sub_resource type="Resource" id="Resource_sword"]
+script = ExtResource("1_tpl")
+item = ExtResource("4_sword")
+min_quality = 1
+
+[resource]
+script = ExtResource("5_cust")
+id = "cust_11"
+name = "Odile"
+role = "Connoisseur"
+sprite = ExtResource("6_sprite")
+min_shop_level = 18
+weight = 2
+max_orders = 2
+wants = Array[ExtResource("1_tpl")]([SubResource("Resource_ingot"), SubResource("Resource_plate"), SubResource("Resource_sword")])

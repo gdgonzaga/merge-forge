@@ -1,0 +1,36 @@
+[gd_resource type="Resource" script_class="CustomerDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/order_template.gd" id="1_tpl"]
+[ext_resource type="Resource" path="res://resources/definitions/items/iron_plate.tres" id="2_plate"]
+[ext_resource type="Resource" path="res://resources/definitions/items/sword.tres" id="3_sword"]
+[ext_resource type="Resource" path="res://resources/definitions/items/iron_shield.tres" id="4_shield"]
+[ext_resource type="Script" path="res://resources/definitions/customer_definition.gd" id="5_cust"]
+[ext_resource type="Texture2D" path="res://resources/sprites/portraits/customer_05.png" id="6_sprite"]
+
+[sub_resource type="Resource" id="Resource_plate"]
+script = ExtResource("1_tpl")
+item = ExtResource("2_plate")
+weight = 2
+min_quality = 2
+
+[sub_resource type="Resource" id="Resource_sword"]
+script = ExtResource("1_tpl")
+item = ExtResource("3_sword")
+min_quality = 2
+
+[sub_resource type="Resource" id="Resource_shield"]
+script = ExtResource("1_tpl")
+item = ExtResource("4_shield")
+min_quality = 2
+
+[resource]
+script = ExtResource("5_cust")
+id = "cust_13"
+name = "Lady Maren"
+role = "Royal Armorer"
+sprite = ExtResource("6_sprite")
+min_shop_level = 32
+weight = 1
+price_multiplier = 1.3
+max_orders = 2
+wants = Array[ExtResource("1_tpl")]([SubResource("Resource_plate"), SubResource("Resource_sword"), SubResource("Resource_shield")])
