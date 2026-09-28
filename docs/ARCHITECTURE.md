@@ -46,6 +46,7 @@ Scene transitions are driven by `main.gd` listening to EventBus signals. Main fr
 | EventBus          | `event_bus.gd`          | Cross-scene signal relay (see registry below)                                                                    |
 | DefinitionLibrary | `definition_library.gd` | Loads and indexes every content definition (see Content Definitions), one catalog per folder under `resources/definitions/`. Lists folders with `ResourceLoader.list_directory` (works in exports, where `.tres` files are remapped). Every definition needs a unique `id`; an empty catalog is a hard error, since there is no fallback content. |
 | RecipeResolver    | `recipe_resolver.gd`    | Rules over the definitions, holding no content itself: merge options filtered by blueprint ownership and reagent inventory, blueprint dependency checks, weighted pool rolls, and the dictionary a board cell holds (`make_item`). |
+| SessionPlanner    | `session_planner.gd`    | `plan_next_session() -> SessionPlan`, the one place the next shop session is dealt: a pure function of GameManager's state, via `customer_generator.gd`. Prep (`core/`) and the shop (`shop/`) both call it, since neither subsystem folder may preload the other. |
 | SaveManager       | `save_manager.gd`       | Auto-save/load to single JSON file at checkpoints                                                                |
 | AudioManager      | `audio_manager.gd`      | Music playback with crossfade, SFX one-shots                                                                     |
 
@@ -542,6 +543,10 @@ The GDD lists effect types (heal, buff_attack). Party stats are confirmed (see t
 |------|------|----------------|
 | `autoloads/definition_library.gd` | Autoload | Loads every definition folder into a catalog keyed by id. Shop listings (blueprints, crates, upgrades, reagents) come back cheapest first, customers in `queue_order`, party members in `slot_order`. |
 | `autoloads/recipe_resolver.gd` | Autoload | Synchronous rules over the definitions, filtered by player progress. |
+| `autoloads/session_planner.gd` | Autoload | `plan_next_session() -> SessionPlan`. The only caller of `customer_generator.gd`; prep and the shop both go through it. |
+| `autoloads/session_plan.gd` | Script (`RefCounted`, `SessionPlan`) | One dealt shop session: `customers: Array[ShopCustomer]`. |
+| `autoloads/customer_generator.gd` | Script (`RefCounted`) | Deals a session's customers from the unlocked archetypes: filters by shop level and craftability, does a weighted draw with replacement, rolls each dealt customer's orders. Deterministic from its inputs (same archetypes, level, seed and craftability give the same session). |
+| `autoloads/shop_customer.gd` | Script (`RefCounted`, `ShopCustomer`) | One customer dealt into a session: the `CustomerDefinition` archetype plus the `Array[OrderDefinition]` rolled for it. |
 | `resources/definitions/*.gd` | Resource scripts | One `class_name` per definition type (below). |
 
 ### Content Definitions
@@ -627,7 +632,7 @@ RecipeResolver has no signals — it is queried synchronously by MergeResolver, 
 | `get_all_items() -> Dictionary`, `get_all_enemies() -> Dictionary` | The catalogs themselves (read-only). |
 | `get_all_party_members()` | Ordered by `slot_order`: index 0 is the front member. |
 | `get_all_blueprints()`, `get_all_crates()`, `get_all_upgrades()`, `get_all_reagents()` | Typed arrays, cheapest first (ties by id). |
-| `get_all_customers() -> Array[CustomerDefinition]` | Sorted by id: the archetype pool `shop/customer_generator.gd` deals a session from. Not a fixed order — the generator decides who's dealt. |
+| `get_all_customers() -> Array[CustomerDefinition]` | Sorted by id: the archetype pool `autoloads/customer_generator.gd` deals a session from. Not a fixed order — the generator decides who's dealt. |
 | `get_shop_rules() -> ShopRulesDefinition` | The one `shop_rules` definition, id `"default"` (`session_size`, `xp_per_gold`, `streak_step`, `streak_cap`, `level_xp_base`, `level_xp_exponent`, `max_level`). |
 | `get_all_dungeons()` | Ordered by `min_shop_level` (unlock order), ties by id. PrepPhase's Enter Dungeon button targets the first. |
 | `get_unlocks_between(old_level: int, new_level: int) -> Array[Resource]` | Every definition across every catalog whose `min_shop_level` is above `old_level` and at or below `new_level` (exclusive below, inclusive above). Sorted by level, then folder, then id. Used by `LevelUpPanel` to list what a level-up opened. |
@@ -646,7 +651,7 @@ RecipeResolver has no signals — it is queried synchronously by MergeResolver, 
 | `is_unlocked(blueprint: BlueprintDefinition) -> bool` | True for null or an owned blueprint. |
 | `has_blueprint(bp_id: String) -> bool` | Checks `GameManager.unlocked_blueprints`. |
 | `are_dependencies_met(blueprint: BlueprintDefinition) -> bool` | True when every dependency is owned. |
-| `is_craftable(item: ItemDefinition) -> bool` | True if the item is raw, or can be reached today via merge results and reagent variants whose source is craftable — counting only crates open at the player's level (`GameManager.meets_level(crate.min_shop_level)`) and reagents for sale at their level or already in stock. Used by `shop/customer_generator.gd` to keep every dealt order deliverable. |
+| `is_craftable(item: ItemDefinition) -> bool` | True if the item is raw, or can be reached today via merge results and reagent variants whose source is craftable — counting only crates open at the player's level (`GameManager.meets_level(crate.min_shop_level)`) and reagents for sale at their level or already in stock. Used by `autoloads/customer_generator.gd` to keep every dealt order deliverable. |
 | `roll_weighted_pool(pool: Array[WeightedItem], min_rolls: int, max_rolls: int) -> Array[ItemDefinition]` | Static. Rolls `randi_range(min_rolls, max_rolls)` independent picks, each weighted by `weight`. Shared by crates and enemy drops. |
 
 ---
@@ -658,9 +663,7 @@ RecipeResolver has no signals — it is queried synchronously by MergeResolver, 
 | File | Type | Responsibility |
 |------|------|----------------|
 | `shop/shop_session.tscn` | Scene | Top-level shop session. Layout: `HBoxContainer [CustomerDisplay | MergeBoard | CratePanel]`. CustomerDisplay and CratePanel are sub-components within this scene (no separate scene files). CratePanel is a VBoxContainer on the right with crate buy buttons populated dynamically from the crate definitions and a discard trash bin below. |
-| `shop/shop_session.gd` | Script | Orchestrates the session loop: customer display, order fulfillment, session end, crate purchasing. Does NOT own board logic or merge resolution. |
-| `shop/customer_generator.gd` | Script (`RefCounted`) | Deals a session's customers from the unlocked archetypes: filters by shop level and craftability, does a weighted draw with replacement, rolls each dealt customer's orders. Deterministic from its inputs (same archetypes, level, seed and craftability give the same session). |
-| `shop/shop_customer.gd` | Script (`RefCounted`, `ShopCustomer`) | One customer dealt into a session: the `CustomerDefinition` archetype plus the `Array[OrderDefinition]` rolled for it. |
+| `shop/shop_session.gd` | Script | Orchestrates the session loop: customer display, order fulfillment, session end, crate purchasing. Does NOT own board logic or merge resolution. Gets its `plan: SessionPlan` (and `customers`, `= plan.customers`) from `SessionPlanner.plan_next_session()`. |
 | `shop/order_card.tscn` | Scene | One order display: item icon, quantity, reward. Tappable to fulfill. |
 | `shop/order_streak.gd` | Script (`RefCounted`) | Tracks the fulfil streak for the current session (`count`, not saved). `fulfill(gold_reward, rules)` returns the order's XP via `ShopRulesDefinition.order_xp` and then grows the streak; `reject()` resets it to 0. A rejection breaks the streak and earns no XP. |
 | `shop/session_summary.tscn` | Scene | End-of-session summary. Animated gold counter, XP earned, items sold, fulfilled/rejected counts, customer portraits, and a `LevelUpPanel` if a level was crossed. |
@@ -668,7 +671,7 @@ RecipeResolver has no signals — it is queried synchronously by MergeResolver, 
 
 ### Customers and Crates
 
-Customers are dealt from `CustomerDefinition` archetypes (see Content Definitions) by `shop/customer_generator.gd`, and crates are `CrateDefinition`s. No separate premium tier: later archetypes gated by `min_shop_level` fill that role. The generator does a weighted draw with replacement from every level-unlocked, currently-craftable archetype: each draw is weighted by `weight` (a real frequency, not just a tiebreaker), with no archetype repeating back-to-back while another is eligible (`pick_weighted` treats a non-positive weight as 0, falling back to a uniform draw if every weight is non-positive). A fresh game only unlocks the archetypes with `min_shop_level` 1, so only those compete for every slot in a `session_size`-customer session (`ShopRulesDefinition`, default 10) until the player's level clears the next archetype's `min_shop_level`. Each dealt customer gets `min_orders` to `max_orders` orders, the first always for something the player can craft today and the rest possibly gated behind a blueprint. Whatever crates are defined and open at the player's level are rendered as buy buttons in the shop's CratePanel, cheapest first; crate cost is multiplied by the Crate Discount upgrade. The panel rebuilds on `GameManager.shop_level_changed` so a newly-unlocked crate appears immediately.
+Customers are dealt from `CustomerDefinition` archetypes (see Content Definitions) by `autoloads/customer_generator.gd`, called only through `SessionPlanner.plan_next_session()`, and crates are `CrateDefinition`s. No separate premium tier: later archetypes gated by `min_shop_level` fill that role. The generator does a weighted draw with replacement from every level-unlocked, currently-craftable archetype: each draw is weighted by `weight` (a real frequency, not just a tiebreaker), with no archetype repeating back-to-back while another is eligible (`pick_weighted` treats a non-positive weight as 0, falling back to a uniform draw if every weight is non-positive). A fresh game only unlocks the archetypes with `min_shop_level` 1, so only those compete for every slot in a `session_size`-customer session (`ShopRulesDefinition`, default 10) until the player's level clears the next archetype's `min_shop_level`. Each dealt customer gets `min_orders` to `max_orders` orders, the first always for something the player can craft today and the rest possibly gated behind a blueprint. Whatever crates are defined and open at the player's level are rendered as buy buttons in the shop's CratePanel, cheapest first; crate cost is multiplied by the Crate Discount upgrade. The panel rebuilds on `GameManager.shop_level_changed` so a newly-unlocked crate appears immediately.
 
 **Crate generation algorithm:** For each item slot (rolled `min_items` to `max_items` times, independently):
 1. Sum all weights in the pool
@@ -691,7 +694,7 @@ Customers are dealt from `CustomerDefinition` archetypes (see Content Definition
 
 **Trigger:** Main instances `shop_session.tscn` (from prep phase or new game).
 
-1. `shop_session.gd._ready()` asks `shop/customer_generator.gd` for `session_size` customers, seeded by `GameManager.get_session_seed()`, from the level-unlocked archetypes.
+1. `shop_session.gd._ready()` calls `SessionPlanner.plan_next_session()`, which asks `autoloads/customer_generator.gd` for `session_size` customers, seeded by `GameManager.get_session_seed()`, from the level-unlocked archetypes.
 2. `shop_session.gd` displays first customer: portrait on left, 1–3 order cards stacked vertically on right, silhouette of remaining customers behind
 3. Player crafts items on the merge board (standard merge board flow) or buys crates from the CratePanel on the right (crate button → `shop_session.try_buy_crate(crate_id)` → picks random items from the crate's weighted pool, places on board via merge-safe placement, staging area as fallback). Available crates are the level-unlocked crate definitions; the panel rebuilds on `shop_level_changed`.
 4. Player taps one of the displayed `order_card.gd` options → emits `order_tapped(index)` → `shop_session.gd.try_fulfill_order(index)`. Only one order can be fulfilled per customer — the chosen order is fulfilled, all other orders for that customer are discarded.
@@ -726,7 +729,8 @@ Customers are dealt from `CustomerDefinition` archetypes (see Content Definition
 
 | Property | Type | Description |
 |----------|------|-------------|
-| `customers: Array[ShopCustomer]` | Array | This session's customers, as dealt by `customer_generator.gd` |
+| `plan: SessionPlan` | `SessionPlan` | This session's plan, from `SessionPlanner.plan_next_session()` |
+| `customers: Array[ShopCustomer]` | Array | `= plan.customers`, as dealt by `autoloads/customer_generator.gd` |
 | `current_index: int` | int | Current customer index (0 to `session_size - 1`) |
 | `board: Control (MergeBoard instance)` | Control | Reference to instanced merge board |
 | `summary_data: Dictionary` | Dictionary | Accumulated stats: gold_earned, items_sold, fulfilled, rejected, portraits, xp_earned, level_before, level_after |

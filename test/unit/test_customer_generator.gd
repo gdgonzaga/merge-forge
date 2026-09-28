@@ -3,7 +3,7 @@ extends TestBase
 # The customer generator deals a session from archetype fixtures. Craftability
 # is injected, so these tests don't depend on crates or blueprints.
 
-const GENERATOR := preload("res://shop/customer_generator.gd")
+const GENERATOR := preload("res://autoloads/customer_generator.gd")
 
 var _generator: RefCounted
 var _ingot: ItemDefinition

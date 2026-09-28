@@ -21,6 +21,7 @@ EventBus="*res://autoloads/event_bus.gd"
 GameManager="*res://autoloads/game_manager.gd"
 DefinitionLibrary="*res://autoloads/definition_library.gd"
 RecipeResolver="*res://autoloads/recipe_resolver.gd"
+SessionPlanner="*res://autoloads/session_planner.gd"
 SaveManager="*res://autoloads/save_manager.gd"
 AudioManager="*res://autoloads/audio_manager.gd"
 

@@ -163,7 +163,7 @@ func test_shop_rules_are_defined() -> void:
 # A new player (no blueprints, level 1) must be dealt a full session.
 func test_a_fresh_game_deals_a_full_session() -> void:
 	var size := DefinitionLibrary.get_shop_rules().session_size
-	var dealt: Array = preload("res://shop/customer_generator.gd").new().generate(
+	var dealt: Array = preload("res://autoloads/customer_generator.gd").new().generate(
 		DefinitionLibrary.get_all_customers(), size, 1, 1, RecipeResolver.is_craftable)
 	assert_int(dealt.size()).is_equal(size)
 

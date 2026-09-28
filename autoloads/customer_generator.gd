@@ -2,7 +2,8 @@ extends RefCounted
 
 # Deals a shop session's customers from the unlocked archetypes. Deterministic:
 # the same archetypes, level, seed and craftability give the same session,
-# which the prep-phase forecast relies on.
+# which the prep-phase forecast relies on. Prep and the shop both use it
+# through SessionPlanner.
 
 
 # `is_craftable` is Callable(ItemDefinition) -> bool.

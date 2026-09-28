@@ -1,9 +1,9 @@
 extends Control
 
 const PORTRAIT_SIZE := 200
-const CUSTOMER_GENERATOR := preload("res://shop/customer_generator.gd")
 const ORDER_STREAK := preload("res://shop/order_streak.gd")
 
+var plan: SessionPlan
 var customers: Array[ShopCustomer] = []
 var current_index: int = 0
 var summary_data: Dictionary = {}
@@ -37,13 +37,8 @@ func _ready() -> void:
 	}
 
 	_rules = DefinitionLibrary.get_shop_rules()
-	customers = CUSTOMER_GENERATOR.new().generate(
-		DefinitionLibrary.get_all_customers(),
-		_rules.session_size,
-		GameManager.get_shop_level(),
-		GameManager.get_session_seed(),
-		RecipeResolver.is_craftable,
-	)
+	plan = SessionPlanner.plan_next_session()
+	customers = plan.customers
 	_shadow_step = 1.0 / float(maxi(customers.size() - 1, 1))
 
 	AudioManager.play_sfx("session_start")
