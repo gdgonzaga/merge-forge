@@ -9,6 +9,6 @@ session_size = 10
 xp_per_gold = 0.5
 streak_step = 0.1
 streak_cap = 0.5
-level_xp_base = 50
+level_xp_base = 70
 level_xp_exponent = 1.5
 max_level = 60
