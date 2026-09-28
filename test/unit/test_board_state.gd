@@ -41,6 +41,19 @@ func test_board_state_skips_ids_missing_from_catalog() -> void:
 	assert_array(board.get_board_state()).is_empty()
 
 
+func test_a_full_board_keeps_its_items_in_place_on_a_taller_board() -> void:
+	var state: Array = []
+	for r in range(3):
+		for c in range(3):
+			state.append({"col": c, "row": r, "item_id": GEM_ID})
+	var taller := _make_board()
+	taller.setup({"cols": 3, "rows": 4})
+	taller.load_board_state(state)
+	assert_array(taller.get_board_state()).is_equal(state)
+	for c in range(3):
+		assert_object(taller.grid[3][c]).is_null()
+
+
 func _make_board() -> GridContainer:
 	var board: GridContainer = auto_free(load("res://board/board_grid.gd").new())
 	add_child(board)

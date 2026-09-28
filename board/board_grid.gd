@@ -7,6 +7,7 @@ var grid: Array[Array] = []
 var grid_cols: int = 5
 var grid_rows: int = 5
 var despawn_time: float = 12.0
+var merges_enabled: bool = true
 
 var _cell_scene: PackedScene
 var _move_callback: Callable
@@ -19,7 +20,9 @@ func set_move_callback(cb: Callable) -> void:
 func setup(config: Dictionary) -> void:
 	grid_cols = config.get("cols", 5)
 	grid_rows = config.get("rows", 5)
-	columns = grid_cols
+	merges_enabled = config.get("merges_enabled", true)
+	# A GridContainer needs at least one column, and the shelf may have 0 slots.
+	columns = maxi(grid_cols, 1)
 	_initialize_grid()
 	_create_cells()
 
@@ -44,6 +47,7 @@ func _create_cells() -> void:
 			var cell: Control = _cell_scene.instantiate()
 			cell.set_meta("is_board_cell", true)
 			cell.grid_pos = Vector2i(c, r)
+			cell.grid_owner = self
 			cell.cell_drag_ended.connect(_on_cell_drop)
 			add_child(cell)
 
@@ -59,7 +63,7 @@ func place_item(item: Dictionary, pos: Vector2i) -> bool:
 	if grid[pos.y][pos.x] != null:
 		return false
 	grid[pos.y][pos.x] = item
-	_update_cell_visual(pos)
+	refresh_cell(pos)
 	AudioManager.play_sfx("item_place")
 	item_placed.emit(item, pos)
 	return true
@@ -70,7 +74,7 @@ func remove_items(positions: Array[Vector2i]) -> void:
 		if pos.x < 0 or pos.x >= grid_cols or pos.y < 0 or pos.y >= grid_rows:
 			continue
 		grid[pos.y][pos.x] = null
-		_update_cell_visual(pos)
+		refresh_cell(pos)
 		item_removed.emit(pos)
 
 
@@ -79,8 +83,8 @@ func swap_items(pos_a: Vector2i, pos_b: Vector2i) -> void:
 	var item_b = grid[pos_b.y][pos_b.x]
 	grid[pos_a.y][pos_a.x] = item_b
 	grid[pos_b.y][pos_b.x] = item_a
-	_update_cell_visual(pos_a)
-	_update_cell_visual(pos_b)
+	refresh_cell(pos_a)
+	refresh_cell(pos_b)
 	item_placed.emit(item_b, pos_a)
 	item_placed.emit(item_a, pos_b)
 
@@ -89,7 +93,7 @@ func discard_item(pos: Vector2i) -> void:
 	if pos.x < 0 or pos.x >= grid_cols or pos.y < 0 or pos.y >= grid_rows:
 		return
 	grid[pos.y][pos.x] = null
-	_update_cell_visual(pos)
+	refresh_cell(pos)
 	item_removed.emit(pos)
 
 
@@ -137,7 +141,7 @@ func place_or_stage(item: Dictionary) -> bool:
 		print("[BoardGrid] place_or_stage: item=%s safe_pos=%s" % [item_id, str(safe_pos)])
 	if safe_pos.x >= 0:
 		grid[safe_pos.y][safe_pos.x] = item
-		_update_cell_visual(safe_pos)
+		refresh_cell(safe_pos)
 		return true
 	return false
 
@@ -163,7 +167,7 @@ func remove_items_by_id(item_id: String, count: int) -> void:
 			var cell = grid[r][c]
 			if cell != null and cell is Dictionary and cell.get("item_id", "") == item_id:
 				grid[r][c] = null
-				_update_cell_visual(Vector2i(c, r))
+				refresh_cell(Vector2i(c, r))
 				item_removed.emit(Vector2i(c, r))
 				removed += 1
 
@@ -172,7 +176,7 @@ func clear_board() -> void:
 	for r in range(grid_rows):
 		for c in range(grid_cols):
 			grid[r][c] = null
-			_update_cell_visual(Vector2i(c, r))
+			refresh_cell(Vector2i(c, r))
 
 
 # Saves hold item ids only. The definition (including its sprite texture, which
@@ -186,19 +190,24 @@ func get_board_state() -> Array:
 	return state
 
 
-func load_board_state(state: Array) -> void:
+# Returns the items that fall outside this grid (a smaller shelf), so the
+# caller can put them somewhere instead of losing them.
+func load_board_state(state: Array) -> Array[Dictionary]:
 	_initialize_grid()
+	var overflow: Array[Dictionary] = []
 	for entry in state:
-		var c := int(entry["col"])
-		var r := int(entry["row"])
-		if c < 0 or c >= grid_cols or r < 0 or r >= grid_rows:
-			continue
 		var def := DefinitionLibrary.get_item(entry["item_id"])
 		if def == null:
 			push_error("BoardGrid: saved item '%s' is not in the catalog" % entry["item_id"])
 			continue
+		var c := int(entry["col"])
+		var r := int(entry["row"])
+		if c < 0 or c >= grid_cols or r < 0 or r >= grid_rows:
+			overflow.append(RecipeResolver.make_item(def))
+			continue
 		grid[r][c] = RecipeResolver.make_item(def)
-		_update_cell_visual(Vector2i(c, r))
+		refresh_cell(Vector2i(c, r))
+	return overflow
 
 
 func flash_cells(positions: Array[Vector2i]) -> void:
@@ -232,7 +241,7 @@ func find_nearest_empty(from: Vector2i) -> Vector2i:
 	return Vector2i(-1, -1)
 
 
-func _update_cell_visual(pos: Vector2i) -> void:
+func refresh_cell(pos: Vector2i) -> void:
 	var cell := get_cell_at(pos)
 	if cell == null:
 		return
@@ -243,73 +252,47 @@ func _update_cell_visual(pos: Vector2i) -> void:
 		cell.call("clear_item")
 
 
-func _on_cell_drop(from_pos: Vector2i, to_pos: Vector2i) -> void:
-	var drag_data = get_viewport().gui_get_drag_data()
-	if drag_data == null or not (drag_data is Dictionary) or not drag_data.has("item_id"):
+# The source grid may be this grid, the other grid (board <-> shelf), or none
+# (an item dragged from the staging area). Dropping onto an occupied cell
+# swaps, except from staging, which only fills empty cells.
+func _on_cell_drop(to_pos: Vector2i, drag_data: Dictionary) -> void:
+	var source: Control = drag_data.get("_source_grid")
+	var from_pos: Vector2i = drag_data.get("_source_pos", Vector2i(-1, -1))
+	if source == self and from_pos == to_pos:
 		return
-	var is_from_board: bool = from_pos.x >= 0 and from_pos.y >= 0
-	if is_from_board and from_pos == to_pos:
-		return
+	var target_item = grid[to_pos.y][to_pos.x]
 	var moves: Array[Dictionary] = []
-	if grid[to_pos.y][to_pos.x] == null:
-		if is_from_board:
-			var moved_item = grid[from_pos.y][from_pos.x]
-			grid[from_pos.y][from_pos.x] = null
-			grid[to_pos.y][to_pos.x] = moved_item
-			moves.append({
-				"item_data": moved_item,
-				"from_pos": from_pos,
-				"to_pos": to_pos,
-			})
-		else:
-			var from_screen: Vector2 = _get_drag_source_screen(drag_data)
-			grid[to_pos.y][to_pos.x] = drag_data
-			moves.append({
-				"item_data": drag_data,
-				"from_pos": Vector2i(-1, -1),
-				"to_pos": to_pos,
-				"from_screen": from_screen,
-			})
+	if source == null:
+		if target_item != null:
+			return
+		grid[to_pos.y][to_pos.x] = drag_data
+		moves.append({"item_data": drag_data, "from_grid": null, "from_pos": Vector2i(-1, -1),
+			"from_screen": _get_drag_source_screen(drag_data), "to_grid": self, "to_pos": to_pos})
 	else:
-		if is_from_board:
-			var item_a = grid[from_pos.y][from_pos.x]
-			var item_b = grid[to_pos.y][to_pos.x]
-			grid[from_pos.y][from_pos.x] = item_b
-			grid[to_pos.y][to_pos.x] = item_a
-			moves.append({
-				"item_data": item_a,
-				"from_pos": from_pos,
-				"to_pos": to_pos,
-			})
-			moves.append({
-				"item_data": item_b,
-				"from_pos": to_pos,
-				"to_pos": from_pos,
-			})
-	if moves.is_empty():
-		return
+		var moved_item = source.grid[from_pos.y][from_pos.x]
+		if moved_item == null:
+			return
+		source.grid[from_pos.y][from_pos.x] = target_item
+		grid[to_pos.y][to_pos.x] = moved_item
+		moves.append({"item_data": moved_item, "from_grid": source, "from_pos": from_pos, "to_grid": self, "to_pos": to_pos})
+		if target_item != null:
+			moves.append({"item_data": target_item, "from_grid": self, "from_pos": to_pos, "to_grid": source, "to_pos": from_pos})
 	if _move_callback.is_valid():
 		_move_callback.call(moves)
 	else:
-		for m in moves:
-			var fp: Vector2i = m.get("from_pos", Vector2i(-1, -1))
-			if fp.x >= 0:
-				_update_cell_visual(fp)
-			_update_cell_visual(m["to_pos"])
-		for m in moves:
-			AudioManager.play_sfx("item_place")
-			item_placed.emit(m["item_data"], m["to_pos"])
+		finalize_move(moves)
 
 
+# Moves may cross grids, so each one names the grids it leaves and lands on.
 func finalize_move(moves: Array[Dictionary]) -> void:
 	for m in moves:
-		var fp: Vector2i = m.get("from_pos", Vector2i(-1, -1))
-		if fp.x >= 0:
-			_update_cell_visual(fp)
-		_update_cell_visual(m["to_pos"])
+		var from_grid: Control = m.get("from_grid")
+		if from_grid != null:
+			from_grid.refresh_cell(m["from_pos"])
+		m["to_grid"].refresh_cell(m["to_pos"])
 	for m in moves:
 		AudioManager.play_sfx("item_place")
-		item_placed.emit(m["item_data"], m["to_pos"])
+		m["to_grid"].item_placed.emit(m["item_data"], m["to_pos"])
 
 
 func _get_drag_source_screen(drag_data: Dictionary) -> Vector2:

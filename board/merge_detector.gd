@@ -1,5 +1,12 @@
 extends RefCounted
 
+# The shelf is a BoardGrid with merges off: its items are set aside to sell.
+func scan_grid(board_grid: Control) -> Array[Dictionary]:
+	if not board_grid.merges_enabled:
+		return []
+	return scan(board_grid.grid)
+
+
 func scan(grid: Array[Array]) -> Array[Dictionary]:
 	var rows := grid.size()
 	if rows == 0:

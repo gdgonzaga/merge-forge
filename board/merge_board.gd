@@ -6,6 +6,9 @@ const MERGE_CONVERGE_TIME: float = 0.25
 const MOVE_ANIM_TIME: float = 0.15
 const MOVE_ARC_HEIGHT: float = -40.0
 
+@onready var _shelf: GridContainer = %ShelfGrid
+@onready var _shelf_area: Control = %ShelfArea
+
 var _board: Control
 var _detector: RefCounted
 var _resolver: RefCounted
@@ -24,6 +27,9 @@ func _ready() -> void:
 	_resolver = load("res://board/merge_resolver.gd").new()
 	if _board:
 		_board.item_placed.connect(_on_item_placed)
+	# A staging item dropped on the shelf must leave staging, and detection
+	# only scans the board, so this is safe.
+	_shelf.item_placed.connect(_on_item_placed)
 	var popup_scene: PackedScene = load("res://board/merge_choice_popup.tscn")
 	_popup = popup_scene.instantiate()
 	add_child(_popup)
@@ -44,6 +50,12 @@ func setup(config: Dictionary) -> void:
 		})
 		_resolver.setup(_board, _on_merge_choice_requested, _detector, self)
 		_board.set_move_callback(_on_board_move)
+	# Only the shop passes shelf_slots; the dungeon's board has no shelf.
+	var shelf_slots: int = config.get("shelf_slots", 0)
+	_shelf.set_cell_scene(cell_scene)
+	_shelf.setup({"cols": shelf_slots, "rows": 1, "merges_enabled": false})
+	_shelf.set_move_callback(_on_board_move)
+	_shelf_area.visible = shelf_slots > 0
 
 
 func buy_crate(crate_id: String) -> bool:
@@ -83,13 +95,13 @@ func animate_merge(positions: Array[Vector2i], center: Vector2i, callback: Calla
 		callback.call()
 		return
 	var overlay_global := _anim_overlay.global_position
-	var center_local := _get_cell_screen_center(center) - overlay_global
+	var center_local := _get_cell_screen_center(_board, center) - overlay_global
 	var icons: Array = []
 	for pos in positions:
-		var tex: Texture2D = _get_cell_texture(pos)
+		var tex: Texture2D = _get_cell_texture(_board, pos)
 		if tex == null:
 			continue
-		var from_local := _get_cell_screen_center(pos) - overlay_global
+		var from_local := _get_cell_screen_center(_board, pos) - overlay_global
 		var fi := _spawn_icon(tex, from_local)
 		icons.append({"node": fi, "start": fi.position, "end": center_local - fi.size / 2.0})
 		_board.get_cell_at(pos).clear_item()
@@ -122,16 +134,18 @@ func animate_move(moves: Array[Dictionary], _callback: Callable) -> void:
 	var overlay_global := _anim_overlay.global_position
 	var icons: Array = []
 	for m in moves:
-		var from_pos: Vector2i = m.get("from_pos", Vector2i(-1, -1))
+		var from_grid: Control = m.get("from_grid")
+		var to_grid: Control = m["to_grid"]
 		var to_pos: Vector2i = m["to_pos"]
-		var to_local := _get_cell_screen_center(to_pos) - overlay_global
+		var to_local := _get_cell_screen_center(to_grid, to_pos) - overlay_global
 		var fi: TextureRect
-		if from_pos.x >= 0:
-			var tex: Texture2D = _get_cell_texture(from_pos)
+		if from_grid != null:
+			var from_pos: Vector2i = m["from_pos"]
+			var tex: Texture2D = _get_cell_texture(from_grid, from_pos)
 			if tex == null:
 				continue
-			fi = _spawn_icon(tex, _get_cell_screen_center(from_pos) - overlay_global)
-			_board.get_cell_at(from_pos).clear_item()
+			fi = _spawn_icon(tex, _get_cell_screen_center(from_grid, from_pos) - overlay_global)
+			from_grid.get_cell_at(from_pos).clear_item()
 		else:
 			var from_screen: Vector2 = m.get("from_screen", Vector2.ZERO)
 			fi = _spawn_icon(m["item_data"]["definition"].sprite, from_screen - overlay_global)
@@ -171,7 +185,7 @@ func spawn_bonus_coin(amount: int, grid_pos: Vector2i) -> void:
 	if _anim_overlay == null or _board == null or amount <= 0:
 		return
 	var overlay_global := _anim_overlay.global_position
-	var screen_pos := _get_cell_screen_center(grid_pos) - overlay_global
+	var screen_pos := _get_cell_screen_center(_board, grid_pos) - overlay_global
 	var coin: Control = load("res://board/bonus_coin.tscn").instantiate()
 	coin.setup(amount, screen_pos)
 	_anim_overlay.add_child(coin)
@@ -181,7 +195,7 @@ func show_gold_text(amount: int, grid_pos: Vector2i) -> void:
 	if _anim_overlay == null or _board == null or amount <= 0:
 		return
 	var overlay_global := _anim_overlay.global_position
-	var cell_center := _get_cell_screen_center(grid_pos) - overlay_global
+	var cell_center := _get_cell_screen_center(_board, grid_pos) - overlay_global
 	var label := Label.new()
 	label.text = "+%d" % amount
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -202,8 +216,8 @@ func show_gold_text(amount: int, grid_pos: Vector2i) -> void:
 	tween.tween_callback(label.queue_free)
 
 
-func _get_cell_texture(pos: Vector2i) -> Texture2D:
-	var cell: Control = _board.get_cell_at(pos)
+func _get_cell_texture(grid: Control, pos: Vector2i) -> Texture2D:
+	var cell: Control = grid.get_cell_at(pos)
 	if cell:
 		return cell.get_icon_texture()
 	return null
@@ -225,8 +239,8 @@ func _apply_arc_pos(node: TextureRect, start: Vector2, end: Vector2, t: float) -
 	node.position = pos
 
 
-func _get_cell_screen_center(pos: Vector2i) -> Vector2:
-	var cell: Control = _board.get_cell_at(pos)
+func _get_cell_screen_center(grid: Control, pos: Vector2i) -> Vector2:
+	var cell: Control = grid.get_cell_at(pos)
 	if cell:
 		return cell.global_position + cell.size / 2.0
 	return Vector2.ZERO
@@ -253,6 +267,7 @@ func _remove_staging_item(item_data: Dictionary) -> void:
 	var clean := item_data.duplicate()
 	clean.erase("_source_screen")
 	clean.erase("_source_pos")
+	clean.erase("_source_grid")
 	for child in _staging_container.get_children():
 		if child.item_data == clean:
 			child.queue_free()
@@ -276,7 +291,7 @@ func _run_merge_detection() -> void:
 		return
 	if _board == null:
 		return
-	var groups: Array[Dictionary] = _detector.scan(_board.grid)
+	var groups: Array[Dictionary] = _detector.scan_grid(_board)
 	if groups.is_empty():
 		return
 	_resolver.enqueue(groups)
@@ -284,6 +299,31 @@ func _run_merge_detection() -> void:
 
 func get_board_grid() -> Control:
 	return _board
+
+
+func get_shelf_grid() -> Control:
+	return _shelf
+
+
+func count_sellable(item_id: String) -> int:
+	return _board.count_items_on_board(item_id) + _shelf.count_items_on_board(item_id)
+
+
+# Shelf first: shelf stock is what the player set aside to sell.
+func take_sellable(item_id: String, count: int) -> void:
+	var from_shelf := mini(count, _shelf.count_items_on_board(item_id))
+	_shelf.remove_items_by_id(item_id, from_shelf)
+	_board.remove_items_by_id(item_id, count - from_shelf)
+
+
+func get_shelf_state() -> Array:
+	return _shelf.get_board_state()
+
+
+# Saved items past the shelf's end go to the board or staging, never lost.
+func load_shelf_state(state: Array) -> void:
+	for item in _shelf.load_board_state(state):
+		place_drop(item)
 
 
 func get_staging_area() -> FlowContainer:

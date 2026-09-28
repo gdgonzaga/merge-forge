@@ -1,10 +1,13 @@
 extends Control
 
 signal cell_drag_started(from_pos: Vector2i, item: Dictionary)
-signal cell_drag_ended(from_pos: Vector2i, to_pos: Vector2i)
+signal cell_drag_ended(to_pos: Vector2i, drag_data: Dictionary)
 
 var grid_pos: Vector2i = Vector2i(-1, -1)
 var item: Dictionary = {}
+# The BoardGrid this cell belongs to; drags carry it so a drop on another grid
+# (board to shelf) knows where the item came from.
+var grid_owner: Control = null
 
 @onready var _icon: TextureRect = $Icon
 @onready var _bg: TextureRect = $BG
@@ -56,8 +59,13 @@ func _get_drag_data(at_position: Vector2) -> Variant:
 	set_drag_preview(preview)
 	preview.position = Vector2(-14, -100)
 	cell_drag_started.emit(grid_pos, item)
+	return make_drag_data()
+
+
+func make_drag_data() -> Dictionary:
 	var drag_info := item.duplicate()
 	drag_info["_source_pos"] = grid_pos
+	drag_info["_source_grid"] = grid_owner
 	drag_info["_source_screen"] = global_position + size / 2.0
 	return drag_info
 
@@ -66,7 +74,8 @@ func _can_drop_data(_at_position: Vector2, data: Variant) -> bool:
 	return data is Dictionary and data.has("item_id")
 
 
+# The data travels with the signal: get_viewport().gui_get_drag_data() is null
+# outside a live OS drag.
 func _drop_data(_at_position: Vector2, data: Variant) -> void:
 	if data is Dictionary and data.has("item_id"):
-		var from_pos: Vector2i = data.get("_source_pos", Vector2i(-1, -1))
-		cell_drag_ended.emit(from_pos, grid_pos)
+		cell_drag_ended.emit(grid_pos, data)
