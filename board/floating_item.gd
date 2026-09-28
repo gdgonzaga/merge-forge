@@ -2,6 +2,8 @@ extends Control
 
 signal despawn_timeout()
 
+const QUALITY_STARS := preload("res://ui/quality_stars.tscn")
+
 var item_data: Dictionary = {}
 var despawn_time: float = 12.0
 var time_remaining: float = 12.0
@@ -57,9 +59,21 @@ func _get_drag_data(at_position: Vector2) -> Variant:
 	preview.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	preview.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	preview.texture = item_data["definition"].sprite
+	_add_quality_preview(preview, item_data["quality"])
 	set_drag_preview(preview)
 	preview.position = Vector2(-14, -100)
 	return make_drag_data()
+
+
+# Mirrors the staging item's own top-right star badge, so a Fine or
+# Masterwork item doesn't look Normal while it's being dragged.
+func _add_quality_preview(preview: TextureRect, quality: int) -> void:
+	if quality <= 0:
+		return
+	var stars: Control = QUALITY_STARS.instantiate()
+	preview.add_child(stars)
+	stars.set_quality(quality)
+	stars.set_anchors_preset(Control.PRESET_TOP_RIGHT)
 
 
 func make_drag_data() -> Dictionary:

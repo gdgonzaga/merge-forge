@@ -66,12 +66,42 @@ func test_a_fine_result_chains_with_a_fine_pair_into_a_fine_item() -> void:
 	assert_array(_qualities(_ingot)).is_empty()
 
 
-func test_a_quality_merge_pays_no_gold() -> void:
-	GameManager.gold = 100
+func test_merge_completed_reports_the_result_quality() -> void:
+	var received: Array = []
+	var handler := func(result_id: String, result_quality: int) -> void:
+		received.append([result_id, result_quality])
+	EventBus.merge_completed.connect(handler)
 	_lay_row(_ore, [0, 0, 0, 0])
 	_grid.place_item(RecipeResolver.make_item(_ore, 0), Vector2i(4, 0))
 	await _await_merges()
-	assert_int(GameManager.gold).is_equal(100)
+	EventBus.merge_completed.disconnect(handler)
+	assert_array(received).is_equal([["__test_ingot", 1]])
+
+
+# Row [2,2,2,0] plus a 0 placed at col 4: floor(6/5) + 1 = mean(2+2+2+0+0 /5=1.2 -> floor=1) + 1 = 2 (Masterwork).
+# Refunds the two lowest qualities: [0, 0].
+func test_a_mixed_five_upgrades_and_refunds_the_lowest() -> void:
+	_lay_row(_ore, [2, 2, 2, 0])
+	_grid.place_item(RecipeResolver.make_item(_ore, 0), Vector2i(4, 0))
+	await _await_merges()
+	assert_array(_qualities(_ingot)).is_equal([2])
+	assert_array(_qualities(_ore)).is_equal([0, 0])
+
+
+func test_a_merge_that_loses_quality_shows_a_lost_cue() -> void:
+	monitor_signals(_board)
+	_lay_row(_ore, [1, 0])
+	_grid.place_item(RecipeResolver.make_item(_ore, 0), Vector2i(2, 0))
+	await _await_merges()
+	await assert_signal(_board).is_emitted("quality_lost", [1, Vector2i(1, 0)])
+
+
+func test_an_all_normal_merge_shows_no_lost_cue() -> void:
+	monitor_signals(_board)
+	_lay_row(_ore, [0, 0])
+	_grid.place_item(RecipeResolver.make_item(_ore, 0), Vector2i(2, 0))
+	await _await_merges()
+	await assert_signal(_board).is_not_emitted("quality_lost")
 
 
 # A group with nothing to merge into (no blueprint, or a final item) stays on

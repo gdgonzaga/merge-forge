@@ -3,6 +3,8 @@ extends Control
 signal cell_drag_started(from_pos: Vector2i, item: Dictionary)
 signal cell_drag_ended(to_pos: Vector2i, drag_data: Dictionary)
 
+const QUALITY_STARS := preload("res://ui/quality_stars.tscn")
+
 var grid_pos: Vector2i = Vector2i(-1, -1)
 var item: Dictionary = {}
 # The BoardGrid this cell belongs to; drags carry it so a drop on another grid
@@ -61,10 +63,22 @@ func _get_drag_data(at_position: Vector2) -> Variant:
 	preview.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	preview.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	preview.texture = item["definition"].sprite
+	_add_quality_preview(preview, item["quality"])
 	set_drag_preview(preview)
 	preview.position = Vector2(-14, -100)
 	cell_drag_started.emit(grid_pos, item)
 	return make_drag_data()
+
+
+# Mirrors the cell's own top-right star badge, so a Fine or Masterwork item
+# doesn't look Normal while it's being dragged.
+func _add_quality_preview(preview: TextureRect, quality: int) -> void:
+	if quality <= 0:
+		return
+	var stars: Control = QUALITY_STARS.instantiate()
+	preview.add_child(stars)
+	stars.set_quality(quality)
+	stars.set_anchors_preset(Control.PRESET_TOP_RIGHT)
 
 
 func make_drag_data() -> Dictionary:

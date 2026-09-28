@@ -12,6 +12,7 @@ var _last_group_count: int = 0
 var _pending_options: Array[Dictionary] = []
 var _result_center: Vector2i = Vector2i(-1, -1)
 var _pending_quality: Dictionary = {}
+var _pending_best_quality: int = 0
 
 const QUALITY_RULES := preload("res://board/quality_rules.gd")
 
@@ -57,7 +58,11 @@ func process_next() -> void:
 		_last_group_positions.append(pos)
 	_last_group_item_id = item_id
 	_last_group_count = positions.size()
-	_pending_quality = QUALITY_RULES.resolve(_group_qualities(_last_group_positions), _last_group_count)
+	var qualities := _group_qualities(_last_group_positions)
+	_pending_best_quality = 0
+	for quality in qualities:
+		_pending_best_quality = maxi(_pending_best_quality, quality)
+	_pending_quality = QUALITY_RULES.resolve(qualities, _last_group_count)
 	_pending_options = all_options
 	for option in _pending_options:
 		option["result_quality"] = _pending_quality["result_quality"]
@@ -71,7 +76,7 @@ func process_next() -> void:
 func _group_qualities(positions: Array[Vector2i]) -> Array[int]:
 	var qualities: Array[int] = []
 	for pos in positions:
-		var cell = board.grid[pos.y][pos.x]
+		var cell: Variant = board.grid[pos.y][pos.x]
 		if cell != null:
 			qualities.append(cell["quality"])
 	return qualities
@@ -160,8 +165,11 @@ func _place_results(option: Dictionary) -> void:
 	_dbg("_place_results: result_count=%d quality=%d" % [_last_group_count / 3, quality])
 	_spawn_results(RecipeResolver.make_item(result_def, quality), _last_group_count / 3)
 	_refund_source_items(source_def, _pending_quality["refund_qualities"])
-	if quality > 0 and _result_center.x >= 0:
-		_merge_board.show_quality_sparkle(quality, _result_center)
+	if _result_center.x >= 0:
+		if quality > 0:
+			_merge_board.show_quality_sparkle(quality, _result_center)
+		if _pending_best_quality > quality:
+			_merge_board.show_quality_lost(_pending_best_quality, _result_center)
 	EventBus.merge_completed.emit(result_id, quality)
 	process_next()
 
@@ -187,7 +195,7 @@ func _spawn_results(result_data: Dictionary, count: int) -> void:
 	board.flash_cells(flash_positions)
 
 
-func _refund_source_items(source_def: ItemDefinition, qualities: Array) -> void:
+func _refund_source_items(source_def: ItemDefinition, qualities: Array[int]) -> void:
 	if qualities.is_empty():
 		return
 	var spawned := 0
