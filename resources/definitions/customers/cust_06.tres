@@ -1,28 +1,32 @@
 [gd_resource type="Resource" script_class="CustomerDefinition" format=3]
 
-[ext_resource type="Script" path="res://resources/definitions/order_definition.gd" id="1_o2daw"]
-[ext_resource type="Resource" path="res://resources/definitions/items/herb_bundle.tres" id="2_e6404"]
-[ext_resource type="Resource" path="res://resources/definitions/items/iron_ingot.tres" id="3_gelq6"]
-[ext_resource type="Script" path="res://resources/definitions/customer_definition.gd" id="4_0i6q0"]
-[ext_resource type="Texture2D" path="res://resources/sprites/portraits/customer_06.png" id="5_kxi50"]
+[ext_resource type="Script" path="res://resources/definitions/order_template.gd" id="1_tpl"]
+[ext_resource type="Resource" path="res://resources/definitions/items/herb_bundle.tres" id="2_bundle"]
+[ext_resource type="Resource" path="res://resources/definitions/items/iron_ingot.tres" id="3_ingot"]
+[ext_resource type="Script" path="res://resources/definitions/customer_definition.gd" id="4_cust"]
+[ext_resource type="Texture2D" path="res://resources/sprites/portraits/customer_06.png" id="5_sprite"]
 
-[sub_resource type="Resource" id="Resource_a85lc"]
-script = ExtResource("1_o2daw")
-item = ExtResource("2_e6404")
-quantity = 3
-gold_reward = 60
+[sub_resource type="Resource" id="Resource_bundle"]
+script = ExtResource("1_tpl")
+item = ExtResource("2_bundle")
+weight = 2
+min_quantity = 2
+max_quantity = 3
 
-[sub_resource type="Resource" id="Resource_7e66d"]
-script = ExtResource("1_o2daw")
-item = ExtResource("3_gelq6")
-quantity = 2
-gold_reward = 40
+[sub_resource type="Resource" id="Resource_ingot"]
+script = ExtResource("1_tpl")
+item = ExtResource("3_ingot")
+weight = 2
+min_quantity = 2
+max_quantity = 3
 
 [resource]
-script = ExtResource("4_0i6q0")
+script = ExtResource("4_cust")
 id = "cust_06"
 name = "Hilda"
 role = "Innkeeper"
-sprite = ExtResource("5_kxi50")
-queue_order = 5
-orders = Array[ExtResource("1_o2daw")]([SubResource("Resource_a85lc"), SubResource("Resource_7e66d")])
+sprite = ExtResource("5_sprite")
+min_orders = 2
+max_orders = 2
+price_multiplier = 0.9
+wants = Array[ExtResource("1_tpl")]([SubResource("Resource_bundle"), SubResource("Resource_ingot")])

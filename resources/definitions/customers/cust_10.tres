@@ -1,28 +1,34 @@
 [gd_resource type="Resource" script_class="CustomerDefinition" format=3]
 
-[ext_resource type="Script" path="res://resources/definitions/order_definition.gd" id="1_lxxya"]
-[ext_resource type="Resource" path="res://resources/definitions/items/battle_elixir.tres" id="2_romnj"]
-[ext_resource type="Resource" path="res://resources/definitions/items/healing_potion.tres" id="3_xj0gj"]
-[ext_resource type="Script" path="res://resources/definitions/customer_definition.gd" id="4_svx80"]
-[ext_resource type="Texture2D" path="res://resources/sprites/portraits/customer_10.png" id="5_rbiqm"]
+[ext_resource type="Script" path="res://resources/definitions/order_template.gd" id="1_tpl"]
+[ext_resource type="Resource" path="res://resources/definitions/items/battle_elixir.tres" id="2_elixir"]
+[ext_resource type="Resource" path="res://resources/definitions/items/healing_potion.tres" id="3_potion"]
+[ext_resource type="Resource" path="res://resources/definitions/items/phoenix_draught.tres" id="4_phoenix"]
+[ext_resource type="Script" path="res://resources/definitions/customer_definition.gd" id="5_cust"]
+[ext_resource type="Texture2D" path="res://resources/sprites/portraits/customer_10.png" id="6_sprite"]
 
-[sub_resource type="Resource" id="Resource_q71bg"]
-script = ExtResource("1_lxxya")
-item = ExtResource("2_romnj")
-quantity = 2
-gold_reward = 560
+[sub_resource type="Resource" id="Resource_elixir"]
+script = ExtResource("1_tpl")
+item = ExtResource("2_elixir")
+weight = 2
+max_quantity = 2
 
-[sub_resource type="Resource" id="Resource_skvvs"]
-script = ExtResource("1_lxxya")
-item = ExtResource("3_xj0gj")
-quantity = 2
-gold_reward = 560
+[sub_resource type="Resource" id="Resource_potion"]
+script = ExtResource("1_tpl")
+item = ExtResource("3_potion")
+max_quantity = 2
+
+[sub_resource type="Resource" id="Resource_phoenix"]
+script = ExtResource("1_tpl")
+item = ExtResource("4_phoenix")
 
 [resource]
-script = ExtResource("4_svx80")
+script = ExtResource("5_cust")
 id = "cust_10"
 name = "Veska"
 role = "Battle-Mage"
-sprite = ExtResource("5_rbiqm")
-queue_order = 9
-orders = Array[ExtResource("1_lxxya")]([SubResource("Resource_q71bg"), SubResource("Resource_skvvs")])
+sprite = ExtResource("6_sprite")
+reputation_required = 200
+max_orders = 3
+price_multiplier = 1.25
+wants = Array[ExtResource("1_tpl")]([SubResource("Resource_elixir"), SubResource("Resource_potion"), SubResource("Resource_phoenix")])

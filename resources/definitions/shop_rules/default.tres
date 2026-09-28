@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="ShopRulesDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/shop_rules_definition.gd" id="1_rules"]
+
+[resource]
+script = ExtResource("1_rules")
+id = "default"
+session_size = 10
+fulfill_reputation = 10
+reject_reputation_penalty = 2

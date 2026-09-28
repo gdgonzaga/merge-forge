@@ -15,6 +15,7 @@ var crates: Dictionary = {}
 var upgrades: Dictionary = {}
 var customers: Dictionary = {}
 var dungeons: Dictionary = {}
+var shop_rules: Dictionary = {}
 
 
 func _ready() -> void:
@@ -46,6 +47,7 @@ func get_catalogs() -> Dictionary:
 		"upgrades": upgrades,
 		"customers": customers,
 		"dungeons": dungeons,
+		"shop_rules": shop_rules,
 	}
 
 
@@ -161,6 +163,11 @@ func get_all_dungeons() -> Array[DungeonDefinition]:
 		return a.id < b.id
 	)
 	return result
+
+
+# The one shop-rules definition.
+func get_shop_rules() -> ShopRulesDefinition:
+	return shop_rules.get("default", null)
 
 
 # Shop listings run cheapest first; ties by id so the order is stable.

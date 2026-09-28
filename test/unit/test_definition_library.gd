@@ -135,6 +135,27 @@ func _dungeon(id: String, reputation_required: int) -> DungeonDefinition:
 	return dungeon
 
 
+func test_customer_archetypes_are_well_formed() -> void:
+	for customer in DefinitionLibrary.get_all_customers():
+		assert_bool(customer.wants.is_empty()).override_failure_message("%s wants nothing" % customer.id).is_false()
+		assert_bool(customer.min_orders >= 1 and customer.min_orders <= customer.max_orders) \
+			.override_failure_message("%s has orders %d-%d" % [customer.id, customer.min_orders, customer.max_orders]).is_true()
+		assert_float(customer.price_multiplier).override_failure_message("%s price" % customer.id).is_greater(0.0)
+		var seen := {}
+		for want in customer.wants:
+			assert_object(want.item).override_failure_message("%s has an empty want" % customer.id).is_not_null()
+			assert_bool(seen.has(want.item.id)).override_failure_message("%s wants %s twice" % [customer.id, want.item.id]).is_false()
+			seen[want.item.id] = true
+			assert_bool(want.min_quantity >= 1 and want.min_quantity <= want.max_quantity) \
+				.override_failure_message("%s wants %s x%d-%d" % [customer.id, want.item.id, want.min_quantity, want.max_quantity]).is_true()
+
+
+func test_shop_rules_are_defined() -> void:
+	var rules := DefinitionLibrary.get_shop_rules()
+	assert_object(rules).is_not_null()
+	assert_int(rules.session_size).is_greater(0)
+
+
 # Party members and enemies share the combat stat fields CombatEngine reads.
 func _assert_unit_stats(unit: Resource) -> void:
 	var id: String = unit.id
