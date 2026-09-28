@@ -146,4 +146,4 @@ theme_override_styles/normal = ExtResource("4_rff1c")
 theme_override_styles/pressed = ExtResource("5_qgtw2")
 theme_override_styles/hover = ExtResource("4_rff1c")
 theme_override_styles/disabled = ExtResource("7_4ueio")
-text = "DBG: Unlock All + 2000g + 1000rep"
+text = "DBG: Unlock All + 20000g + 1000rep"

@@ -156,8 +156,8 @@ func _describe_upgrade(upgrade: UpgradeDefinition) -> String:
 
 func _debug_unlock_all() -> void:
 	GameManager.debug_mode = true
-	GameManager.gold = 2000
-	GameManager.gold_changed.emit(2000)
+	GameManager.gold = 20000
+	GameManager.gold_changed.emit(20000)
 	GameManager.add_reputation(1000)
 	for blueprint in DefinitionLibrary.get_all_blueprints():
 		GameManager.add_blueprint(blueprint.id)
