@@ -60,6 +60,7 @@ func _on_gold_changed(_value: int) -> void:
 
 func _on_blueprint_added(_id: String) -> void:
 	_refresh_blueprints()
+	_refresh_forecast()
 
 
 func _on_upgrade_added(_id: String) -> void:
@@ -68,11 +69,13 @@ func _on_upgrade_added(_id: String) -> void:
 
 func _on_reagent_count_changed(_id: String, _count: int) -> void:
 	_refresh_reagents()
+	_refresh_forecast()
 
 
 func _on_shop_level_changed(_level: int) -> void:
 	_refresh_dungeon_button()
 	_refresh_all()
+	_refresh_forecast()
 
 
 func _refresh_dungeon_button() -> void:

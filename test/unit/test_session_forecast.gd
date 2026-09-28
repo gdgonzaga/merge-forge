@@ -28,6 +28,58 @@ func test_the_session_rolls_the_modifier_prep_forecast() -> void:
 	assert_array(_describe(_shop_plan())).is_equal(_describe(plan))
 
 
+func test_buying_a_blueprint_in_prep_updates_the_forecast() -> void:
+	# A crate sells ore; the blueprint merges 3 ore into a blade; the knight
+	# wants only the blade, so he's dealt only once the blueprint is owned.
+	var ore := ItemDefinition.new()
+	ore.id = "__test_ore"
+	ore.name = "Test Ore"
+	var blade := ItemDefinition.new()
+	blade.id = "__test_blade"
+	blade.name = "Test Blade"
+	var blueprint := BlueprintDefinition.new()
+	blueprint.id = "__test_blade_bp"
+	blueprint.name = "Test Blade Blueprint"
+	blueprint.cost = 10
+	var merge := MergeResult.new()
+	merge.result = blade
+	merge.blueprint = blueprint
+	ore.merge_results = [merge]
+	var entry := WeightedItem.new()
+	entry.item = ore
+	entry.weight = 1
+	var crate := CrateDefinition.new()
+	crate.id = "__test_crate"
+	crate.name = "Test Crate"
+	crate.cost = 1
+	crate.pool = [entry]
+	var want := OrderTemplate.new()
+	want.item = blade
+	var knight := CustomerDefinition.new()
+	knight.id = "__test_knight"
+	knight.name = "Test Knight"
+	knight.weight = 100000
+	knight.wants = [want]
+	set_definition(DefinitionLibrary.items, ore)
+	set_definition(DefinitionLibrary.items, blade)
+	set_definition(DefinitionLibrary.blueprints, blueprint)
+	set_definition(DefinitionLibrary.crates, crate)
+	set_definition(DefinitionLibrary.customers, knight)
+	var prep: Control = auto_free(PREP.instantiate())
+	add_child(prep)
+	assert_array(_ids(prep.get_forecast_plan())).not_contains(["__test_knight"])
+	assert_bool(prep.try_purchase("blueprint", "__test_blade_bp")).is_true()
+	assert_array(_ids(prep.get_forecast_plan())).contains(["__test_knight"])
+	assert_array(_describe(_shop_plan())).is_equal(_describe(prep.get_forecast_plan()))
+
+
+func _ids(plan: SessionPlan) -> Array[String]:
+	var ids: Array[String] = []
+	for customer in plan.customers:
+		ids.append(customer.definition.id)
+	return ids
+
+
 func _forecast_plan() -> SessionPlan:
 	var prep: Control = PREP.instantiate()
 	add_child(prep)
