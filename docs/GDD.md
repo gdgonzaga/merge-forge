@@ -28,10 +28,9 @@
 - 2 material families in MVP gameplay (Metal, Herb), each with a 4-step merge chain defined on the item definitions. Gem and Wood families have the family key reserved in data (`"gem"`, `"wood"`) but no items are defined yet.
 - 1 reagent in MVP (Fire Essence) creating variant items as merge options for final-stage merges
 - Shop mode: 10-customer sessions with order fulfillment
-- 3 customer tiers (Basic, Standard, Premium) gated by reputation
+- Shop level: 60 levels from XP that never decreases; every unlock (customer archetype, dungeon, blueprint, crate, reagent) is a `min_shop_level` on its definition
 - Economy: gold, material crates, reagent purchases, shop upgrades
 - Prep phase between sessions: buy blueprints/reagents/upgrades, rearrange board; material crates bought during shop sessions
-- Reputation system with thresholds for customer tier and dungeon unlock
 - Dungeon mode: auto-walking party, enemy encounters, auto-combat
 - Real-time merging during dungeon with usable items (heal, buff) drag-to-party
 - Party knockouts and dungeon fail condition (full party wipe)
@@ -74,12 +73,12 @@ The core loop has two modes: **Shop Mode** and **Dungeon Mode**.
 
 ### Shop Mode Loop
 
-1. **Session starts** — 10 customers are dealt from the reputation-unlocked archetypes, seeded per session
+1. **Session starts** — 10 customers are dealt from the level-unlocked archetypes, seeded per session
 2. **Customer arrives** — displays portrait and 1–3 possible orders
 3. **Player crafts** — buys crates, places materials on the board, merges them into more advanced items
-4. **Player fulfills order** — taps one order card to deliver the required items, earning gold. Only one order per customer can be fulfilled; remaining orders are discarded. OR rejects the customer (small reputation penalty)
+4. **Player fulfills order** — taps one order card to deliver the required items, earning gold and XP (more with a longer fulfil streak). Only one order per customer can be fulfilled; remaining orders are discarded. OR rejects the customer, which breaks the fulfil streak; no XP
 5. **Repeat** steps 2–4 for all 10 customers
-6. **Session summary** — shows gold earned, items sold, satisfied customer portraits
+6. **Session summary** — shows gold and XP earned, items sold, satisfied customer portraits, and a level-up panel if a level was crossed
 7. **Prep phase** — spend gold on blueprints, reagents, upgrades; rearrange board (demand forecast tab deferred to post-MVP)
 8. **Choose** — start next session or enter dungeon (if unlocked)
 
@@ -91,7 +90,7 @@ The core loop has two modes: **Shop Mode** and **Dungeon Mode**.
 4. **Player supports party** — drags usable items (heals, buffs) to party members
 5. **Combat resolves** — auto-combat ticks, enemies die and drop materials, or party members get knocked out
 6. **Repeat** steps 2–5 until all enemies in the dungeon are defeated and progress reaches 100%
-7. **Dungeon ends** — rewards (gold, blueprints, reputation) on success, reputation loss on failure
+7. **Dungeon ends** — rewards (gold, blueprints, XP) on clear; nothing on a wipe
 
 **Session length:** 5–10 minutes (shop), 3–5 minutes (dungeon)
 
@@ -114,7 +113,7 @@ Transitions:
 - Shop Session → Session Summary: 10th customer served or rejected
 - Session Summary → Prep Phase: player taps Continue
 - Prep Phase → Shop Session: player taps Start Session
-- Prep Phase → Dungeon: player taps Enter Dungeon (requires reputation threshold)
+- Prep Phase → Dungeon: player taps Enter Dungeon (requires the dungeon's `min_shop_level`)
 - Dungeon → Dungeon Summary: dungeon cleared or failed
 - Dungeon Summary → Prep Phase: player taps Continue
 - Prep Phase → Main Menu: player taps Quit (with confirmation)
@@ -228,17 +227,17 @@ Transitions:
 
 ### Shop Mode — No Fail State
 
-- The player cannot lose in shop mode. Rejecting all customers yields zero gold and slight reputation loss, but the session always completes.
+- The player cannot lose in shop mode. Rejecting all customers yields zero gold and zero XP, but the session always completes.
 
 ### Dungeon Mode — Win
 
 - **Condition:** Progress reaches 100% (all encounters cleared).
-- **On win:** Dungeon summary (cleared) screen — gold reward, any blueprint reward, +25 reputation gained. All items on the dungeon board are discarded. Return to Prep Phase.
+- **On win:** Dungeon summary (cleared) screen — gold reward, any blueprint reward, XP gained (the dungeon's `xp_reward`), and a level-up panel if a level was crossed. All items on the dungeon board are discarded. Return to Prep Phase.
 
 ### Dungeon Mode — Fail
 
 - **Condition:** All 3 party members knocked out (HP reaches 0).
-- **On fail:** Dungeon summary (failed) screen — reputation penalty applied. Return to Prep Phase. All items on the dungeon board are lost. Partial progress (encounters cleared) is wiped. Shop board state is unaffected.
+- **On fail:** Dungeon summary (failed) screen — no XP. Return to Prep Phase. All items on the dungeon board are lost. Partial progress (encounters cleared) is wiped. Shop board state is unaffected.
 
 ---
 
@@ -249,27 +248,39 @@ Transitions:
   - Encounter 2 (50%): 1× Goblin Archer, 1× Goblin
   - Encounter 3 (80%): 2× Goblin
 - **Number of dungeons:** 1 (MVP). More planned for later versions.
-- **Progression unlock:** Reputation-based. Fulfilling orders earns reputation points. Crossing thresholds unlocks new customer tiers and dungeon access.
-- **Difficulty scaling:** Customer orders demand more advanced items at higher reputation. Dungeon enemies have more HP and damage in later encounters.
+- **Progression unlock:** Shop-level-based. Fulfilling orders and clearing dungeons earn shop XP, which never decreases. Crossing a level unlocks every definition (customer archetype, dungeon, blueprint, crate, reagent) whose `min_shop_level` is that level.
+- **Difficulty scaling:** Higher-level customer archetypes demand more advanced items. Dungeon enemies have more HP and damage in later encounters.
 - **Save / checkpoint system:** Auto-save after session end, after purchases, and after dungeon end. Single JSON file at `user://save_data.json`.
 
-### Reputation Thresholds
+### Shop Levels
 
-| Level | Points Required | Unlocks |
-|-------|----------------|---------|
-| Low | 0–99 | Basic customers |
-| Mid | 100–299 | Standard customers, dungeon access (at 150 pts) |
-| High | 300+ | Premium customers (deferred) |
+The curve is a power law: XP from level k to k+1 is `round(level_xp_base x k^level_xp_exponent)` (`level_xp_base` 70, `level_xp_exponent` 1.5). At best play, level 10 lands around session 10, level 30 around session 97, level 50 around session 330 — see `tmp/shop-improvements/sim/economy_sim.gd`'s `_print_levels()`.
+
+| Level | Unlocks |
+|-------|---------|
+| 1 | Customers: Brom, Mira, Hilda |
+| 2 | Blueprint: Iron Plate. Crate: Herb Crate |
+| 3 | Customers: Garrick, Maelys. Crate: Metal Crate |
+| 4 | Blueprint: Healing Potion |
+| 5 | Customer: Ysolde |
+| 6 | Dungeon: Goblin Cave. Blueprint: Battle Elixir |
+| 7 | Blueprint: Bomb |
+| 8 | Customers: Ser Roland, Caelum. Blueprint: Sword |
+| 10 | Blueprint: Iron Shield |
+| 12 | Blueprint: Cluster Bomb. Reagent: Fire Essence |
+| 14 | Customers: Ser Kaelen, Veska. Blueprints: Flame Sword, Phoenix Draught |
+| 16 | Blueprint: Fire Bomb |
+| 17–60 | Empty until Phases 4–8 of `tmp/shop-improvements/` fill them in |
 
 ### What Persists Between Sessions
 
 - Gold balance
+- Shop XP (and the level derived from it)
 - Blueprints unlocked
 - Upgrades purchased
 - Reagent inventory (Dictionary[String, int])
 - Board state (items on grid carry over)
 - Grid size (if upgraded)
-- Reputation points
 
 ---
 
@@ -282,17 +293,17 @@ Transitions:
 ### Shop Mode (In-Game)
 - **Top:** Customer queue — current customer portrait + 1–3 order cards showing item icons and quantities + reject button. On the left side, the current customer's image is shown, with a "Reject" button at the bottom. On the right side, their 1–3 orders are stacked vertically, each showing item icon, quantity, and gold reward. Tapping an order card fulfills it. **Parked:** Show silhouette of other customers behind the current customer, with random movements (just horizontal movements).
 - **Center-left:** Merge board (5×5 grid with staging area above it).
-- **Right side:** CratePanel — VBoxContainer with crate buy buttons populated from `crates.json` and a discard trash bin below.
-- **Overlay (CanvasLayer):** HUD — gold display, reputation badge (always visible during gameplay)
+- **Right side:** CratePanel — VBoxContainer with crate buy buttons populated from the level-unlocked crate definitions and a discard trash bin below.
+- **Overlay (CanvasLayer):** HUD — gold, shop level and XP bar (always visible during gameplay)
 - Does NOT have: Timer, health bar, pause button
 
 ### Session Summary
-- Elements: Gold earned counter (animated count-up), items sold list, fulfilled count, rejected count, satisfied/disappointed customer portraits, Continue button
+- Elements: Gold earned counter (animated count-up), XP earned, items sold list, fulfilled count, rejected count, satisfied/disappointed customer portraits, a level-up panel (shown only if a level was crossed), Continue button
 - Does NOT have: Star rating, share button
 
 ### Prep Phase
-- Elements: TabContainer with tabs — Board (rearrange freely), Blueprints (buy blueprints), Upgrades (buy upgrades and reagents). Material crates are purchased during shop sessions. Forecast tab deferred to post-MVP.
-- **Overlay (CanvasLayer):** HUD — gold display, reputation badge (always visible during gameplay)
+- Elements: TabContainer with tabs — Board (rearrange freely), Blueprints (buy blueprints), Upgrades (buy upgrades and reagents). Material crates are purchased during shop sessions. Forecast tab deferred to post-MVP. Locked entries are greyed with "Unlocks at level N"; the dungeon button reads "Dungeon (Lv N)" while locked.
+- **Overlay (CanvasLayer):** HUD — gold, shop level and XP bar (always visible during gameplay)
 - **Bottom:** Continue button → start next session or enter dungeon. Quit button (with confirmation) → return to Main Menu.
 - Does NOT have: Timer, limited item slots
 
@@ -310,14 +321,14 @@ Transitions:
 - **Between sides:** Encounter banner — label showing encounter number (e.g. "Encounter 1/3"), shown during combat
 - **Center/bottom:** Merge board (same grid as shop, separate board state)
 - **Staging area:** Enemy drops appear here
-- **Overlay (CanvasLayer):** HUD — gold display, reputation badge (always visible during gameplay)
+- **Overlay (CanvasLayer):** HUD — gold, shop level and XP bar (always visible during gameplay)
 - Does NOT have: Manual attack button, movement controls, inventory screen
 
 ### Dungeon Cleared Summary Screen
-- Elements: Gold reward, blueprint reward (if any), reputation gained, Continue button
+- Elements: Gold reward, blueprint reward (if any), "XP: +N", a level-up panel (shown only if a level was crossed), Continue button
 
 ### Dungeon Failed Summary Screen
-- Elements: "Party Wiped" message, reputation lost, Continue button
+- Elements: "Party Wiped" message, "No XP", Continue button
 
 ### Merge Choice Popup
 - Elements: Compact panel with 2–4 buttons, each showing item icon and name. Variant options show the reagent icon badge if a reagent is consumed.
@@ -379,13 +390,13 @@ Transitions:
 | Crate discount | 20% | With Crate Discount upgrade |
 | Upgrades | Data-driven | Defined in `upgrades.json` (Slow Timer, Crate Discount, Grid Expand) |
 | Crates | Data-driven | Defined in `crates.json` (whatever entries exist become buy buttons) |
-| Customers | Data-driven: reputation-gated archetypes | `CustomerDefinition` archetypes under `resources/definitions/customers/`, dealt each session by `shop/customer_generator.gd`. Order price = `gold_value x quantity x price_multiplier`. |
-| Reputation fulfill reward | 10 points | Per fulfilled order |
-| Reputation reject penalty | 2 points | Per rejected customer |
-| Reputation dungeon fail | 20 points lost | On party wipe |
-| Reputation dungeon clear | 25 points gained | On dungeon completion |
+| Customers | Data-driven: level-gated archetypes | `CustomerDefinition` archetypes under `resources/definitions/customers/`, dealt each session by `shop/customer_generator.gd` (weighted draw with replacement by `weight`, no back-to-back repeats). Order price = `gold_value x quantity x price_multiplier`. |
+| Order XP | `round(gold_reward x xp_per_gold x (1 + min(streak x streak_step, streak_cap)))` | `xp_per_gold` 0.5, `streak_step` 0.1, `streak_cap` 0.5. `streak` is the customers fulfilled in a row before this one. |
+| Shop level curve | `round(level_xp_base x level^level_xp_exponent)` | XP from level k to k+1. `level_xp_base` 70, `level_xp_exponent` 1.5. |
+| Max shop level | 60 | XP past the level-60 threshold has nowhere to go; the HUD's XP bar stays full |
 | Dungeon gold reward | 120g | Goblin Cave (MVP) |
-| Dungeon unlock threshold | 150 reputation points | |
+| Dungeon XP reward | 60 | Goblin Cave, on clear. A wipe gives none. |
+| Dungeon unlock | Level 6 | Goblin Cave's `min_shop_level` |
 
 ### Item Catalog (MVP)
 
@@ -522,7 +533,7 @@ Any board change — item placed, item removed, or item swapped. Also re-trigger
 
 **GDD dependencies:**
 - Economy
-- Reputation
+- Shop Level
 - Blueprint
 - Reagent
 
@@ -585,56 +596,51 @@ Purchase flow:
 
 ---
 
-### Submodule — Reputation System
+### Submodule — Shop Level
 
-**What it does:**
-Tracks reputation points and determines the player's reputation level (Low/Mid/High). Gates dungeon access based on level thresholds, and gates individual customer archetypes based on each archetype's own `reputation_required`.
+**What it tracks:**
+Cumulative shop XP (`GameManager.shop_xp`, never decreases) and the shop level it derives (`get_shop_level()`, 1 to `max_level`). Every definition that has a `min_shop_level` — customer archetype, dungeon, blueprint, crate, reagent — is gated by the player's current level.
 
 **What triggers it:**
-Customer order fulfilled (+10 pts), customer rejected (-2 pts), dungeon cleared (+25 pts), dungeon failed (-20 pts).
+Customer order fulfilled (XP per `order_xp`, streak-boosted), customer rejected (streak resets, no XP change), dungeon cleared (the dungeon's `xp_reward`; 60 for the Goblin Cave), dungeon failed (no XP).
 
 **Inputs:**
 - Events from ShopSession (fulfill, reject)
 - Events from DungeonController (dungeon cleared, dungeon failed)
-- Current reputation points from GameManager
+- Current `shop_xp` from GameManager
+- `ShopRulesDefinition` (`xp_per_gold`, `streak_step`, `streak_cap`, `level_xp_base`, `level_xp_exponent`, `max_level`)
 
 **Outputs:**
-- Updates GameManager.reputation_points
-- Emits reputation_changed when level changes
-- `reputation_points` is read directly by `shop/customer_generator.gd`, which gates each archetype by its own `reputation_required`
-- Provides dungeon unlock status
+- Updates `GameManager.shop_xp`, emits `shop_xp_changed`
+- Emits `shop_level_changed` once per level crossed (a gain that skips levels still fires once per level in between)
+- `GameManager.meets_level(min_shop_level)` is read directly by `core/purchases.gd`, `board/merge_board.gd` (crate purchase), `autoloads/recipe_resolver.gd` (`is_craftable`) and `core/prep_phase.gd`; `GameManager.get_shop_level()` is passed into `shop/customer_generator.gd.generate()`, which compares it to each archetype's `min_shop_level` directly
+- `DefinitionLibrary.get_unlocks_between(old_level, new_level)` feeds the level-up panel shown on both summaries
 
 **States / Logic:**
 ```
-Levels: [0, 100, 300] → Low / Mid / High (drives HUD badge and dungeon unlock only)
+XP from level k to k+1: round(level_xp_base x k^level_xp_exponent)
+  — a power law, not geometric (see Decisions Log 2026-09-28).
 
-Customer archetypes are gated individually by reputation_required, not by level:
-a fresh game (0 reputation) only unlocks the archetypes with reputation_required 0.
+Order XP: round(gold_reward x xp_per_gold x (1 + min(streak x streak_step, streak_cap))),
+  where streak is the customers fulfilled in a row before this one.
+A rejection resets the streak to 0 and earns no XP.
 
-Dungeon unlock: 150 pts required
+Every definition with min_shop_level is gated individually, not by tier:
+a fresh game (level 1) only unlocks the archetypes, blueprints, crates and
+reagents with min_shop_level 1.
 ```
 
-**Fixed values:**
-
-| Property | Value | Notes |
-|----------|-------|-------|
-| Fulfill reward | 10 pts | Per order fulfilled |
-| Reject penalty | 2 pts | Per customer rejected |
-| Dungeon clear reward | 25 pts | On dungeon completion |
-| Dungeon fail penalty | 20 pts | On full party wipe |
-| Dungeon unlock | 150 pts | |
-| Mid threshold | 100 pts | |
-| High threshold | 300 pts | |
+**Fixed values:** see Section 10, Fixed Values and the Shop Levels table in Section 7.
 
 **Does NOT:**
-- Decrease reputation below 0
-- Group customer archetypes into tiers — gating is per-archetype
+- Decrease `shop_xp` (no penalty for rejecting or wiping)
+- Group unlocks into tiers — gating is per-definition
 - Affect dungeon difficulty
 
 **GDD dependencies:**
-- Reads/writes GameManager.reputation_points
-- Affects `shop/customer_generator.gd` (per-archetype `reputation_required` gates)
-- Affects Prep Phase (dungeon button visibility)
+- Reads/writes `GameManager.shop_xp`
+- Affects `shop/customer_generator.gd`, `core/purchases.gd`, `board/merge_board.gd`, `autoloads/recipe_resolver.gd` (per-definition `min_shop_level` gates)
+- Affects Prep Phase (dungeon button text/enabled state, greyed locked entries)
 
 ---
 
@@ -826,7 +832,7 @@ Combat tick (every 1 second):
 - Reads usable item effects from the item definitions (`resources/definitions/items/`)
 - Affects party member HP and buffs
 - Affects DropManager (spawns drops on enemy death)
-- Affects Reputation System (penalty on wipe)
+- Affects Shop Level (no XP on wipe; `xp_reward` on clear)
 
 **Parked:**
 
@@ -898,10 +904,10 @@ The player leaving a summary screen for the prep phase: the Session Summary's Co
 | 2026-06-04 | Dungeon wipe: partial progress lost on exit/fail | Post-MVP: exit penalty + anti-scumming measures |
 | 2026-06-04 | Demand forecast deferred | Forecast tab and forecast_bias not in MVP |
 | 2026-06-04 | Premium customer tier deferred | CustomerGenerator only produces Basic and Standard for MVP |
-| 2026-06-04 | Reject penalty: reputation only, no gold cost | -2 reputation per rejected customer |
+| 2026-06-04 | Reject penalty: reputation only, no gold cost | -2 reputation per rejected customer. **Superseded 2026-09-28:** reputation is gone; a reject now breaks the fulfil streak and earns no XP, with no other penalty. |
 | 2026-06-04 | Usable item values confirmed for v1.0 | Healing Potion: heal 30 HP; Battle Elixir: +5 ATK for 10s. Tune during playtesting |
-| 2026-06-04 | Dungeon clear reputation reward: +25 | |
-| 2026-06-04 | Goblin Cave: no blueprint reward | First dungeon awards gold + reputation only. Post-MVP dungeons may award blueprints. |
+| 2026-06-04 | Dungeon clear reputation reward: +25 | **Superseded 2026-09-28:** reputation is gone; a clear now awards `xp_reward` shop XP instead (60 for the Goblin Cave). |
+| 2026-06-04 | Goblin Cave: no blueprint reward | First dungeon awards gold + XP only (reputation, superseded 2026-09-28). Post-MVP dungeons may award blueprints. |
 | 2026-06-10 | Remove `tier` field from items.json | Merge chains fully defined by recipes.json; reagent variant eligibility determined by reagent_combos.json entries; no derived or computed tier property needed |
 | 2026-06-11 | Merge-safe placement for generated items | Crate contents and enemy drops are placed directly on the board when a "safe" empty cell exists (won't trigger an unintended merge). Staging area used only as fallback. Does not apply to player drag placement. |
 | 2026-09-25 | Goblin Cave retune + telegraphed heavy attacks | Unassisted party wipes in encounter 3; one Healing Potion (now 40 HP) clears with a KO, two clear cleanly. Enemies drop refined_potion / herb_bundle so a potion is craftable in-run (~90% by encounter 3). Walk cut from ~50s to ~13s. Healing Potion blueprint is effectively required to clear. |
@@ -914,13 +920,16 @@ The player leaving a summary screen for the prep phase: the Session Summary's Co
 | 2026-09-28 | All content is `.tres`; `data/` is gone | Recipes, reagent variants, blueprints, crates, upgrades, reagents, customers and dungeons moved from JSON to typed definitions under `resources/definitions/`. Definitions reference each other directly, so a broken link shows up in the editor and in the integrity tests instead of as a silent id typo; references only point down the tiers because Godot can't load cyclic resources. Ids are unchanged, so saves still load (no `SAVE_VERSION` bump). Fire Essence costs 100 as specified; `reagents.json` had drifted to 75. Shop listings are ordered cheapest first. |
 | 2026-09-28 | v1.0 is ad-supported: interstitials only | AdMob interstitials at summary-to-prep breaks, with UMP consent (Submodule — Ads). No persistent banner: it would take about 130-240 px of a full portrait layout, and it would sit next to drag-and-drop input, which risks accidental clicks (an AdMob policy violation) for little revenue. No rewarded ads yet. Paid ad removal is deferred (`docs/TODO.md`). Store and account setup: `docs/ADS-COMPLIANCE.md`. |
 | 2026-09-28 | Economy baseline retune | Margins now rise with tier (price / material cost at least 1.3 / 1.6 / 2.0 at depth 2 / 3 / 4); tier-4 herbs had sold below cost. New Herb Crate (herbs cost 6.25g per leaf through the mixed crate). Merge bonus pays 25% of the *source* value per extra item; paying 50% of the result's value on refunded extras was a repeatable gold farm. Blueprint and upgrade costs scaled so buying everything takes about 12 best-case sessions instead of about 2.5. Checked by `tmp/shop-improvements/sim/economy_sim.gd`. Dungeon clear reward 400 -> 120g: runs are free and repeatable, so a bigger reward let repeated dungeon runs out-earn the shop; 120 keeps roughly the old 80g's share of a best-case session (about 11% of about 1032g). |
-| 2026-09-28 | Customers are seeded archetype sessions, not a fixed list | `CustomerDefinition` becomes an archetype (`reputation_required`, `weight`, `min_orders`/`max_orders`, `price_multiplier`, `wants: Array[OrderTemplate]`) instead of a customer with fixed orders. Each shop session deals `session_size` customers from `shop/customer_generator.gd`, seeded by `GameManager.get_session_seed()` (`run_seed` + `sessions_played`, both new save fields) so a session is reproducible and previewable. Dealing is a deck without replacement: every reputation-unlocked, currently-craftable archetype gets one slot per pass, with no archetype repeating back-to-back while another is available; `weight` only biases draw order within a pass. Every dealt customer's first order is guaranteed craftable today (`RecipeResolver.is_craftable`); remaining orders may be locked behind a blueprint the player doesn't have yet, as a teaser for what it would unlock. `SAVE_VERSION` 5 (breaking: `run_seed` and `sessions_played` are required fields, old saves are rejected as CORRUPT). |
+| 2026-09-28 | Customers are seeded archetype sessions, not a fixed list | `CustomerDefinition` becomes an archetype (`reputation_required`, `weight`, `min_orders`/`max_orders`, `price_multiplier`, `wants: Array[OrderTemplate]`) instead of a customer with fixed orders. Each shop session deals `session_size` customers from `shop/customer_generator.gd`, seeded by `GameManager.get_session_seed()` (`run_seed` + `sessions_played`, both new save fields) so a session is reproducible and previewable. Dealing is a deck without replacement: every reputation-unlocked, currently-craftable archetype gets one slot per pass, with no archetype repeating back-to-back while another is available; `weight` only biases draw order within a pass. Every dealt customer's first order is guaranteed craftable today (`RecipeResolver.is_craftable`); remaining orders may be locked behind a blueprint the player doesn't have yet, as a teaser for what it would unlock. `SAVE_VERSION` 5 (breaking: `run_seed` and `sessions_played` are required fields, old saves are rejected as CORRUPT). **Superseded 2026-09-28:** `reputation_required` is `min_shop_level`, and the deck-without-replacement dealing (one slot per pass) is a weighted draw with replacement — see the "Archetype weight is a real frequency weight" row below. |
 | 2026-09-28 | Drop archetype price premiums | The economy sim's endgame pace was 7.8 sessions against the 10-15 session target after archetypes shipped. Every archetype's `price_multiplier` was set back to 1.0 except Hilda (`cust_06`, 0.9), and Caelum's `healing_potion` want quantity was tightened from a range to a flat 1. Re-simmed pace is about 10.5 sessions. |
-| 2026-09-28 | No separate premium tier | Superseded by seeded archetype sessions: later archetypes gated by `reputation_required` fill the role the old "Basic/Standard/Premium" tier split was meant for. |
+| 2026-09-28 | No separate premium tier | Superseded by seeded archetype sessions: later archetypes gated by `reputation_required` fill the role the old "Basic/Standard/Premium" tier split was meant for. **Superseded 2026-09-28:** `reputation_required` is `min_shop_level`. |
+| 2026-09-28 | Reputation replaced by shop XP and levels | `GameManager.reputation_points` and every `reputation_required`/`reputation_changed` field are gone. `shop_xp` (never decreases) drives `get_shop_level()`, 1 to `max_level` (60); every unlock a definition used to gate by reputation now uses `min_shop_level`. `SAVE_VERSION` 6, breaking: old saves are rejected as CORRUPT. |
+| 2026-09-28 | Power-law level curve, not geometric | XP from level k to k+1 is `round(level_xp_base x k^level_xp_exponent)`, not a fixed per-level multiplier. Income plateaus once content runs out (there's nothing left to sell for more gold), so a geometric curve would make each later level cost a fixed factor more sessions forever; a power law's cost grows but at a rate the sim can tune to match the content that actually exists. |
+| 2026-09-28 | Archetype weight is a real frequency weight | Supersedes the deck rule in this date's "seeded archetype sessions" entry: the generator no longer deals a deck (one guaranteed slot per pass). It now does a weighted draw with replacement, so `weight` sets how often an archetype is dealt relative to the others, not just draw order within a pass; the no-repeat-back-to-back rule is unchanged. |
 
 ---
 
 ## 15. Open Questions
 
-- Balance tuning: all gold values, reputation thresholds, and economy numbers are placeholders until playtesting
+- Balance tuning: all gold values, shop level XP curve, and economy numbers are placeholders until playtesting
 - Dungeon mid-exit penalty (post-MVP): what penalty and which anti-scumming measures?
