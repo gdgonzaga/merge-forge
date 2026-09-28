@@ -140,7 +140,6 @@ These are emitted directly on GameManager. Connect via `GameManager.gold_changed
 - **Dungeon Mid-Exit Penalty:** MVP wipes all partial progress on dungeon exit/fail. Post-MVP: impose a penalty for mid-dungeon exit and implement anti-scumming measures (e.g., gold cost, reputation penalty, cooldown timer).
 - **Additional dungeons:** Beyond the first dungeon (Goblin Cave).
 - **Gem and Wood material families:** Family keys reserved in data (`"gem"`, `"wood"`). Wood items defined for forward compatibility. Gem items not yet defined.
-- **Premium customer tier:** All customer archetypes are gated individually by `reputation_required`; there is no separate "premium" tier concept.
 - **Additional reagent types:** Beyond Fire Essence (Ice, Shadow, Holy).
 - **Timed events or daily challenges.**
 - **Board themes / cosmetics.**
@@ -663,7 +662,7 @@ RecipeResolver has no signals — it is queried synchronously by MergeResolver, 
 
 ### Customers and Crates
 
-Customers are dealt from `CustomerDefinition` archetypes (see Content Definitions) by `shop/customer_generator.gd`, and crates are `CrateDefinition`s. The generator deals from a deck without replacement: each reputation-unlocked, currently-craftable archetype goes into the deck once per pass through the pool, and the deck is refilled and reshuffled whenever it runs out; an archetype never follows itself while another is available. `weight` biases draw order within a pass — it does not change how often an archetype appears in a session, since every eligible archetype is guaranteed one slot per pass. A fresh game only unlocks Brom, Mira and Hilda (`reputation_required` 0), so each of the three appears 3-4 times in a 10-customer session until the player's reputation clears the next threshold (Phase 3). Each dealt customer gets `min_orders` to `max_orders` orders, the first always for something the player can craft today and the rest possibly gated behind a blueprint. Whatever crates are defined are rendered as buy buttons in the shop's CratePanel, cheapest first; crate cost is multiplied by the Crate Discount upgrade.
+Customers are dealt from `CustomerDefinition` archetypes (see Content Definitions) by `shop/customer_generator.gd`, and crates are `CrateDefinition`s. No separate premium tier: later archetypes gated by `reputation_required` fill that role. The generator deals from a deck without replacement: each reputation-unlocked, currently-craftable archetype goes into the deck once per pass through the pool, and the deck is refilled and reshuffled whenever it runs out; an archetype never follows itself while another is available. `weight` biases draw order within a pass — it does not change how often an archetype appears in a session, since every eligible archetype is guaranteed one slot per pass. A fresh game only unlocks Brom, Mira and Hilda (`reputation_required` 0), so each of the three appears 3-4 times in a `session_size`-customer session (`ShopRulesDefinition`, default 10) until the player's reputation clears the next archetype's `reputation_required`. Each dealt customer gets `min_orders` to `max_orders` orders, the first always for something the player can craft today and the rest possibly gated behind a blueprint. Whatever crates are defined are rendered as buy buttons in the shop's CratePanel, cheapest first; crate cost is multiplied by the Crate Discount upgrade.
 
 **Crate generation algorithm:** For each item slot (rolled `min_items` to `max_items` times, independently):
 1. Sum all weights in the pool
@@ -692,8 +691,8 @@ Customers are dealt from `CustomerDefinition` archetypes (see Content Definition
 4. Player taps one of the displayed `order_card.gd` options → emits `order_tapped(index)` → `shop_session.gd.try_fulfill_order(index)`. Only one order can be fulfilled per customer — the chosen order is fulfilled, all other orders for that customer are discarded.
 5. If board has required items for the chosen order: remove items, add gold + reputation to GameManager, emit `customer_fulfilled` via EventBus, discard remaining orders, advance customer
 6. If board lacks items for the chosen order: flash order card red, no action, other orders remain available to tap
-7. Player taps reject → `GameManager.add_reputation(-2)`, emit `customer_rejected` via EventBus, advance customer
-8. After customer 10 → compile summary data, emit `session_ended(summary)` via EventBus → Main transitions to `session_summary.tscn`
+7. Player taps reject → `GameManager.add_reputation(-_rules.reject_reputation_penalty)` (`ShopRulesDefinition`, default 2), emit `customer_rejected` via EventBus, advance customer
+8. After the last customer (`_rules.session_size`, default 10) → compile summary data, emit `session_ended(summary)` via EventBus → Main transitions to `session_summary.tscn`
 
 **End state:** GameManager updated with gold/reputation changes, SessionSummary displayed, auto-save triggered.
 
@@ -704,7 +703,7 @@ Customers are dealt from `CustomerDefinition` archetypes (see Content Definition
 1. `order_card.gd` emits `order_tapped(order_index)` → `shop_session.gd.try_fulfill_order(index)`
 2. `shop_session.gd` reads the chosen order's requirements: `{item_id: quantity}`
 3. Calls `board.count_items_on_board(item_id)` for each required item
-4. If all requirements met: `board.remove_items_by_id(item_id, qty)` for each, `GameManager.add_gold(reward)`, `GameManager.add_reputation(10)`, emit `customer_fulfilled`, discard all other unfulfilled orders for this customer
+4. If all requirements met: `board.remove_items_by_id(item_id, qty)` for each, `GameManager.add_gold(reward)`, `GameManager.add_reputation(_rules.fulfill_reputation)` (`ShopRulesDefinition`, default 10), emit `customer_fulfilled`, discard all other unfulfilled orders for this customer
 5. Advance to next customer (or end session if last)
 
 **End state:** Chosen order fulfilled, remaining orders discarded, items removed from board, gold and reputation added, customer replaced.
@@ -715,7 +714,7 @@ Customers are dealt from `CustomerDefinition` archetypes (see Content Definition
 
 **Extends:** Control
 **Script:** `shop/shop_session.gd`
-**Description:** Orchestrates the 10-customer shop session. Each customer presents 1–3 order options; the player picks one to fulfill (others are discarded). Manages customer queue state and delegates to BoardGrid and OrderCards.
+**Description:** Orchestrates the shop session (`session_size` customers, `ShopRulesDefinition`, default 10). Each customer presents 1–3 order options; the player picks one to fulfill (others are discarded). Manages customer queue state and delegates to BoardGrid and OrderCards.
 
 **Properties:**
 
@@ -730,9 +729,9 @@ Customers are dealt from `CustomerDefinition` archetypes (see Content Definition
 
 | Function | Description |
 |----------|-------------|
-| `advance_customer()` | Displays next customer. If index >= 10, ends session. |
+| `advance_customer()` | Displays next customer. If index >= `_rules.session_size`, ends session. |
 | `try_fulfill_order(order_index: int)` | Checks board for items for the chosen order. If met: fulfills, discards remaining orders, advances customer. If not: flashes red. |
-| `reject_customer()` | Applies -2 reputation penalty, advances. |
+| `reject_customer()` | Applies `_rules.reject_reputation_penalty` reputation penalty, advances. |
 | `try_buy_crate(crate_id: String) -> bool` | Delegates to `board.buy_crate(crate_id)`. MergeBoard handles discount, pool rolling, and merge-safe placement internally. |
 
 #### OrderCard
@@ -1259,7 +1258,7 @@ Reagents are bought in the prep phase and stored in `GameManager.reagent_invento
 | `get_despawn_time() -> float` | `value` of a purchased `despawn_time` upgrade, else `DEFAULT_DESPAWN_TIME` (12.0). |
 | `get_crate_discount() -> float` | `value` of a purchased `crate_discount` upgrade, else 1.0. |
 | `record_session_played()` | Increments `sessions_played`. Called once, at the end of a shop session. |
-| `get_session_seed() -> int` | `hash([run_seed, sessions_played])`. Fixed for a given run and session number: previewable in prep, replays the same after a crash. |
+| `get_session_seed() -> int` | `hash([run_seed, sessions_played])`. Fixed for a given run and session number: previewable in prep. A crash mid-session replays the same customers unless reputation crossed an archetype's `reputation_required` mid-session. |
 | `serialize() -> Dictionary` | Returns all persistent state as a Dictionary for SaveManager. |
 | `deserialize(data: Dictionary)` | Restores all state from save data. |
 

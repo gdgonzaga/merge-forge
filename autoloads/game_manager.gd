@@ -87,7 +87,9 @@ func record_session_played() -> void:
 
 
 # Fixed for a given run and session number, so the next session can be
-# previewed in prep and replays the same after a crash.
+# previewed in prep. A crash mid-session deals the same customers on replay,
+# unless reputation_points (saved mid-session) crossed an archetype's
+# reputation_required and changed the eligible pool.
 func get_session_seed() -> int:
 	return hash([run_seed, sessions_played])
 
@@ -192,7 +194,7 @@ func deserialize(data: Dictionary) -> void:
 	dungeon_board_state = data.get("dungeon_board_state", [])
 	grid_cols = data.get("grid_cols", 5)
 	grid_rows = data.get("grid_rows", 5)
-	run_seed = int(data.get("run_seed", randi()))
+	run_seed = int(data["run_seed"]) if data.has("run_seed") else randi()
 	sessions_played = int(data.get("sessions_played", 0))
 	seen_intro = data.get("seen_intro", false)
 	gold_changed.emit(gold)

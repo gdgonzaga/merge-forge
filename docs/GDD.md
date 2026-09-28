@@ -57,7 +57,6 @@
 
 - Additional dungeons beyond the first
 - Gem and Wood material families (family keys reserved: `"gem"`, `"wood"`; no items defined yet)
-- Premium customer tier
 - Party Abilities / Active Skills (auto-attack only for MVP)
 - Demand Forecast / Forecast tab
 - Dungeon Mid-Exit Penalty (MVP wipes all partial progress)
@@ -917,6 +916,7 @@ The player leaving a summary screen for the prep phase: the Session Summary's Co
 | 2026-09-28 | Economy baseline retune | Margins now rise with tier (price / material cost at least 1.3 / 1.6 / 2.0 at depth 2 / 3 / 4); tier-4 herbs had sold below cost. New Herb Crate (herbs cost 6.25g per leaf through the mixed crate). Merge bonus pays 25% of the *source* value per extra item; paying 50% of the result's value on refunded extras was a repeatable gold farm. Blueprint and upgrade costs scaled so buying everything takes about 12 best-case sessions instead of about 2.5. Checked by `tmp/shop-improvements/sim/economy_sim.gd`. Dungeon clear reward 400 -> 120g: runs are free and repeatable, so a bigger reward let repeated dungeon runs out-earn the shop; 120 keeps roughly the old 80g's share of a best-case session (about 11% of about 1032g). |
 | 2026-09-28 | Customers are seeded archetype sessions, not a fixed list | `CustomerDefinition` becomes an archetype (`reputation_required`, `weight`, `min_orders`/`max_orders`, `price_multiplier`, `wants: Array[OrderTemplate]`) instead of a customer with fixed orders. Each shop session deals `session_size` customers from `shop/customer_generator.gd`, seeded by `GameManager.get_session_seed()` (`run_seed` + `sessions_played`, both new save fields) so a session is reproducible and previewable. Dealing is a deck without replacement: every reputation-unlocked, currently-craftable archetype gets one slot per pass, with no archetype repeating back-to-back while another is available; `weight` only biases draw order within a pass. Every dealt customer's first order is guaranteed craftable today (`RecipeResolver.is_craftable`); remaining orders may be locked behind a blueprint the player doesn't have yet, as a teaser for what it would unlock. `SAVE_VERSION` 5 (breaking: `run_seed` and `sessions_played` are required fields, old saves are rejected as CORRUPT). |
 | 2026-09-28 | Drop archetype price premiums | The economy sim's endgame pace was 7.8 sessions against the 10-15 session target after archetypes shipped. Every archetype's `price_multiplier` was set back to 1.0 except Hilda (`cust_06`, 0.9), and Caelum's `healing_potion` want quantity was tightened from a range to a flat 1. Re-simmed pace is about 10.5 sessions. |
+| 2026-09-28 | No separate premium tier | Superseded by seeded archetype sessions: later archetypes gated by `reputation_required` fill the role the old "Basic/Standard/Premium" tier split was meant for. |
 
 ---
 
