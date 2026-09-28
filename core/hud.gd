@@ -1,19 +1,19 @@
 extends Control
 
 @onready var _gold_label: Label = $HBox/GoldLabel
-@onready var _rep_label: Label = $HBox/RepLabel
+@onready var _level_label: Label = $HBox/LevelLabel
 
 
 func _ready() -> void:
 	_gold_label.text = "Gold: %d" % GameManager.gold
-	_rep_label.text = "Rep: %d" % GameManager.reputation_points
+	_level_label.text = "Lv %d" % GameManager.get_shop_level()
 	GameManager.gold_changed.connect(_on_gold_changed)
-	GameManager.reputation_changed.connect(_on_reputation_changed)
+	GameManager.shop_xp_changed.connect(_on_shop_xp_changed)
 
 
 func _on_gold_changed(new_amount: int) -> void:
 	_gold_label.text = "Gold: %d" % new_amount
 
 
-func _on_reputation_changed(new_points: int) -> void:
-	_rep_label.text = "Rep: %d" % new_points
+func _on_shop_xp_changed(_xp: int) -> void:
+	_level_label.text = "Lv %d" % GameManager.get_shop_level()

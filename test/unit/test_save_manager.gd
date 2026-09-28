@@ -97,6 +97,7 @@ func test_board_state_entries_survive_save_and_load() -> void:
 
 func test_save_then_load_returns_OK_and_round_trips() -> void:
 	GameManager.add_gold(30)
+	GameManager.add_shop_xp(70)
 	GameManager.add_blueprint("bp_x")
 	GameManager.add_reagent("fire", 4)
 	var before := GameManager.serialize()
@@ -108,7 +109,7 @@ func test_save_then_load_returns_OK_and_round_trips() -> void:
 	# compare logical values field-by-field rather than the whole dict by identity.
 	var after: Dictionary = r["data"]
 	assert_int(int(after["gold"])).is_equal(int(before["gold"]))
-	assert_int(int(after["reputation_points"])).is_equal(int(before["reputation_points"]))
+	assert_int(int(after["shop_xp"])).is_equal(int(before["shop_xp"]))
 	assert_int(int(after["grid_cols"])).is_equal(int(before["grid_cols"]))
 	assert_int(int(after["grid_rows"])).is_equal(int(before["grid_rows"]))
 	assert_int(int(after["version"])).is_equal(int(before["version"]))
@@ -148,5 +149,12 @@ func test_load_without_run_seed_returns_CORRUPT() -> void:
 func test_load_bool_sessions_played_returns_CORRUPT() -> void:
 	var bad := GameManager.serialize()
 	bad["sessions_played"] = true
+	_write_save_file(JSON.stringify(bad))
+	assert_int(SaveManager.load_game_ex()["status"]).is_equal(SaveManager.LoadStatus.CORRUPT)
+
+
+func test_load_without_shop_xp_returns_CORRUPT() -> void:
+	var bad := GameManager.serialize()
+	bad.erase("shop_xp")
 	_write_save_file(JSON.stringify(bad))
 	assert_int(SaveManager.load_game_ex()["status"]).is_equal(SaveManager.LoadStatus.CORRUPT)

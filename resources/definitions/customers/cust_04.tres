@@ -27,6 +27,6 @@ id = "cust_04"
 name = "Ysolde"
 role = "Alchemist"
 sprite = ExtResource("6_sprite")
-reputation_required = 60
+min_shop_level = 5
 max_orders = 3
 wants = Array[ExtResource("1_tpl")]([SubResource("Resource_tonic"), SubResource("Resource_potion"), SubResource("Resource_elixir")])

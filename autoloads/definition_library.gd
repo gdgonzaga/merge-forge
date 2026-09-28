@@ -153,13 +153,13 @@ func get_dungeon(id: String) -> DungeonDefinition:
 	return dungeons.get(id, null)
 
 
-# In unlock order: lowest reputation_required first, ties by id.
+# In unlock order: lowest min_shop_level first, ties by id.
 func get_all_dungeons() -> Array[DungeonDefinition]:
 	var result: Array[DungeonDefinition] = []
 	result.assign(dungeons.values())
 	result.sort_custom(func(a: DungeonDefinition, b: DungeonDefinition) -> bool:
-		if a.reputation_required != b.reputation_required:
-			return a.reputation_required < b.reputation_required
+		if a.min_shop_level != b.min_shop_level:
+			return a.min_shop_level < b.min_shop_level
 		return a.id < b.id
 	)
 	return result

@@ -62,8 +62,8 @@ No autoload uses `class_name` — globally accessible by registration name only 
 | `session_summary_dismissed()` | `session_summary.gd` | `main.gd` | Player taps Continue, go to prep |
 | `prep_start_session()` | `prep_phase.gd` | `main.gd` | Player starts next shop session |
 | `prep_enter_dungeon(dungeon_id: String)` | `prep_phase.gd` | `main.gd` | Player enters that dungeon (if unlocked) |
-| `dungeon_cleared(rewards: Dictionary)` | `dungeon_controller.gd` | `main.gd`, `save_manager.gd` | Dungeon completed. Rewards: `{cleared: true, gold_reward: int, blueprint_reward: String or null, reputation_change: 25}` |
-| `dungeon_failed(summary: Dictionary)` | `dungeon_controller.gd` | `main.gd`, `save_manager.gd` | Dungeon failed. Summary: `{cleared: false, gold_reward: 0, blueprint_reward: null, reputation_change: -20}` |
+| `dungeon_cleared(rewards: Dictionary)` | `dungeon_controller.gd` | `main.gd`, `save_manager.gd` | Dungeon completed. Rewards: `{cleared: true, gold_reward: int, blueprint_reward: String or null, xp_gained: int, level_before: int, level_after: int}` |
+| `dungeon_failed(summary: Dictionary)` | `dungeon_controller.gd` | `main.gd`, `save_manager.gd` | Dungeon failed. Summary: `{cleared: false, gold_reward: 0, blueprint_reward: null, xp_gained: 0, level_before: int, level_after: int}` |
 | `dungeon_summary_dismissed()` | `dungeon_summary.gd` | `main.gd` | Player taps Continue, return to prep |
 | `new_game_started()` | `main_menu.gd` | `main.gd` | Player starts new game |
 | `continue_game()` | `main_menu.gd` | `main.gd` | Player loads save |
@@ -77,8 +77,8 @@ These are emitted directly on GameManager. Connect via `GameManager.gold_changed
 | Signal | Trigger | Example Listener |
 |--------|---------|-----------------|
 | `gold_changed(new_amount: int)` | Gold balance changes | HUD gold label, prep buy buttons |
-| `reputation_changed(new_points: int)` | Reputation points change | HUD reputation badge |
-| `reputation_level_changed(level: String)` | Crossed a threshold ("low"/"mid"/"high") | Prep phase dungeon button, customer generator |
+| `shop_xp_changed(xp: int)` | Shop XP changes | HUD level label |
+| `shop_level_changed(level: int)` | Crossed a level, once per level crossed | Prep phase dungeon button, customer generator |
 | `blueprint_added(bp_id: String)` | Blueprint unlocked | Prep phase blueprints tab, audio_manager (SFX) |
 | `upgrade_added(upgrade_id: String)` | Upgrade purchased | audio_manager (SFX) |
 | `reagent_count_changed(id: String, count: int)` | Reagent inventory changes | Prep phase reagent display, merge choice popup |
@@ -1136,8 +1136,8 @@ Reagents are bought in the prep phase and stored in `GameManager.reagent_invento
 | `prep_quit_to_menu()` | `prep_phase.gd` | `main.gd` | Yes | Quit to Menu |
 | `save_requested()` | multiple | `save_manager.gd` | Yes | After Purchase/Session/Dungeon |
 | `gold_changed(new_amount: int)` | `game_manager.gd` | HUD, prep tabs | No (GameManager direct) | Any gold change |
-| `reputation_changed(new_points: int)` | `game_manager.gd` | HUD, dungeon button | No (GameManager direct) | Reputation change |
-| `reputation_level_changed(level: String)` | `game_manager.gd` | `prep_phase.gd` | No (GameManager direct) | Threshold crossed |
+| `shop_xp_changed(xp: int)` | `game_manager.gd` | HUD | No (GameManager direct) | Shop XP change |
+| `shop_level_changed(level: int)` | `game_manager.gd` | `prep_phase.gd` | No (GameManager direct) | Level crossed |
 | `blueprint_added(bp_id: String)` | `game_manager.gd` | prep blueprints tab, `audio_manager.gd` | No (GameManager direct) | Blueprint Purchase |
 | `upgrade_added(upgrade_id: String)` | `game_manager.gd` | `audio_manager.gd` | No (GameManager direct) | Upgrade Purchase |
 | `grid_size_changed(cols: int, rows: int)` | `game_manager.gd` | active MergeBoard | No (GameManager direct) | Grid upgrade |
@@ -1219,7 +1219,7 @@ Reagents are bought in the prep phase and stored in `GameManager.reagent_invento
 | Property | Type | Description |
 |----------|------|-------------|
 | `gold: int` | int | Current gold balance. Default: 50 (starting gold). |
-| `reputation_points: int` | int | Cumulative reputation |
+| `shop_xp: int` | int | Cumulative shop XP (`SAVE_VERSION` 6) |
 | `unlocked_blueprints: Array[String]` | Array | Blueprint IDs owned |
 | `reagent_inventory: Dictionary` | Dictionary | String → int (reagent_id → count) |
 | `purchased_upgrades: Array[String]` | Array | Upgrade IDs purchased |
@@ -1235,8 +1235,8 @@ Reagents are bought in the prep phase and stored in `GameManager.reagent_invento
 | Signal | Description |
 |--------|-------------|
 | `gold_changed(new_amount: int)` | Gold balance changed. HUD and buy buttons listen. |
-| `reputation_changed(new_points: int)` | Reputation points changed. HUD listens. |
-| `reputation_level_changed(level: String)` | Crossed threshold: "low", "mid", "high". |
+| `shop_xp_changed(xp: int)` | Shop XP changed. HUD listens. |
+| `shop_level_changed(level: int)` | Level crossed. Emitted once per level crossed. |
 | `blueprint_added(bp_id: String)` | Blueprint unlocked. Prep phase blueprints tab, audio_manager (purchase SFX) listen. |
 | `upgrade_added(upgrade_id: String)` | Upgrade purchased. audio_manager (purchase SFX) listens. |
 | `reagent_count_changed(id: String, count: int)` | Reagent inventory changed. |
@@ -1248,13 +1248,13 @@ Reagents are bought in the prep phase and stored in `GameManager.reagent_invento
 |----------|-------------|
 | `add_gold(amount: int)` | Adds gold, emits `gold_changed`. |
 | `deduct_gold(amount: int) -> bool` | Deducts if sufficient. Returns false if not. Emits `gold_changed`. |
-| `add_reputation(points: int)` | Adds points (clamped to min 0), checks level change, emits signals. |
+| `add_shop_xp(amount: int)` | Adds XP (ignores <= 0), emits `shop_xp_changed`, then `shop_level_changed` once per level crossed. |
 | `add_blueprint(bp_id: String)` | Appends to unlocked, emits `blueprint_added`. |
 | `add_reagent(reagent_id: String, count: int)` | Updates inventory dict, emits `reagent_count_changed`. |
 | `consume_reagent(reagent_id: String) -> bool` | Deducts 1 if count > 0. Returns false if none. |
 | `add_upgrade(upgrade_id: String)` | Appends to purchased_upgrades, emits `upgrade_added`. Effect application is handled by the caller (e.g., prep_phase._buy_upgrade() applies grid_size changes). |
-| `get_reputation_level() -> String` | Returns "low" (0–99), "mid" (100–299), "high" (300+). |
-| `is_dungeon_unlocked(dungeon: DungeonDefinition) -> bool` | Returns `reputation_points >= dungeon.reputation_required`. |
+| `get_shop_level() -> int` | Returns `DefinitionLibrary.get_shop_rules().level_for_xp(shop_xp)`. |
+| `meets_level(min_shop_level: int) -> bool` | Returns `get_shop_level() >= min_shop_level`. |
 | `get_despawn_time() -> float` | `value` of a purchased `despawn_time` upgrade, else `DEFAULT_DESPAWN_TIME` (12.0). |
 | `get_crate_discount() -> float` | `value` of a purchased `crate_discount` upgrade, else 1.0. |
 | `record_session_played()` | Increments `sessions_played`. Called once, at the end of a shop session. |

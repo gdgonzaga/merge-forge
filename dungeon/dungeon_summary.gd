@@ -2,7 +2,7 @@ extends Control
 
 @onready var _title_label: Label = $VBox/TitleLabel
 @onready var _gold_label: Label = $VBox/GoldLabel
-@onready var _rep_label: Label = $VBox/RepLabel
+@onready var _xp_label: Label = $VBox/XpLabel
 @onready var _bp_label: Label = $VBox/BpLabel
 
 var _target_gold: int = 0
@@ -31,7 +31,7 @@ func display_results(data: Dictionary) -> void:
 			_countup_tween.tween_callback(func(): _gold_label.text = "Gold: +%d" % _target_gold)
 		else:
 			_gold_label.text = "Gold: +0"
-		_rep_label.text = "Reputation: +25"
+		_xp_label.text = "XP: +%d" % int(data.get("xp_gained", 0))
 		var bp = data.get("blueprint_reward")
 		if bp and bp != null:
 			_bp_label.text = "Blueprint: %s" % str(bp)
@@ -41,7 +41,7 @@ func display_results(data: Dictionary) -> void:
 		_title_label.text = "Dungeon Failed"
 		_title_label.modulate = Color(1, 0.5, 0.5)
 		_gold_label.text = ""
-		_rep_label.text = "Reputation: -20"
+		_xp_label.text = "No XP"
 		_bp_label.text = ""
 
 

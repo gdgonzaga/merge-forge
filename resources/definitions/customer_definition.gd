@@ -8,7 +8,7 @@ class_name CustomerDefinition
 @export var role: String = ""
 # The customer's portrait.
 @export var sprite: Texture2D
-@export var reputation_required: int = 0
+@export var min_shop_level: int = 1
 # Each eligible archetype is dealt once per pass through the pool; weight 0
 # doesn't exclude it. Weight only biases the draw order within a pass.
 @export var weight: int = 1

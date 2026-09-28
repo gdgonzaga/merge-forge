@@ -157,6 +157,7 @@ func end_dungeon_cleared() -> void:
 	for pm in party_members:
 		if is_instance_valid(pm):
 			pm.play_victory()
+	var level_before := GameManager.get_shop_level()
 	var gold_reward := _dungeon.gold_reward
 	# The summary shows the id, or nothing for null.
 	var bp_reward: Variant = null
@@ -164,28 +165,31 @@ func end_dungeon_cleared() -> void:
 		bp_reward = _dungeon.blueprint_reward.id
 		GameManager.add_blueprint(bp_reward)
 	GameManager.add_gold(gold_reward)
-	GameManager.add_reputation(25)
+	GameManager.add_shop_xp(_dungeon.xp_reward)
 	_save_board_state()
 	EventBus.save_requested.emit()
 	EventBus.dungeon_cleared.emit({
 		"cleared": true,
 		"gold_reward": gold_reward,
 		"blueprint_reward": bp_reward,
-		"reputation_change": 25,
+		"xp_gained": _dungeon.xp_reward,
+		"level_before": level_before,
+		"level_after": GameManager.get_shop_level(),
 	})
 
 
 func end_dungeon_failed() -> void:
 	stop_walking()
 	_dbg("DUNGEON FAILED")
-	GameManager.add_reputation(-20)
 	_save_board_state()
 	EventBus.save_requested.emit()
 	EventBus.dungeon_failed.emit({
 		"cleared": false,
 		"gold_reward": 0,
 		"blueprint_reward": null,
-		"reputation_change": -20,
+		"xp_gained": 0,
+		"level_before": GameManager.get_shop_level(),
+		"level_after": GameManager.get_shop_level(),
 	})
 
 

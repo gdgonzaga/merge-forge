@@ -28,6 +28,6 @@ id = "cust_05"
 name = "Ser Roland"
 role = "Errant Knight"
 sprite = ExtResource("6_sprite")
-reputation_required = 100
+min_shop_level = 8
 max_orders = 2
 wants = Array[ExtResource("1_tpl")]([SubResource("Resource_sword"), SubResource("Resource_shield"), SubResource("Resource_plate")])

@@ -22,8 +22,7 @@ func _ready() -> void:
 		child.queue_free()
 
 	_dungeon = DefinitionLibrary.get_all_dungeons()[0]
-	_dungeon_btn.disabled = not GameManager.is_dungeon_unlocked(_dungeon)
-	_dungeon_btn.tooltip_text = "Requires %d reputation" % _dungeon.reputation_required
+	_dungeon_btn.disabled = not GameManager.meets_level(_dungeon.min_shop_level)
 	$VBox/BtnBox/QuitBtn.pressed.connect(_on_quit_pressed)
 	$VBox/BtnBox/SessionBtn.pressed.connect(EventBus.prep_start_session.emit)
 	_dungeon_btn.pressed.connect(EventBus.prep_enter_dungeon.emit.bind(_dungeon.id))
@@ -35,7 +34,7 @@ func _ready() -> void:
 	GameManager.blueprint_added.connect(_on_blueprint_added)
 	GameManager.upgrade_added.connect(_on_upgrade_added)
 	GameManager.reagent_count_changed.connect(_on_reagent_count_changed)
-	GameManager.reputation_changed.connect(_on_reputation_changed)
+	GameManager.shop_level_changed.connect(_on_shop_level_changed)
 	_refresh_all()
 
 
@@ -67,8 +66,9 @@ func _on_reagent_count_changed(_id: String, _count: int) -> void:
 	_refresh_reagents()
 
 
-func _on_reputation_changed(_points: int) -> void:
-	_dungeon_btn.disabled = not GameManager.is_dungeon_unlocked(_dungeon)
+func _on_shop_level_changed(_level: int) -> void:
+	_dungeon_btn.disabled = not GameManager.meets_level(_dungeon.min_shop_level)
+	_refresh_all()
 
 
 func try_purchase(type: String, id: String) -> bool:
@@ -158,7 +158,8 @@ func _debug_unlock_all() -> void:
 	GameManager.debug_mode = true
 	GameManager.gold = 20000
 	GameManager.gold_changed.emit(20000)
-	GameManager.add_reputation(1000)
+	var rules := DefinitionLibrary.get_shop_rules()
+	GameManager.add_shop_xp(rules.xp_for_level(rules.max_level) - GameManager.shop_xp)
 	for blueprint in DefinitionLibrary.get_all_blueprints():
 		GameManager.add_blueprint(blueprint.id)
 	for reagent in DefinitionLibrary.get_all_reagents():

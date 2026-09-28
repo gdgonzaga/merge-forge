@@ -125,10 +125,10 @@ func test_definition_library_missing_returns_null() -> void:
 	assert_object(DefinitionLibrary.get_enemy("__nonexistent__")).is_null()
 
 
-func _dungeon(id: String, reputation_required: int) -> DungeonDefinition:
+func _dungeon(id: String, min_shop_level: int) -> DungeonDefinition:
 	var dungeon := DungeonDefinition.new()
 	dungeon.id = id
-	dungeon.reputation_required = reputation_required
+	dungeon.min_shop_level = min_shop_level
 	return dungeon
 
 
@@ -159,11 +159,11 @@ func test_shop_rules_are_defined() -> void:
 	assert_float(rules.streak_cap).is_greater_equal(0.0)
 
 
-# A new player (no blueprints, no reputation) must be dealt a full session.
+# A new player (no blueprints, level 1) must be dealt a full session.
 func test_a_fresh_game_deals_a_full_session() -> void:
 	var size := DefinitionLibrary.get_shop_rules().session_size
 	var dealt: Array = preload("res://shop/customer_generator.gd").new().generate(
-		DefinitionLibrary.get_all_customers(), size, 0, 1, RecipeResolver.is_craftable)
+		DefinitionLibrary.get_all_customers(), size, 1, 1, RecipeResolver.is_craftable)
 	assert_int(dealt.size()).is_equal(size)
 
 

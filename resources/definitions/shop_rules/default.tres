@@ -6,8 +6,6 @@
 script = ExtResource("1_rules")
 id = "default"
 session_size = 10
-fulfill_reputation = 10
-reject_reputation_penalty = 2
 xp_per_gold = 0.5
 streak_step = 0.1
 streak_cap = 0.5

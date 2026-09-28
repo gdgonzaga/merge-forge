@@ -28,6 +28,6 @@ id = "cust_10"
 name = "Veska"
 role = "Battle-Mage"
 sprite = ExtResource("6_sprite")
-reputation_required = 200
+min_shop_level = 14
 max_orders = 3
 wants = Array[ExtResource("1_tpl")]([SubResource("Resource_elixir"), SubResource("Resource_potion"), SubResource("Resource_phoenix")])

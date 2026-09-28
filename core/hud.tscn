@@ -42,8 +42,8 @@ theme_override_fonts/font = ExtResource("3_font")
 theme_override_font_sizes/font_size = 24
 text = "Gold: 200"
 
-[node name="RepLabel" type="Label" parent="HBox" unique_id=759419846]
+[node name="LevelLabel" type="Label" parent="HBox" unique_id=759419846]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("3_font")
 theme_override_font_sizes/font_size = 24
-text = "Rep: 500"
+text = "Lv 1"

@@ -1,16 +1,16 @@
 extends RefCounted
 
 # Deals a shop session's customers from the unlocked archetypes. Deterministic:
-# the same archetypes, reputation, seed and craftability give the same session,
+# the same archetypes, level, seed and craftability give the same session,
 # which the prep-phase forecast relies on.
 
 
 # `is_craftable` is Callable(ItemDefinition) -> bool.
-func generate(archetypes: Array[CustomerDefinition], count: int, reputation: int, session_seed: int, is_craftable: Callable) -> Array[ShopCustomer]:
+func generate(archetypes: Array[CustomerDefinition], count: int, level: int, session_seed: int, is_craftable: Callable) -> Array[ShopCustomer]:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = session_seed
 	var dealt: Array[ShopCustomer] = []
-	var pool := _eligible(archetypes, reputation, is_craftable)
+	var pool := _eligible(archetypes, level, is_craftable)
 	if pool.is_empty():
 		return dealt
 	var deck: Array[CustomerDefinition] = []
@@ -39,12 +39,12 @@ static func pick_weighted(weights: Array[int], rng: RandomNumberGenerator) -> in
 	return weights.size() - 1
 
 
-# Unlocked by reputation and wanting at least one thing the player can make
+# Unlocked by level and wanting at least one thing the player can make
 # today. Sorted by id so catalog load order can't change a seeded session.
-func _eligible(archetypes: Array[CustomerDefinition], reputation: int, is_craftable: Callable) -> Array[CustomerDefinition]:
+func _eligible(archetypes: Array[CustomerDefinition], level: int, is_craftable: Callable) -> Array[CustomerDefinition]:
 	var pool: Array[CustomerDefinition] = []
 	for archetype in archetypes:
-		if reputation >= archetype.reputation_required and not _craftable_wants(archetype, is_craftable).is_empty():
+		if level >= archetype.min_shop_level and not _craftable_wants(archetype, is_craftable).is_empty():
 			pool.append(archetype)
 	pool.sort_custom(func(a: CustomerDefinition, b: CustomerDefinition) -> bool: return a.id < b.id)
 	return pool

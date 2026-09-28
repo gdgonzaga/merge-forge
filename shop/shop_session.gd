@@ -2,11 +2,13 @@ extends Control
 
 const PORTRAIT_SIZE := 200
 const CUSTOMER_GENERATOR := preload("res://shop/customer_generator.gd")
+const ORDER_STREAK := preload("res://shop/order_streak.gd")
 
 var customers: Array[ShopCustomer] = []
 var current_index: int = 0
 var summary_data: Dictionary = {}
 var _rules: ShopRulesDefinition
+var _streak: RefCounted = ORDER_STREAK.new()
 # Per-position shadow alpha in the pending queue: the back of a full queue
 # tops out just under 100% (e.g. 8 / 9 with 10 customers). Fixed for the
 # session, so the stack lightens as it shrinks.
@@ -30,13 +32,15 @@ func _ready() -> void:
 		"fulfilled": 0,
 		"rejected": 0,
 		"portraits": [],
+		"xp_earned": 0,
+		"level_before": GameManager.get_shop_level(),
 	}
 
 	_rules = DefinitionLibrary.get_shop_rules()
 	customers = CUSTOMER_GENERATOR.new().generate(
 		DefinitionLibrary.get_all_customers(),
 		_rules.session_size,
-		GameManager.reputation_points,
+		GameManager.get_shop_level(),
 		GameManager.get_session_seed(),
 		RecipeResolver.is_craftable,
 	)
@@ -184,7 +188,8 @@ func try_fulfill_order(order_index: int) -> void:
 	board_ref.remove_items_by_id(item_id, needed)
 	var reward := order.gold_reward
 	GameManager.add_gold(reward)
-	GameManager.add_reputation(_rules.fulfill_reputation)
+	var xp: int = _streak.fulfill(reward, _rules)
+	GameManager.add_shop_xp(xp)
 	EventBus.customer_fulfilled.emit(item_id)
 	EventBus.save_requested.emit()
 
@@ -192,6 +197,7 @@ func try_fulfill_order(order_index: int) -> void:
 	summary_data["items_sold"] = summary_data.get("items_sold", 0) + needed
 	summary_data["fulfilled"] = summary_data.get("fulfilled", 0) + 1
 	summary_data["portraits"].append(customer.definition.sprite)
+	summary_data["xp_earned"] = summary_data.get("xp_earned", 0) + xp
 
 	current_index += 1
 	advance_customer.call_deferred()
@@ -201,7 +207,7 @@ func reject_customer() -> void:
 	if current_index >= customers.size():
 		return
 
-	GameManager.add_reputation(-_rules.reject_reputation_penalty)
+	_streak.reject()
 	EventBus.customer_rejected.emit(customers[current_index].definition.id)
 	EventBus.save_requested.emit()
 
@@ -227,6 +233,7 @@ func end_session() -> void:
 	if board_ref and is_instance_valid(board_ref):
 		GameManager.shop_board_state = board_ref.get_board_state()
 
+	summary_data["level_after"] = GameManager.get_shop_level()
 	GameManager.record_session_played()
 	EventBus.save_requested.emit()
 	EventBus.session_ended.emit(summary_data)

@@ -1,21 +1,22 @@
 extends Node
 
 signal gold_changed(new_amount: int)
-signal reputation_changed(new_points: int)
-signal reputation_level_changed(level: String)
+signal shop_xp_changed(xp: int)
+signal shop_level_changed(level: int)
 signal blueprint_added(bp_id: String)
 signal upgrade_added(upgrade_id: String)
 signal reagent_count_changed(id: String, count: int)
 signal grid_size_changed(cols: int, rows: int)
 
 const DEFAULT_GOLD := 50
-const SAVE_VERSION := 5
+const SAVE_VERSION := 6
 const DEFAULT_DESPAWN_TIME := 12.0
 const DEFAULT_CRATE_COST_MULTIPLIER := 1.0
 
 var debug_mode: bool = false
 var gold: int = DEFAULT_GOLD
-var reputation_points: int = 0
+# Never decreases; the shop level is derived from it (ShopRulesDefinition).
+var shop_xp: int = 0
 var unlocked_blueprints: Array[String] = []
 var reagent_inventory: Dictionary = {}
 var purchased_upgrades: Array[String] = []
@@ -45,13 +46,17 @@ func deduct_gold(amount: int) -> bool:
 	return true
 
 
-func add_reputation(points: int) -> void:
-	var old_level := get_reputation_level()
-	reputation_points = maxi(reputation_points + points, 0)
-	reputation_changed.emit(reputation_points)
-	var new_level := get_reputation_level()
-	if new_level != old_level:
-		reputation_level_changed.emit(new_level)
+# XP never goes down: a rejection only breaks the streak. One
+# shop_level_changed per level crossed, so a gain that skips levels still
+# announces each one.
+func add_shop_xp(amount: int) -> void:
+	if amount <= 0:
+		return
+	var old_level := get_shop_level()
+	shop_xp += amount
+	shop_xp_changed.emit(shop_xp)
+	for level in range(old_level + 1, get_shop_level() + 1):
+		shop_level_changed.emit(level)
 
 
 func add_blueprint(bp_id: String) -> void:
@@ -88,22 +93,18 @@ func record_session_played() -> void:
 
 # Fixed for a given run and session number, so the next session can be
 # previewed in prep. A crash mid-session deals the same customers on replay,
-# unless reputation_points (saved mid-session) crossed an archetype's
-# reputation_required and changed the eligible pool.
+# unless shop XP (saved mid-session) crossed a level that unlocks an
+# archetype.
 func get_session_seed() -> int:
 	return hash([run_seed, sessions_played])
 
 
-func get_reputation_level() -> String:
-	if reputation_points >= 300:
-		return "high"
-	if reputation_points >= 100:
-		return "mid"
-	return "low"
+func get_shop_level() -> int:
+	return DefinitionLibrary.get_shop_rules().level_for_xp(shop_xp)
 
 
-func is_dungeon_unlocked(dungeon: DungeonDefinition) -> bool:
-	return reputation_points >= dungeon.reputation_required
+func meets_level(min_shop_level: int) -> bool:
+	return get_shop_level() >= min_shop_level
 
 
 func get_despawn_time() -> float:
@@ -127,7 +128,7 @@ func serialize() -> Dictionary:
 	return {
 		"version": SAVE_VERSION,
 		"gold": gold,
-		"reputation_points": reputation_points,
+		"shop_xp": shop_xp,
 		"unlocked_blueprints": unlocked_blueprints,
 		"reagent_inventory": reagent_inventory,
 		"purchased_upgrades": purchased_upgrades,
@@ -149,7 +150,7 @@ func is_valid_save(data: Dictionary) -> bool:
 	if not _is_number(data.get("version")) or int(data.get("version")) != SAVE_VERSION:
 		return false
 	if not _is_number(data.get("gold")): return false
-	if not _is_number(data.get("reputation_points")): return false
+	if not _is_number(data.get("shop_xp")): return false
 	if not (data.get("unlocked_blueprints") is Array): return false
 	if not (data.get("reagent_inventory") is Dictionary): return false
 	if not (data.get("purchased_upgrades") is Array): return false
@@ -186,7 +187,7 @@ static func _is_number(value: Variant) -> bool:
 
 func deserialize(data: Dictionary) -> void:
 	gold = data.get("gold", DEFAULT_GOLD)
-	reputation_points = data.get("reputation_points", 0)
+	shop_xp = int(data.get("shop_xp", 0))
 	unlocked_blueprints.assign(data.get("unlocked_blueprints", []))
 	reagent_inventory = data.get("reagent_inventory", {})
 	purchased_upgrades.assign(data.get("purchased_upgrades", []))
@@ -198,5 +199,5 @@ func deserialize(data: Dictionary) -> void:
 	sessions_played = int(data.get("sessions_played", 0))
 	seen_intro = data.get("seen_intro", false)
 	gold_changed.emit(gold)
-	reputation_changed.emit(reputation_points)
+	shop_xp_changed.emit(shop_xp)
 	grid_size_changed.emit(grid_cols, grid_rows)

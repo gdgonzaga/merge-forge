@@ -10,7 +10,7 @@ extends TestBase
 
 func test_default_state() -> void:
 	assert_int(GameManager.gold).is_equal(50)
-	assert_int(GameManager.reputation_points).is_equal(0)
+	assert_int(GameManager.shop_xp).is_equal(0)
 	assert_array(GameManager.unlocked_blueprints).is_empty()
 	assert_dict(GameManager.reagent_inventory).is_empty()
 	assert_array(GameManager.purchased_upgrades).is_empty()
@@ -60,57 +60,60 @@ func test_deduct_gold_cannot_make_gold_negative() -> void:
 	assert_int(GameManager.gold).is_greater_equal(0)
 
 
-# --- reputation ---
+# --- shop XP and level ---
 
-func test_add_reputation_increases_and_emits() -> void:
-	var seen: Array = []
-	GameManager.reputation_changed.connect(func(v: int) -> void: seen.append(v))
-	GameManager.add_reputation(50)
-	assert_int(GameManager.reputation_points).is_equal(50)
-	assert_array(seen).has_size(1)
-	assert_int(int(seen[0])).is_equal(50)
-
-
-# Invariant: reputation_points never goes negative (clamped at 0).
-func test_add_reputation_negative_clamps_to_zero() -> void:
-	GameManager.add_reputation(20)
-	GameManager.add_reputation(-100)
-	assert_int(GameManager.reputation_points).is_greater_equal(0)
-	assert_int(GameManager.reputation_points).is_equal(0)
+func test_add_shop_xp_increases_and_emits() -> void:
+	var seen: Array[int] = []
+	var on_xp := func(xp: int) -> void: seen.append(xp)
+	GameManager.shop_xp_changed.connect(on_xp)
+	GameManager.add_shop_xp(40)
+	GameManager.shop_xp_changed.disconnect(on_xp)
+	assert_int(GameManager.shop_xp).is_equal(40)
+	assert_array(seen).is_equal([40])
 
 
-func test_reputation_level_change_emits_when_crossing_threshold() -> void:
-	var seen_levels: Array = []
-	GameManager.reputation_level_changed.connect(func(lvl: String) -> void: seen_levels.append(lvl))
-	GameManager.add_reputation(100)  # low -> mid
-	assert_array(seen_levels).contains("mid")
+# Invariant: XP never goes down.
+func test_add_shop_xp_ignores_zero_and_negative_amounts() -> void:
+	GameManager.add_shop_xp(30)
+	var seen: Array[int] = []
+	var on_xp := func(xp: int) -> void: seen.append(xp)
+	GameManager.shop_xp_changed.connect(on_xp)
+	GameManager.add_shop_xp(0)
+	GameManager.add_shop_xp(-100)
+	GameManager.shop_xp_changed.disconnect(on_xp)
+	assert_int(GameManager.shop_xp).is_equal(30)
+	assert_array(seen).is_empty()
 
 
-# --- get_reputation_level (boundary inputs at exact thresholds) ---
-
-func test_reputation_level_thresholds() -> void:
-	var cases: Array = [
-		[0, "low"], [99, "low"],
-		[100, "mid"], [101, "mid"], [299, "mid"],
-		[300, "high"], [301, "high"],
-	]
-	for c in cases:
-		var pts: int = int(c[0])
-		var expected: String = String(c[1])
-		GameManager.reputation_points = pts
-		assert_str(GameManager.get_reputation_level()).is_equal(expected)
+func test_level_signal_fires_once_per_level_crossed() -> void:
+	set_definition(DefinitionLibrary.shop_rules, _curve_rules())
+	var levels: Array[int] = []
+	var on_level := func(level: int) -> void: levels.append(level)
+	GameManager.shop_level_changed.connect(on_level)
+	GameManager.add_shop_xp(99)  # 99: still level 1
+	GameManager.add_shop_xp(501)  # 600: level 4, skipping 2 and 3
+	GameManager.add_shop_xp(10_000)  # past the cap: level 5
+	GameManager.shop_level_changed.disconnect(on_level)
+	assert_array(levels).is_equal([2, 3, 4, 5])
+	assert_int(GameManager.get_shop_level()).is_equal(5)
 
 
-# --- is_dungeon_unlocked (boundary) ---
+func test_meets_level_at_its_boundary() -> void:
+	set_definition(DefinitionLibrary.shop_rules, _curve_rules())
+	GameManager.shop_xp = 299  # level 2
+	assert_bool(GameManager.meets_level(3)).is_false()
+	GameManager.shop_xp = 300  # level 3
+	assert_bool(GameManager.meets_level(3)).is_true()
 
-func test_dungeon_unlocks_at_its_reputation_required() -> void:
-	var dungeon := DungeonDefinition.new()
-	dungeon.id = "__test_dungeon"
-	dungeon.reputation_required = 40
-	GameManager.reputation_points = 39
-	assert_bool(GameManager.is_dungeon_unlocked(dungeon)).is_false()
-	GameManager.reputation_points = 40
-	assert_bool(GameManager.is_dungeon_unlocked(dungeon)).is_true()
+
+# Base 100, exponent 1, max 5: levels 2-5 start at 100, 300, 600, 1000.
+func _curve_rules() -> ShopRulesDefinition:
+	var rules := ShopRulesDefinition.new()
+	rules.id = "default"
+	rules.level_xp_base = 100
+	rules.level_xp_exponent = 1.0
+	rules.max_level = 5
+	return rules
 
 
 # --- blueprints (idempotent add) ---
@@ -187,7 +190,7 @@ func test_upgrade_value_only_comes_from_its_effect() -> void:
 
 func test_serialize_deserialize_round_trip() -> void:
 	GameManager.add_gold(30)
-	GameManager.add_reputation(120)
+	GameManager.add_shop_xp(120)
 	GameManager.add_blueprint("bp_x")
 	GameManager.add_reagent("fire", 4)
 	GameManager.add_upgrade("slow_timer")

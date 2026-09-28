@@ -13,7 +13,7 @@ func test_leaving_prep_phase_drops_its_game_manager_connections() -> void:
 		GameManager.blueprint_added,
 		GameManager.upgrade_added,
 		GameManager.reagent_count_changed,
-		GameManager.reputation_changed,
+		GameManager.shop_level_changed,
 	]
 	var before: Array[int] = _connection_counts(signals)
 	var prep := PREP_PHASE.instantiate()
@@ -32,7 +32,7 @@ func test_leaving_prep_phase_drops_its_game_manager_connections() -> void:
 func test_dungeon_button_enters_the_first_dungeon_to_unlock() -> void:
 	var dungeon := DungeonDefinition.new()
 	dungeon.id = "__test_dungeon"
-	dungeon.reputation_required = -9001
+	dungeon.min_shop_level = -9001
 	set_definition(DefinitionLibrary.dungeons, dungeon)
 	var entered: Array[String] = []
 	var on_enter := func(dungeon_id: String) -> void: entered.append(dungeon_id)
