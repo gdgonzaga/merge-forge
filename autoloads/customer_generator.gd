@@ -10,7 +10,8 @@ extends RefCounted
 # modifiers to the catalog never reshuffles the customers a seed deals.
 func plan(archetypes: Array[CustomerDefinition], modifiers: Array[SessionModifierDefinition], rules: ShopRulesDefinition, level: int, session_seed: int, is_craftable: Callable) -> SessionPlan:
 	var modifier := roll_modifier(modifiers, rules.modifier_chance, level, session_seed)
-	return SessionPlan.new().setup(generate(archetypes, rules.session_size, level, session_seed, is_craftable), modifier)
+	var count := rules.session_size if modifier == null else modifier.session_size(rules.session_size)
+	return SessionPlan.new().setup(generate(archetypes, count, level, session_seed, is_craftable, modifier), modifier)
 
 
 func roll_modifier(modifiers: Array[SessionModifierDefinition], chance: float, level: int, session_seed: int) -> SessionModifierDefinition:
@@ -34,7 +35,7 @@ func roll_modifier(modifiers: Array[SessionModifierDefinition], chance: float, l
 
 
 # `is_craftable` is Callable(ItemDefinition) -> bool.
-func generate(archetypes: Array[CustomerDefinition], count: int, level: int, session_seed: int, is_craftable: Callable) -> Array[ShopCustomer]:
+func generate(archetypes: Array[CustomerDefinition], count: int, level: int, session_seed: int, is_craftable: Callable, modifier: SessionModifierDefinition = null) -> Array[ShopCustomer]:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = session_seed
 	var dealt: Array[ShopCustomer] = []
@@ -43,8 +44,8 @@ func generate(archetypes: Array[CustomerDefinition], count: int, level: int, ses
 		return dealt
 	var previous: CustomerDefinition = null
 	for _i in range(count):
-		var archetype := _draw(pool, previous, rng)
-		dealt.append(ShopCustomer.new().setup(archetype, _roll_orders(archetype, rng, is_craftable)))
+		var archetype := _draw(pool, previous, modifier, rng)
+		dealt.append(ShopCustomer.new().setup(archetype, _roll_orders(archetype, modifier, rng, is_craftable)))
 		previous = archetype
 	return dealt
 
@@ -85,7 +86,7 @@ func _craftable_wants(archetype: CustomerDefinition, is_craftable: Callable) -> 
 
 # Weighted draw with replacement that avoids repeating `previous` while anyone
 # else is eligible.
-func _draw(pool: Array[CustomerDefinition], previous: CustomerDefinition, rng: RandomNumberGenerator) -> CustomerDefinition:
+func _draw(pool: Array[CustomerDefinition], previous: CustomerDefinition, modifier: SessionModifierDefinition, rng: RandomNumberGenerator) -> CustomerDefinition:
 	var candidates: Array[CustomerDefinition] = []
 	for archetype in pool:
 		if archetype != previous:
@@ -94,16 +95,20 @@ func _draw(pool: Array[CustomerDefinition], previous: CustomerDefinition, rng: R
 		candidates = pool.duplicate()
 	var weights: Array[int] = []
 	for archetype in candidates:
-		weights.append(archetype.weight)
+		weights.append(_weight(archetype, modifier))
 	return candidates[pick_weighted(weights, rng)]
+
+
+func _weight(archetype: CustomerDefinition, modifier: SessionModifierDefinition) -> int:
+	return archetype.weight if modifier == null else modifier.customer_weight(archetype)
 
 
 # The first order is always one the player can make today; the rest may not
 # be, which shows what a blueprint would open up. No item appears twice.
-func _roll_orders(archetype: CustomerDefinition, rng: RandomNumberGenerator, is_craftable: Callable) -> Array[OrderDefinition]:
+func _roll_orders(archetype: CustomerDefinition, modifier: SessionModifierDefinition, rng: RandomNumberGenerator, is_craftable: Callable) -> Array[OrderDefinition]:
 	var orders: Array[OrderDefinition] = []
 	var first := _pick_template(_craftable_wants(archetype, is_craftable), rng)
-	orders.append(_make_order(first, archetype.price_multiplier, rng))
+	orders.append(_make_order(first, archetype.price_multiplier, modifier, rng))
 	var remaining: Array[OrderTemplate] = []
 	for want in archetype.wants:
 		if want.item != first.item:
@@ -112,7 +117,7 @@ func _roll_orders(archetype: CustomerDefinition, rng: RandomNumberGenerator, is_
 	while orders.size() < target and not remaining.is_empty():
 		var template := _pick_template(remaining, rng)
 		remaining = remaining.filter(func(want: OrderTemplate) -> bool: return want.item != template.item)
-		orders.append(_make_order(template, archetype.price_multiplier, rng))
+		orders.append(_make_order(template, archetype.price_multiplier, modifier, rng))
 	return orders
 
 
@@ -123,9 +128,10 @@ func _pick_template(templates: Array[OrderTemplate], rng: RandomNumberGenerator)
 	return templates[pick_weighted(weights, rng)]
 
 
-static func _make_order(template: OrderTemplate, price_multiplier: float, rng: RandomNumberGenerator) -> OrderDefinition:
+static func _make_order(template: OrderTemplate, price_multiplier: float, modifier: SessionModifierDefinition, rng: RandomNumberGenerator) -> OrderDefinition:
 	var order := OrderDefinition.new()
 	order.item = template.item
 	order.quantity = rng.randi_range(template.min_quantity, template.max_quantity)
-	order.gold_reward = roundi(template.item.gold_value * order.quantity * price_multiplier)
+	var market := 1.0 if modifier == null else modifier.price_multiplier(template.item)
+	order.gold_reward = roundi(template.item.gold_value * order.quantity * price_multiplier * market)
 	return order
