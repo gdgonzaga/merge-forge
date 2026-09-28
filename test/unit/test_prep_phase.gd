@@ -47,6 +47,21 @@ func test_dungeon_button_enters_the_first_dungeon_to_unlock() -> void:
 	assert_array(entered).is_equal(["__test_dungeon"])
 
 
+func test_blueprint_below_its_level_shows_its_unlock_level_and_cannot_be_bought() -> void:
+	var blueprint := BlueprintDefinition.new()
+	blueprint.id = "__test_bp"
+	blueprint.name = "Test Blueprint"
+	blueprint.cost = 1
+	blueprint.min_shop_level = 9000
+	set_definition(DefinitionLibrary.blueprints, blueprint)
+	var prep: Control = auto_free(PREP_PHASE.instantiate())
+	add_child(prep)
+	var card: PanelContainer = _card_named(prep, "Test Blueprint")
+	assert_object(card).is_not_null()
+	assert_str(card.desc_label.text).is_equal("Unlocks at level 9000")
+	assert_bool(card.buy_btn.disabled).is_true()
+
+
 func _connection_counts(signals: Array[Signal]) -> Array[int]:
 	var counts: Array[int] = []
 	for sig in signals:
@@ -59,3 +74,13 @@ func _plus_one(counts: Array[int]) -> Array[int]:
 	for count in counts:
 		result.append(count + 1)
 	return result
+
+
+func _card_named(prep: Control, card_name: String) -> PanelContainer:
+	var content: VBoxContainer = prep.get_node("VBox/TabContainer/Blueprints/BpContent")
+	for child in content.get_children():
+		if child.is_queued_for_deletion():
+			continue
+		if child.name_label.text == card_name:
+			return child
+	return null

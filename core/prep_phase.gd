@@ -22,7 +22,7 @@ func _ready() -> void:
 		child.queue_free()
 
 	_dungeon = DefinitionLibrary.get_all_dungeons()[0]
-	_dungeon_btn.disabled = not GameManager.meets_level(_dungeon.min_shop_level)
+	_refresh_dungeon_button()
 	$VBox/BtnBox/QuitBtn.pressed.connect(_on_quit_pressed)
 	$VBox/BtnBox/SessionBtn.pressed.connect(EventBus.prep_start_session.emit)
 	_dungeon_btn.pressed.connect(EventBus.prep_enter_dungeon.emit.bind(_dungeon.id))
@@ -67,8 +67,14 @@ func _on_reagent_count_changed(_id: String, _count: int) -> void:
 
 
 func _on_shop_level_changed(_level: int) -> void:
-	_dungeon_btn.disabled = not GameManager.meets_level(_dungeon.min_shop_level)
+	_refresh_dungeon_button()
 	_refresh_all()
+
+
+func _refresh_dungeon_button() -> void:
+	var open := GameManager.meets_level(_dungeon.min_shop_level)
+	_dungeon_btn.disabled = not open
+	_dungeon_btn.text = "Enter Dungeon" if open else "Dungeon (Lv %d)" % _dungeon.min_shop_level
 
 
 func try_purchase(type: String, id: String) -> bool:
@@ -95,21 +101,27 @@ func _refresh_blueprints() -> void:
 	for blueprint in DefinitionLibrary.get_all_blueprints():
 		var bp_id := blueprint.id
 		var owned := RecipeResolver.has_blueprint(bp_id)
+		var level_ok := GameManager.meets_level(blueprint.min_shop_level)
 		var deps_met := RecipeResolver.are_dependencies_met(blueprint)
 		var cost := blueprint.cost
 		var desc: String = ""
 		var desc_color := Color(0.7, 0.7, 0.7)
-		if not deps_met:
+		if not owned and not level_ok:
+			desc = "Unlocks at level %d" % blueprint.min_shop_level
+			desc_color = Color(0.5, 0.5, 0.5)
+		elif not deps_met:
 			var dep_names: Array[String] = []
 			for dep in blueprint.dependencies:
 				dep_names.append(dep.name)
 			desc = "Requires: %s" % ", ".join(dep_names)
 			desc_color = Color(0.7, 0.5, 0.5)
 		var btn_text := "%dg" % cost
-		var disabled := not deps_met or GameManager.gold < cost
+		var disabled := not owned and (not level_ok or not deps_met or GameManager.gold < cost)
 		var name_mod := Color.WHITE
 		if owned:
 			name_mod = Color(0.5, 1, 0.5)
+		elif not level_ok:
+			name_mod = Color(0.5, 0.5, 0.5)
 		elif not deps_met:
 			name_mod = Color(0.5, 0.5, 0.5)
 		var card: PanelContainer = card_scene.instantiate()
@@ -138,9 +150,12 @@ func _refresh_reagents() -> void:
 	var card_scene: PackedScene = load("res://shop/purchase_card.tscn")
 	for reagent in DefinitionLibrary.get_all_reagents():
 		var owned_count: int = GameManager.reagent_inventory.get(reagent.id, 0)
+		var level_ok := GameManager.meets_level(reagent.min_shop_level)
+		var desc := reagent.description if level_ok else "Unlocks at level %d" % reagent.min_shop_level
+		var disabled := not level_ok or GameManager.gold < reagent.cost
 		var card: PanelContainer = card_scene.instantiate()
 		_reagent_scroll.add_child(card)
-		card.setup("%s (x%d)" % [reagent.name, owned_count], reagent.description, Color(0.7, 0.7, 0.7), "%dg" % reagent.cost, GameManager.gold < reagent.cost, try_purchase.bind("reagent", reagent.id), 72)
+		card.setup("%s (x%d)" % [reagent.name, owned_count], desc, Color(0.7, 0.7, 0.7), "%dg" % reagent.cost, disabled, try_purchase.bind("reagent", reagent.id), 72)
 
 
 func _describe_upgrade(upgrade: UpgradeDefinition) -> String:

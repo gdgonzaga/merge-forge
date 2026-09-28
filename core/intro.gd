@@ -16,7 +16,7 @@ const PANELS: Array[Dictionary] = [
 	},
 	{
 		"title": "Grow Your Renown",
-		"body": "Every order fulfilled earns gold and reputation.\n\nSpend gold on rarer crates, blueprints, and upgrades. Earn enough reputation and a new path opens — the dungeons, where the rarest reagents hide.\n\nNow — to the forge.",
+		"body": "Every order fulfilled earns gold and experience for your shop. Serve customers in a row for bonus experience.\n\nSpend gold on rarer crates, blueprints, and upgrades. Each shop level opens something new, and in time a new path: the dungeons, where the rarest reagents hide.\n\nNow — to the forge.",
 	},
 ]
 

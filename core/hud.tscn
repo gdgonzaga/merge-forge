@@ -47,3 +47,10 @@ layout_mode = 2
 theme_override_fonts/font = ExtResource("3_font")
 theme_override_font_sizes/font_size = 24
 text = "Lv 1"
+
+[node name="XpBar" type="ProgressBar" parent="HBox"]
+custom_minimum_size = Vector2(240, 24)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+show_percentage = false
