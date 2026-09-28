@@ -16,6 +16,7 @@ var upgrades: Dictionary = {}
 var customers: Dictionary = {}
 var dungeons: Dictionary = {}
 var shop_rules: Dictionary = {}
+var modifiers: Dictionary = {}
 
 
 func _ready() -> void:
@@ -48,6 +49,7 @@ func get_catalogs() -> Dictionary:
 		"customers": customers,
 		"dungeons": dungeons,
 		"shop_rules": shop_rules,
+		"modifiers": modifiers,
 	}
 
 
@@ -168,6 +170,20 @@ func get_all_dungeons() -> Array[DungeonDefinition]:
 # The one shop-rules definition.
 func get_shop_rules() -> ShopRulesDefinition:
 	return shop_rules.get("default", null)
+
+
+func get_modifier(id: String) -> SessionModifierDefinition:
+	return modifiers.get(id, null)
+
+
+# Sorted by id, so a seeded roll can't depend on catalog load order.
+func get_all_modifiers() -> Array[SessionModifierDefinition]:
+	var result: Array[SessionModifierDefinition] = []
+	result.assign(modifiers.values())
+	result.sort_custom(func(a: SessionModifierDefinition, b: SessionModifierDefinition) -> bool:
+		return a.id < b.id
+	)
+	return result
 
 
 # Everything that opens when the shop goes from old_level to new_level: above

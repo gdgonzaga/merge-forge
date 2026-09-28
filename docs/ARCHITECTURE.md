@@ -544,8 +544,8 @@ The GDD lists effect types (heal, buff_attack). Party stats are confirmed (see t
 | `autoloads/definition_library.gd` | Autoload | Loads every definition folder into a catalog keyed by id. Shop listings (blueprints, crates, upgrades, reagents) come back cheapest first, customers in `queue_order`, party members in `slot_order`. |
 | `autoloads/recipe_resolver.gd` | Autoload | Synchronous rules over the definitions, filtered by player progress. |
 | `autoloads/session_planner.gd` | Autoload | `plan_next_session() -> SessionPlan`. The only caller of `customer_generator.gd`; prep and the shop both go through it. |
-| `autoloads/session_plan.gd` | Script (`RefCounted`, `SessionPlan`) | One dealt shop session: `customers: Array[ShopCustomer]`. |
-| `autoloads/customer_generator.gd` | Script (`RefCounted`) | Deals a session's customers from the unlocked archetypes: filters by shop level and craftability, does a weighted draw with replacement, rolls each dealt customer's orders. Deterministic from its inputs (same archetypes, level, seed and craftability give the same session). |
+| `autoloads/session_plan.gd` | Script (`RefCounted`, `SessionPlan`) | One dealt shop session: `customers: Array[ShopCustomer]`, `modifier: SessionModifierDefinition` (null when none rolled). |
+| `autoloads/customer_generator.gd` | Script (`RefCounted`) | `plan(...)` rolls a market modifier (its own RNG stream, so adding modifiers never reshuffles a seed's customers) then deals the session's customers from the unlocked archetypes: filters by shop level and craftability, does a weighted draw with replacement, rolls each dealt customer's orders. `roll_modifier(...)` picks at most one modifier, gated by `ShopRulesDefinition.modifier_chance` and each modifier's `min_shop_level`, weighted like everything else. Deterministic from its inputs (same archetypes, modifiers, level, seed and craftability give the same session). |
 | `autoloads/shop_customer.gd` | Script (`RefCounted`, `ShopCustomer`) | One customer dealt into a session: the `CustomerDefinition` archetype plus the `Array[OrderDefinition]` rolled for it. |
 | `resources/definitions/*.gd` | Resource scripts | One `class_name` per definition type (below). |
 
@@ -563,8 +563,9 @@ Each catalog is a folder of `.tres` files under `resources/definitions/`; the fi
 | `crates/` | `CrateDefinition` | `id`, `name`, `cost`, `min_items`, `max_items`, `pool: Array[WeightedItem]`, `min_shop_level` |
 | `upgrades/` | `UpgradeDefinition` | `id`, `name`, `cost`, `effect` (`grid_size`, `despawn_time` or `crate_discount`), `value` (seconds for despawn_time, price multiplier for crate_discount), `grid_cols` and `grid_rows` (grid_size) |
 | `customers/` | `CustomerDefinition` | A customer *archetype*, not a fixed customer: `id`, `name`, `role`, `sprite` (portrait), `min_shop_level`, `weight` (a real frequency weight: how often this archetype is dealt relative to the other eligible archetypes — see Shop Session), `min_orders`, `max_orders`, `price_multiplier` (scales every rolled order's price), `wants: Array[OrderTemplate]` |
-| `shop_rules/` | `ShopRulesDefinition` | One definition, id `"default"`: `id`, `session_size`, `xp_per_gold`, `streak_step`, `streak_cap`, `level_xp_base`, `level_xp_exponent`, `max_level` |
+| `shop_rules/` | `ShopRulesDefinition` | One definition, id `"default"`: `id`, `session_size`, `modifier_chance`, `xp_per_gold`, `streak_step`, `streak_cap`, `level_xp_base`, `level_xp_exponent`, `max_level` |
 | `dungeons/` | `DungeonDefinition` | See the Dungeon Run subsystem. |
+| `modifiers/` | `SessionModifierDefinition` | A market event a shop session may roll, at most one per session (`ShopRulesDefinition.modifier_chance`): `id`, `name`, `description`, `sprite`, `min_shop_level`, `weight`, `boosted_customers: Array[CustomerDefinition]`, `customer_weight_multiplier`, `family`, `family_price_multiplier`, `affected_crates: Array[CrateDefinition]`, `crate_cost_multiplier`, `session_size_delta` |
 | (inline) | `EffectDefinition` | `type`, `value`, `duration` (ticks, 0 = instant). The `value` meaning per type is in `effect_definition.gd`. |
 | (inline) | `MergeResult` | `result: ItemDefinition`, `blueprint: BlueprintDefinition` (null = always available) |
 | (inline) | `ReagentVariant` | `result: ItemDefinition`, `reagent: ReagentDefinition`, `blueprint` (null = always available) |
@@ -628,13 +629,14 @@ RecipeResolver has no signals — it is queried synchronously by MergeResolver, 
 | Function | Description |
 |----------|-------------|
 | `get_catalogs() -> Dictionary` | Folder name to catalog, for code that walks every catalog (the integrity tests). |
-| `get_item(id)`, `get_party_member(id)`, `get_enemy(id)`, `get_reagent(id)`, `get_blueprint(id)`, `get_crate(id)`, `get_upgrade(id)`, `get_dungeon(id)` | The definition, or null. |
+| `get_item(id)`, `get_party_member(id)`, `get_enemy(id)`, `get_reagent(id)`, `get_blueprint(id)`, `get_crate(id)`, `get_upgrade(id)`, `get_dungeon(id)`, `get_modifier(id)` | The definition, or null. |
 | `get_all_items() -> Dictionary`, `get_all_enemies() -> Dictionary` | The catalogs themselves (read-only). |
 | `get_all_party_members()` | Ordered by `slot_order`: index 0 is the front member. |
 | `get_all_blueprints()`, `get_all_crates()`, `get_all_upgrades()`, `get_all_reagents()` | Typed arrays, cheapest first (ties by id). |
 | `get_all_customers() -> Array[CustomerDefinition]` | Sorted by id: the archetype pool `autoloads/customer_generator.gd` deals a session from. Not a fixed order — the generator decides who's dealt. |
-| `get_shop_rules() -> ShopRulesDefinition` | The one `shop_rules` definition, id `"default"` (`session_size`, `xp_per_gold`, `streak_step`, `streak_cap`, `level_xp_base`, `level_xp_exponent`, `max_level`). |
+| `get_shop_rules() -> ShopRulesDefinition` | The one `shop_rules` definition, id `"default"` (`session_size`, `modifier_chance`, `xp_per_gold`, `streak_step`, `streak_cap`, `level_xp_base`, `level_xp_exponent`, `max_level`). |
 | `get_all_dungeons()` | Ordered by `min_shop_level` (unlock order), ties by id. PrepPhase's Enter Dungeon button targets the first. |
+| `get_all_modifiers() -> Array[SessionModifierDefinition]` | Sorted by id, so a seeded modifier roll can't depend on catalog load order. |
 | `get_unlocks_between(old_level: int, new_level: int) -> Array[Resource]` | Every definition across every catalog whose `min_shop_level` is above `old_level` and at or below `new_level` (exclusive below, inclusive above). Sorted by level, then folder, then id. Used by `LevelUpPanel` to list what a level-up opened. |
 
 #### RecipeResolver

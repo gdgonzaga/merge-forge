@@ -9,12 +9,11 @@ const CUSTOMER_GENERATOR := preload("res://autoloads/customer_generator.gd")
 
 
 func plan_next_session() -> SessionPlan:
-	var rules := DefinitionLibrary.get_shop_rules()
-	var customers: Array[ShopCustomer] = CUSTOMER_GENERATOR.new().generate(
+	return CUSTOMER_GENERATOR.new().plan(
 		DefinitionLibrary.get_all_customers(),
-		rules.session_size,
+		DefinitionLibrary.get_all_modifiers(),
+		DefinitionLibrary.get_shop_rules(),
 		GameManager.get_shop_level(),
 		GameManager.get_session_seed(),
 		RecipeResolver.is_craftable,
 	)
-	return SessionPlan.new().setup(customers)

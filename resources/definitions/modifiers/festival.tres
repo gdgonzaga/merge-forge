@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="SessionModifierDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/session_modifier_definition.gd" id="1_mod"]
+
+[resource]
+script = ExtResource("1_mod")
+id = "festival"
+name = "Festival"
+description = "The town is celebrating: every order pays more."
+min_shop_level = 8
+family = ""
+family_price_multiplier = 1.2

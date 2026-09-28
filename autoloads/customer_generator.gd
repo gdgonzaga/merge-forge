@@ -6,6 +6,33 @@ extends RefCounted
 # through SessionPlanner.
 
 
+# The modifier (if any) is rolled first, from its own RNG stream, so adding
+# modifiers to the catalog never reshuffles the customers a seed deals.
+func plan(archetypes: Array[CustomerDefinition], modifiers: Array[SessionModifierDefinition], rules: ShopRulesDefinition, level: int, session_seed: int, is_craftable: Callable) -> SessionPlan:
+	var modifier := roll_modifier(modifiers, rules.modifier_chance, level, session_seed)
+	return SessionPlan.new().setup(generate(archetypes, rules.session_size, level, session_seed, is_craftable), modifier)
+
+
+func roll_modifier(modifiers: Array[SessionModifierDefinition], chance: float, level: int, session_seed: int) -> SessionModifierDefinition:
+	if chance <= 0.0:
+		return null
+	var unlocked: Array[SessionModifierDefinition] = []
+	for modifier in modifiers:
+		if level >= modifier.min_shop_level:
+			unlocked.append(modifier)
+	if unlocked.is_empty():
+		return null
+	unlocked.sort_custom(func(a: SessionModifierDefinition, b: SessionModifierDefinition) -> bool: return a.id < b.id)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash([session_seed, "modifier"])
+	if rng.randf() > chance:
+		return null
+	var weights: Array[int] = []
+	for modifier in unlocked:
+		weights.append(modifier.weight)
+	return unlocked[pick_weighted(weights, rng)]
+
+
 # `is_craftable` is Callable(ItemDefinition) -> bool.
 func generate(archetypes: Array[CustomerDefinition], count: int, level: int, session_seed: int, is_craftable: Callable) -> Array[ShopCustomer]:
 	var rng := RandomNumberGenerator.new()

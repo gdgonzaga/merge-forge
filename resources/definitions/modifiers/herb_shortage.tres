@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="SessionModifierDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/session_modifier_definition.gd" id="1_mod"]
+[ext_resource type="Script" path="res://resources/definitions/crate_definition.gd" id="2_crate_script"]
+[ext_resource type="Resource" path="res://resources/definitions/crates/themed_herb.tres" id="3_herb_crate"]
+
+[resource]
+script = ExtResource("1_mod")
+id = "herb_shortage"
+name = "Herb Shortage"
+description = "Herbs are scarce: herb crates cost more, and herb orders pay more."
+min_shop_level = 5
+affected_crates = Array[ExtResource("2_crate_script")]([ExtResource("3_herb_crate")])
+crate_cost_multiplier = 1.5
+family = "herb"
+family_price_multiplier = 1.3
