@@ -8,6 +8,7 @@ const MOVE_ARC_HEIGHT: float = -40.0
 
 @onready var _shelf: GridContainer = %ShelfGrid
 @onready var _shelf_area: Control = %ShelfArea
+@onready var _shelf_gap: Control = %ShelfGap
 
 var _board: Control
 var _detector: RefCounted
@@ -58,6 +59,7 @@ func setup(config: Dictionary) -> void:
 	_shelf.set_move_callback(_on_board_move)
 	_shelf.set_drop_guard(_drops_allowed)
 	_shelf_area.visible = shelf_slots > 0
+	_shelf_gap.visible = shelf_slots > 0
 
 
 func buy_crate(crate_id: String) -> bool:

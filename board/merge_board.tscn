@@ -37,6 +37,7 @@ columns = 5
 script = ExtResource("2")
 
 [node name="ShelfGap" type="Control" parent="VBox"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 8)
 layout_mode = 2
 

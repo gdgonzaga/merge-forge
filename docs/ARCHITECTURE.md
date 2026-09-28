@@ -357,7 +357,7 @@ The GDD lists effect types (heal, buff_attack). Party stats are confirmed (see t
   - `VBox` (VBoxContainer)
     - `TopPadding` (8 px)
     - `BoardArea` (CenterContainer, expands; its minimum height is the grid's, so a taller board can't overlap the shelf) → `BoardGrid` (`board_grid.gd`)
-    - `ShelfGap` (8 px)
+    - `%ShelfGap` (8 px, hidden with the shelf when it has no slots)
     - `%ShelfArea` (PanelContainer, hidden when the shelf has no slots) → `%ShelfGrid` (`board_grid.gd`, one row, merges off)
     - `StagingWrapper` (160 px) → `StagingBg`, `StagingArea` (FlowContainer)
     - `BottomPadding` (40 px)
