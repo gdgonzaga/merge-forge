@@ -1,6 +1,11 @@
 extends Resource
 class_name ItemDefinition
 
+# Item quality: 0 Normal, 1 Fine, 2 Masterwork. A board item dict carries it
+# (RecipeResolver.make_item); oversized merge groups raise it.
+const MAX_QUALITY := 2
+const QUALITY_NAMES: Array[String] = ["Normal", "Fine", "Masterwork"]
+
 @export var id: String = ""
 @export var name: String = ""
 @export var family: String = "" # "metal", "herb", "powder", etc.
