@@ -78,7 +78,7 @@ These are emitted directly on GameManager. Connect via `GameManager.gold_changed
 |--------|---------|-----------------|
 | `gold_changed(new_amount: int)` | Gold balance changes | HUD gold label, prep buy buttons |
 | `shop_xp_changed(xp: int)` | Shop XP changes | HUD level label |
-| `shop_level_changed(level: int)` | Crossed a level, once per level crossed | Prep phase dungeon button, `shop_session.gd` (rebuilds crate buttons) |
+| `shop_level_changed(level: int)` | Crossed a level, once per level crossed | `prep_phase.gd` (refreshes the dungeon button and every purchase list), `shop_session.gd` (rebuilds crate buttons) |
 | `blueprint_added(bp_id: String)` | Blueprint unlocked | Prep phase blueprints tab, audio_manager (SFX) |
 | `upgrade_added(upgrade_id: String)` | Upgrade purchased | audio_manager (SFX) |
 | `reagent_count_changed(id: String, count: int)` | Reagent inventory changes | Prep phase reagent display, merge choice popup |

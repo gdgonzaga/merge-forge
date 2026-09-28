@@ -38,14 +38,13 @@ func display_results(data: Dictionary) -> void:
 			_bp_label.text = "Blueprint: %s" % str(bp)
 		else:
 			_bp_label.text = ""
-		_level_up_panel.setup(data.get("level_before", 1), data.get("level_after", 1))
 	else:
 		_title_label.text = "Dungeon Failed"
 		_title_label.modulate = Color(1, 0.5, 0.5)
 		_gold_label.text = ""
 		_xp_label.text = "No XP"
 		_bp_label.text = ""
-		_level_up_panel.setup(data.get("level_before", 1), data.get("level_after", 1))
+	_level_up_panel.setup(data.get("level_before", 1), data.get("level_after", 1))
 
 
 func _set_gold_count(value: int) -> void:

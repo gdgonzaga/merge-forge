@@ -8,7 +8,7 @@ var customers: Array[ShopCustomer] = []
 var current_index: int = 0
 var summary_data: Dictionary = {}
 var _rules: ShopRulesDefinition
-var _streak: RefCounted = ORDER_STREAK.new()
+var _streak := ORDER_STREAK.new()
 # Per-position shadow alpha in the pending queue: the back of a full queue
 # tops out just under 100% (e.g. 8 / 9 with 10 customers). Fixed for the
 # session, so the stack lightens as it shrinks.

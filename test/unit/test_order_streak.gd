@@ -18,7 +18,7 @@ func before_test() -> void:
 
 
 func test_each_fulfil_in_a_row_earns_more_up_to_the_cap() -> void:
-	var streak: RefCounted = ORDER_STREAK.new()
+	var streak := ORDER_STREAK.new()
 	var earned: Array[int] = []
 	for _i in range(4):
 		earned.append(streak.fulfill(60, _rules))
@@ -26,7 +26,7 @@ func test_each_fulfil_in_a_row_earns_more_up_to_the_cap() -> void:
 
 
 func test_a_rejection_starts_the_streak_over() -> void:
-	var streak: RefCounted = ORDER_STREAK.new()
+	var streak := ORDER_STREAK.new()
 	streak.fulfill(60, _rules)
 	streak.fulfill(60, _rules)
 	streak.reject()

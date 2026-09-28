@@ -39,13 +39,13 @@ theme_override_constants/separation = 24
 [node name="GoldLabel" type="Label" parent="HBox" unique_id=1780255889]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("3_font")
-theme_override_font_sizes/font_size = 24
+theme_override_font_sizes/font_size = 32
 text = "Gold: 200"
 
 [node name="LevelLabel" type="Label" parent="HBox" unique_id=759419846]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("3_font")
-theme_override_font_sizes/font_size = 24
+theme_override_font_sizes/font_size = 32
 text = "Lv 1"
 
 [node name="XpBar" type="ProgressBar" parent="HBox"]
