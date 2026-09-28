@@ -11,11 +11,9 @@ var _last_group_item_id: String = ""
 var _last_group_count: int = 0
 var _pending_options: Array[Dictionary] = []
 var _result_center: Vector2i = Vector2i(-1, -1)
+var _pending_quality: Dictionary = {}
 
-# Share of the source item's value paid per item past 3 in a group. The
-# extras are refunded as well, so a group of 5 can be rebuilt every merge;
-# a high rate turns that into a gold farm independent of customers.
-const BONUS_RATE := 0.25
+const QUALITY_RULES := preload("res://board/quality_rules.gd")
 
 
 func setup(board_ref: Control, popup_cb: Callable, detector: RefCounted, merge_board: Control) -> void:
@@ -59,10 +57,24 @@ func process_next() -> void:
 		_last_group_positions.append(pos)
 	_last_group_item_id = item_id
 	_last_group_count = positions.size()
+	_pending_quality = QUALITY_RULES.resolve(_group_qualities(_last_group_positions), _last_group_count)
 	_pending_options = all_options
+	for option in _pending_options:
+		option["result_quality"] = _pending_quality["result_quality"]
 	_result_center = _resolve_result_position()
 	_dbg("process_next: starting merge animation, result_center=%s" % str(_result_center))
 	_merge_board.animate_merge(_last_group_positions, _result_center, _on_animation_done)
+
+
+# Read from the board when the group starts resolving, so a chain merge sees
+# the quality a previous merge just placed.
+func _group_qualities(positions: Array[Vector2i]) -> Array[int]:
+	var qualities: Array[int] = []
+	for pos in positions:
+		var cell = board.grid[pos.y][pos.x]
+		if cell != null:
+			qualities.append(cell["quality"])
+	return qualities
 
 
 func _on_animation_done() -> void:
@@ -143,33 +155,15 @@ func _place_results(option: Dictionary) -> void:
 		if rid != "":
 			GameManager.consume_reagent(rid)
 	var result_def := DefinitionLibrary.get_item(result_id)
-	var result_count := _last_group_count / 3
-	var refund_count := _last_group_count % 3
-	var gold_value: int = result_def.gold_value
 	var source_def := DefinitionLibrary.get_item(_last_group_item_id)
-	var bonus: int = calculate_bonus_gold(_last_group_count, source_def.gold_value)
-	_dbg("_place_results: result_count=%d refund_count=%d bonus=%d" % [result_count, refund_count, bonus])
-	if bonus > 0:
-		_spawn_bonus_coins(bonus)
-	_spawn_results(RecipeResolver.make_item(result_def), result_count)
-	_refund_source_items(RecipeResolver.make_item(source_def), refund_count)
-	if gold_value > 0 and _result_center.x >= 0:
-		_merge_board.show_gold_text(gold_value, _result_center)
-	EventBus.merge_completed.emit(result_id, bonus)
+	var quality: int = _pending_quality["result_quality"]
+	_dbg("_place_results: result_count=%d quality=%d" % [_last_group_count / 3, quality])
+	_spawn_results(RecipeResolver.make_item(result_def, quality), _last_group_count / 3)
+	_refund_source_items(source_def, _pending_quality["refund_qualities"])
+	if quality > 0 and _result_center.x >= 0:
+		_merge_board.show_quality_sparkle(quality, _result_center)
+	EventBus.merge_completed.emit(result_id, quality)
 	process_next()
-
-
-func _spawn_bonus_coins(total_bonus: int) -> void:
-	var num_coins := mini(_last_group_count - 3, 3)
-	if num_coins <= 0:
-		num_coins = 1
-	var per_coin := total_bonus / num_coins
-	var remainder := total_bonus - per_coin * num_coins
-	for i in range(num_coins):
-		var amount := per_coin
-		if i < remainder:
-			amount += 1
-		_merge_board.spawn_bonus_coin(amount, _result_center)
 
 
 func _spawn_results(result_data: Dictionary, count: int) -> void:
@@ -193,15 +187,15 @@ func _spawn_results(result_data: Dictionary, count: int) -> void:
 	board.flash_cells(flash_positions)
 
 
-func _refund_source_items(source_data: Dictionary, count: int) -> void:
-	if count <= 0:
+func _refund_source_items(source_def: ItemDefinition, qualities: Array) -> void:
+	if qualities.is_empty():
 		return
 	var spawned := 0
 	for pos in _last_group_positions:
-		if spawned >= count:
+		if spawned >= qualities.size():
 			break
 		if board.grid[pos.y][pos.x] == null:
-			board.place_item(source_data, pos)
+			board.place_item(RecipeResolver.make_item(source_def, qualities[spawned]), pos)
 			spawned += 1
 
 
@@ -214,10 +208,6 @@ func calculate_center_of_mass(positions: Array[Vector2i]) -> Vector2i:
 		sum_x += pos.x
 		sum_y += pos.y
 	return Vector2i(sum_x / positions.size(), sum_y / positions.size())
-
-
-func calculate_bonus_gold(count: int, source_value: int) -> int:
-	return (count - 3) * int(floor(source_value * BONUS_RATE))
 
 
 func _dbg(msg: String) -> void:

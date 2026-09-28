@@ -1,6 +1,6 @@
 extends Node
 
-signal merge_completed(result_id: String, bonus_gold: int)
+signal merge_completed(result_id: String, result_quality: int)
 signal customer_fulfilled(order_id: String)
 signal customer_rejected(customer_id: String)
 signal session_ended(summary: Dictionary)

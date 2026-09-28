@@ -28,10 +28,13 @@ func show_options(options: Array[Dictionary]) -> void:
 		var display_name: String = opt.get("display_name", opt.get("item_id", "?"))
 		var is_variant: bool = opt.get("is_variant", false)
 		var reagent_cost: int = opt.get("reagent_cost", 0)
+		var details: Array[String] = []
+		var quality: int = opt.get("result_quality", 0)
+		if quality > 0:
+			details.append(ItemDefinition.QUALITY_NAMES[quality])
 		if is_variant and reagent_cost > 0:
-			btn.text = "%s (%dg)" % [display_name, reagent_cost]
-		else:
-			btn.text = display_name
+			details.append("%dg" % reagent_cost)
+		btn.text = display_name if details.is_empty() else "%s (%s)" % [display_name, ", ".join(details)]
 		btn.custom_minimum_size = Vector2(220, 48)
 		var item_id: String = opt.get("item_id", "")
 		var reagent_id: String = opt.get("reagent_id", "")

@@ -188,41 +188,6 @@ func _spawn_icon(tex: Texture2D, center: Vector2) -> TextureRect:
 	return fi
 
 
-func spawn_bonus_coin(amount: int, grid_pos: Vector2i) -> void:
-	if _anim_overlay == null or _board == null or amount <= 0:
-		return
-	var overlay_global := _anim_overlay.global_position
-	var screen_pos := _get_cell_screen_center(_board, grid_pos) - overlay_global
-	var coin: Control = load("res://board/bonus_coin.tscn").instantiate()
-	coin.setup(amount, screen_pos)
-	_anim_overlay.add_child(coin)
-
-
-func show_gold_text(amount: int, grid_pos: Vector2i) -> void:
-	if _anim_overlay == null or _board == null or amount <= 0:
-		return
-	var overlay_global := _anim_overlay.global_position
-	var cell_center := _get_cell_screen_center(_board, grid_pos) - overlay_global
-	var label := Label.new()
-	label.text = "+%d" % amount
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.add_theme_color_override("font_color", Color(1, 0.99, 0, 1))
-	label.add_theme_font_override("font", load("res://resources/fonts/RobotoCondensed-VariableFont_wght.ttf"))
-	label.add_theme_font_size_override("font_size", 32)
-	label.position = cell_center - Vector2(40, 16)
-	label.size = Vector2(80, 32)
-	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_anim_overlay.add_child(label)
-	var start_pos := label.position
-	var tween := _anim_overlay.create_tween()
-	tween.tween_method(func(t: float):
-		label.position = start_pos + Vector2(0, -60.0 * t)
-	, 0.0, 1.0, 0.8)
-	tween.parallel().tween_property(label, "modulate:a", 0.0, 0.3).set_delay(0.5)
-	tween.tween_callback(label.queue_free)
-
-
 # A Fine or Masterwork result pops its stars over the cell, so a quality
 # upgrade is never silent.
 func show_quality_sparkle(quality: int, grid_pos: Vector2i) -> void:

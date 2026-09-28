@@ -35,7 +35,7 @@ func _ready() -> void:
 		"crate_open": SFX_BASE + "crate_open.wav",
 	}
 
-	EventBus.merge_completed.connect(func(_id, _gold): play_sfx("merge_complete"))
+	EventBus.merge_completed.connect(func(_id, _quality): play_sfx("merge_complete"))
 	EventBus.customer_fulfilled.connect(func(_id): play_sfx("customer_happy"))
 	EventBus.customer_rejected.connect(func(_id): play_sfx("customer_reject"))
 	EventBus.session_ended.connect(func(_s): play_sfx("session_end"))
