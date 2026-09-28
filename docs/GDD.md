@@ -258,7 +258,7 @@ The curve is a power law: XP from level k to k+1 is `round(level_xp_base x k^lev
 
 | Level | Unlocks |
 |-------|---------|
-| 1 | Customers: Brom, Mira, Hilda |
+| 1 | Customers: Brom, Mira, Hilda. Crate: Basic Crate |
 | 2 | Blueprint: Iron Plate. Crate: Herb Crate |
 | 3 | Customers: Garrick, Maelys. Crate: Metal Crate |
 | 4 | Blueprint: Healing Potion |
