@@ -138,6 +138,7 @@ func test_customer_archetypes_are_well_formed() -> void:
 		assert_bool(customer.min_orders >= 1 and customer.min_orders <= customer.max_orders) \
 			.override_failure_message("%s has orders %d-%d" % [customer.id, customer.min_orders, customer.max_orders]).is_true()
 		assert_float(customer.price_multiplier).override_failure_message("%s price" % customer.id).is_greater(0.0)
+		assert_int(customer.weight).override_failure_message("%s weight" % customer.id).is_greater(0)
 		var seen := {}
 		for want in customer.wants:
 			assert_object(want.item).override_failure_message("%s has an empty want" % customer.id).is_not_null()

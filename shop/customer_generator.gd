@@ -13,12 +13,9 @@ func generate(archetypes: Array[CustomerDefinition], count: int, level: int, ses
 	var pool := _eligible(archetypes, level, is_craftable)
 	if pool.is_empty():
 		return dealt
-	var deck: Array[CustomerDefinition] = []
 	var previous: CustomerDefinition = null
 	for _i in range(count):
-		if deck.is_empty():
-			deck = pool.duplicate()
-		var archetype := _draw(deck, previous, rng)
+		var archetype := _draw(pool, previous, rng)
 		dealt.append(ShopCustomer.new().setup(archetype, _roll_orders(archetype, rng, is_craftable)))
 		previous = archetype
 	return dealt
@@ -58,21 +55,19 @@ func _craftable_wants(archetype: CustomerDefinition, is_craftable: Callable) -> 
 	return craftable
 
 
-# Weighted draw without replacement that avoids repeating `previous` while the
-# deck holds anyone else.
-func _draw(deck: Array[CustomerDefinition], previous: CustomerDefinition, rng: RandomNumberGenerator) -> CustomerDefinition:
+# Weighted draw with replacement that avoids repeating `previous` while anyone
+# else is eligible.
+func _draw(pool: Array[CustomerDefinition], previous: CustomerDefinition, rng: RandomNumberGenerator) -> CustomerDefinition:
 	var candidates: Array[CustomerDefinition] = []
-	for archetype in deck:
+	for archetype in pool:
 		if archetype != previous:
 			candidates.append(archetype)
 	if candidates.is_empty():
-		candidates = deck.duplicate()
+		candidates = pool.duplicate()
 	var weights: Array[int] = []
 	for archetype in candidates:
 		weights.append(archetype.weight)
-	var picked := candidates[pick_weighted(weights, rng)]
-	deck.erase(picked)
-	return picked
+	return candidates[pick_weighted(weights, rng)]
 
 
 # The first order is always one the player can make today; the rest may not

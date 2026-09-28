@@ -9,8 +9,8 @@ class_name CustomerDefinition
 # The customer's portrait.
 @export var sprite: Texture2D
 @export var min_shop_level: int = 1
-# Each eligible archetype is dealt once per pass through the pool; weight 0
-# doesn't exclude it. Weight only biases the draw order within a pass.
+# How often this archetype is dealt, relative to the other eligible
+# archetypes. Must be at least 1.
 @export var weight: int = 1
 @export var min_orders: int = 1
 @export var max_orders: int = 1

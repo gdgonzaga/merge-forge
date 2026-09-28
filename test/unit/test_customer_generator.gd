@@ -99,6 +99,19 @@ func test_no_customer_follows_itself_when_another_is_available() -> void:
 		assert_str(ids[i]).is_not_equal(ids[i - 1])
 
 
+func test_weight_sets_how_often_an_archetype_is_dealt() -> void:
+	var heavy := _archetype("__heavy", 1, [_want(_ingot, 1, 1, 1)], 1, 1)
+	heavy.weight = 18
+	var archetypes: Array[CustomerDefinition] = [
+		heavy,
+		_archetype("__b", 1, [_want(_ingot, 1, 1, 1)], 1, 1),
+		_archetype("__c", 1, [_want(_ingot, 1, 1, 1)], 1, 1),
+	]
+	var ids := _ids(_generator.generate(archetypes, 100, 1, 11, _all_craftable))
+	# Expected about 45 heavy (it follows every b/c with 18/19 odds); a deck would give 34.
+	assert_int(ids.count("__heavy")).is_greater(40)
+
+
 func test_single_archetype_is_dealt_every_time() -> void:
 	var archetypes: Array[CustomerDefinition] = [_archetype("__a", 1, [_want(_ingot, 1, 1, 1)], 1, 1)]
 	assert_array(_ids(_generator.generate(archetypes, 3, 1, 1, _all_craftable))).is_equal(["__a", "__a", "__a"])
