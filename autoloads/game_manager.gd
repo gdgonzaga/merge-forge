@@ -197,6 +197,9 @@ static func _is_valid_upgrade_levels(value: Variant) -> bool:
 	for level: Variant in value.values():
 		if not _is_number(level):
 			return false
+		var level_num: float = level
+		if level_num < 0.0 or level_num != floor(level_num):
+			return false
 	return true
 
 

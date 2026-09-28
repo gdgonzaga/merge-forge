@@ -20,7 +20,7 @@
 
 ### In Scope (v1.0)
 
-- 5×5 merge grid (expandable to 6×5) with drag-and-drop placement and repositioning
+- 5x5 merge grid (expandable to 6x6) with drag-and-drop placement and repositioning
 - Staging area with timed despawn for incoming materials
 - Connected-group merge detection (3+ identical orthogonally adjacent items auto-triggers)
 - Fixed recipe tree with player choice (2–4 options per merge)
@@ -302,7 +302,7 @@ The curve is a power law: XP from level k to k+1 is `round(level_xp_base x k^lev
 - Does NOT have: Star rating, share button
 
 ### Prep Phase
-- Elements: TabContainer with tabs — **Forecast** (first, default tab: previews the next session exactly as the shop will deal it — a market modifier card, shown only when a modifier rolled, with its icon, name and description; demand by item family, largest share first; and portraits for the first `forecast_customers` (3) customers), Blueprints (buy blueprints), Upgrades (buy upgrades and reagents). Upgrade cards read "Name (k/N)" (levels bought of the track's N), show the next level's value ("Next: ...") and cost, "Max" once every level is bought, and "Unlocks at level N" while the next level is level-locked; buying an upgrade buys its next level. With Town Crier the forecast reveals that level's customer count (5 or 8), and at the top level every customer plus their orders. Material crates are purchased during shop sessions. Board rearrange deferred to post-MVP. Locked entries are greyed with "Unlocks at level N"; the dungeon button reads "Dungeon (Lv N)" while locked. The forecast refreshes whenever a purchase or level-up could change what's craftable (blueprint bought, reagent count changed, level crossed).
+- Elements: TabContainer with tabs — **Forecast** (first, default tab: previews the next session exactly as the shop will deal it — a market modifier card, shown only when a modifier rolled, with its icon, name and description; demand by item family, largest share first; and portraits for the first `forecast_customers` (3) customers), Blueprints (buy blueprints), Upgrades (buy upgrades and reagents). Upgrade cards read "Name (k/N)" (levels bought of the track's N), show the next level's value ("Next: ...") and cost, "Max" once every level is bought, and "Unlocks at level N" while the next level is level-locked; buying an upgrade buys its next level. With Town Crier the forecast reveals that level's customer count (5 or 8), and at the top level every customer plus their orders. Material crates are purchased during shop sessions. Board rearrange deferred to post-MVP. Locked entries are greyed with "Unlocks at level N"; the dungeon button reads "Dungeon (Lv N)" while locked. The forecast refreshes whenever a purchase or level-up could change what's craftable (blueprint bought, reagent count changed, level crossed, upgrade bought).
 - **Overlay (CanvasLayer):** HUD — gold, shop level and XP bar (always visible during gameplay)
 - **Bottom:** Continue button → start next session or enter dungeon. Quit button (with confirmation) → return to Main Menu.
 - Does NOT have: Timer, limited item slots

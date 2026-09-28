@@ -290,6 +290,7 @@ The GDD lists effect types (heal, buff_attack). Party stats are confirmed (see t
 | `cell_drag_started(from_pos: Vector2i, item: Dictionary)` | `board_cell.gd` | `board_grid.gd` | No | Item Drag |
 | `cell_drag_ended(to_pos: Vector2i, drag_data: Dictionary)` | `board_cell.gd` | `board_grid.gd` (`_on_cell_drop`) | No | Item Move, Item Swap (within a grid or between board and shelf), Staging Placement |
 | `item_placed(item: Dictionary, pos: Vector2i)` | `board_grid.gd` | `merge_detector.gd` (via parent callback) | No | Merge Detection |
+| `staging_item_placed(item: Dictionary, pos: Vector2i)` | `board_grid.gd` (`finalize_move`, only when the move's `from_grid` was null) | `merge_board.gd` (`_on_staging_item_placed`) | No | Staging Placement |
 | `item_removed(pos: Vector2i)` | `board_grid.gd` | `merge_detector.gd` (via parent callback) | No | Chain Merge |
 | `merge_detected(groups: Array)` | `merge_detector.gd` | `merge_resolver.gd` | No | Merge Resolution |
 | `merge_completed(result_id: String, bonus_gold: int)` | `merge_resolver.gd` | EventBus | Yes | Merge Resolution |
@@ -365,7 +366,7 @@ The GDD lists effect types (heal, buff_attack). Party stats are confirmed (see t
 
 Fits a 6x6 board of 128 px cells plus a 6-slot shelf on the shop screen at 1080x1920 even when the current customer shows 3 orders (see GDD Decisions Log, 2026-09-28 leveled upgrades entry).
 
-**Display shelf:** `setup(config)` reads `config.shelf_slots` (default 0): the shop passes `GameManager.get_shelf_slots()`, the dungeon passes none, so its shelf stays hidden. The shelf is a second BoardGrid with `merges_enabled` false, the same cell scene and the same move callback, so drags between board and shelf reuse the board's code. Its `item_placed` also removes a dropped staging item from staging; merge detection only scans the board. Shelf items never merge and never despawn.
+**Display shelf:** `setup(config)` reads `config.shelf_slots` (default 0): the shop passes `GameManager.get_shelf_slots()`, the dungeon passes none, so its shelf stays hidden. The shelf is a second BoardGrid with `merges_enabled` false, the same cell scene and the same move callback, so drags between board and shelf reuse the board's code. Its `staging_item_placed` also removes a dropped staging item from staging; `item_placed` (both grids) only drives merge detection, which only scans the board. Shelf items never merge and never despawn.
 
 | Function | Description |
 |----------|-------------|
@@ -412,6 +413,7 @@ Fits a 6x6 board of 128 px cells plus a 6-slot shelf on the shop screen at 1080x
 | Signal | Description |
 |--------|-------------|
 | `item_placed(item: Dictionary, pos: Vector2i)` | Emitted when an item lands on the grid. merge_detector listens via parent. |
+| `staging_item_placed(item: Dictionary, pos: Vector2i)` | Emitted alongside `item_placed`, only for a move whose source was the staging area (`from_grid` null). MergeBoard removes the matching staging item on this signal, never on plain `item_placed` — a board/shelf move or swap must not touch staging just because an item there shares an id. |
 | `item_removed(pos: Vector2i)` | Emitted when an item is removed (merge consume, discard). |
 
 **Functions:**
@@ -420,7 +422,7 @@ Fits a 6x6 board of 128 px cells plus a 6-slot shelf on the shop screen at 1080x
 |----------|-------------|
 | `set_move_callback(cb: Callable)` | MergeBoard's move animation; called with the moves of a drop, each naming `from_grid`/`from_pos` and `to_grid`/`to_pos`. |
 | `set_drop_guard(guard: Callable)` | A drop is refused while `guard.call()` is false (MergeBoard: no merge resolving). |
-| `finalize_move(moves: Array[Dictionary])` | Refreshes the cells each move leaves and lands on (either grid) and emits `item_placed` on the landing grid. |
+| `finalize_move(moves: Array[Dictionary])` | Refreshes the cells each move leaves and lands on (either grid) and emits `item_placed` on the landing grid, plus `staging_item_placed` when that move's `from_grid` is null (it came from staging). |
 | `place_item(item: Dictionary, pos: Vector2i) -> bool` | Places item at pos. Returns false if occupied. Emits `item_placed`. |
 | `remove_items(positions: Array[Vector2i])` | Removes items at given positions. Emits `item_removed` for each. |
 | `swap_items(pos_a: Vector2i, pos_b: Vector2i)` | Swaps items at two positions. |
@@ -620,7 +622,7 @@ Saves store ids only, never resources, so an id is part of the save format: rena
 | `merge_results` | `Array[MergeResult]` | What three of this item merge into. More than one available result opens the choice popup. |
 | `reagent_variants` | `Array[ReagentVariant]` | Extra merge results that cost one reagent. |
 
-**Board item:** a board cell holds `RecipeResolver.make_item(def)`, a dictionary `{item_id, definition}`. `item_id` is what merge detection, order fulfillment and saves read; views read `definition.sprite`. Drag and drop copies it and adds transient `_source_pos` / `_source_screen` keys.
+**Board item:** a board cell holds `RecipeResolver.make_item(def)`, a dictionary `{item_id, definition}`. `item_id` is what merge detection, order fulfillment and saves read; views read `definition.sprite`. Drag and drop copies it and adds transient `_source_pos` / `_source_grid` / `_source_screen` keys.
 
 ### Signals
 
@@ -1278,7 +1280,7 @@ Reagents are bought in the prep phase and stored in `GameManager.reagent_invento
 |----------|-------------|
 | `get_forecast_plan() -> SessionPlan` | Returns `_plan`, the session the Forecast tab is showing. `shop_session.gd` deals the same plan (both call `SessionPlanner.plan_next_session()`, a pure function of GameManager's state). |
 | `try_purchase(type: String, id: String) -> bool` | Delegates a blueprint, upgrade or reagent purchase to its `core/purchases.gd` helper. Returns true on success. |
-| `_refresh_forecast()` | Rolls `_plan` from `SessionPlanner` and calls `_forecast_panel.setup(_plan, DefinitionLibrary.get_shop_rules().forecast_customers)`. Called from `_ready`, and from the `blueprint_added`, `reagent_count_changed` and `shop_level_changed` handlers whenever a purchase or level-up could change what's craftable. |
+| `_refresh_forecast()` | Rolls `_plan` from `SessionPlanner` and calls `_forecast_panel.setup(_plan, GameManager.get_forecast_customers())`. Called from `_ready`, and from the `blueprint_added`, `reagent_count_changed`, `shop_level_changed` and `upgrade_level_changed` handlers whenever a purchase or level-up could change what's craftable. |
 | `_debug_unlock_all()` | Debug: sets debug_mode, grants 20000g, 1000 rep, all blueprints, 5 of every reagent. |
 
 #### GameManager

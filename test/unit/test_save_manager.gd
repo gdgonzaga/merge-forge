@@ -98,6 +98,14 @@ func test_load_upgrade_levels_that_are_not_a_dictionary_returns_CORRUPT() -> voi
 	assert_int(r["status"]).is_equal(SaveManager.LoadStatus.CORRUPT)
 
 
+func test_load_negative_upgrade_level_returns_CORRUPT() -> void:
+	var bad := GameManager.serialize()
+	bad["upgrade_levels"] = {"__test_track": -1}
+	_write_save_file(JSON.stringify(bad))
+	var r: Dictionary = SaveManager.load_game_ex()
+	assert_int(r["status"]).is_equal(SaveManager.LoadStatus.CORRUPT)
+
+
 func test_load_shelf_entry_without_item_id_returns_CORRUPT() -> void:
 	var bad := GameManager.serialize()
 	bad["shop_shelf_state"] = [{"col": 0, "row": 0}]
