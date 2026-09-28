@@ -136,3 +136,17 @@ func _has_quarantine_backup() -> bool:
 		if file_name.begins_with(SaveManager.CORRUPT_PREFIX) and file_name.ends_with(".json"):
 			return true
 	return false
+
+
+func test_load_without_run_seed_returns_CORRUPT() -> void:
+	var bad := GameManager.serialize()
+	bad.erase("run_seed")
+	_write_save_file(JSON.stringify(bad))
+	assert_int(SaveManager.load_game_ex()["status"]).is_equal(SaveManager.LoadStatus.CORRUPT)
+
+
+func test_load_bool_sessions_played_returns_CORRUPT() -> void:
+	var bad := GameManager.serialize()
+	bad["sessions_played"] = true
+	_write_save_file(JSON.stringify(bad))
+	assert_int(SaveManager.load_game_ex()["status"]).is_equal(SaveManager.LoadStatus.CORRUPT)

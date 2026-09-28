@@ -191,6 +191,7 @@ func test_serialize_deserialize_round_trip() -> void:
 	GameManager.add_blueprint("bp_x")
 	GameManager.add_reagent("fire", 4)
 	GameManager.add_upgrade("slow_timer")
+	GameManager.record_session_played()
 
 	var saved := GameManager.serialize()
 	reset_game_state()
@@ -207,3 +208,32 @@ func _upgrade(id: String, effect: String, value: float) -> UpgradeDefinition:
 	upgrade.effect = effect
 	upgrade.value = value
 	return upgrade
+
+
+# --- sessions ---
+
+func test_new_game_has_played_no_sessions() -> void:
+	assert_int(GameManager.sessions_played).is_equal(0)
+
+
+func test_record_session_played_counts_up() -> void:
+	GameManager.record_session_played()
+	GameManager.record_session_played()
+	assert_int(GameManager.sessions_played).is_equal(2)
+
+
+func test_session_seed_is_fixed_by_run_seed_and_session_count() -> void:
+	GameManager.run_seed = 7
+	var first: int = GameManager.get_session_seed()
+	assert_int(GameManager.get_session_seed()).is_equal(first)
+	GameManager.record_session_played()
+	assert_int(GameManager.get_session_seed()).is_not_equal(first)
+	GameManager.sessions_played = 0
+	assert_int(GameManager.get_session_seed()).is_equal(first)
+
+
+# Two fresh games share a run seed with odds of 1 in 2^32.
+func test_new_games_roll_their_own_run_seed() -> void:
+	var first: int = GameManager.run_seed
+	reset_game_state()
+	assert_int(GameManager.run_seed).is_not_equal(first)

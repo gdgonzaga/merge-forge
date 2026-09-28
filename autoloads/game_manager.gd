@@ -9,7 +9,7 @@ signal reagent_count_changed(id: String, count: int)
 signal grid_size_changed(cols: int, rows: int)
 
 const DEFAULT_GOLD := 50
-const SAVE_VERSION := 4
+const SAVE_VERSION := 5
 const DEFAULT_DESPAWN_TIME := 12.0
 const DEFAULT_CRATE_COST_MULTIPLIER := 1.0
 
@@ -23,6 +23,10 @@ var shop_board_state: Array = []
 var dungeon_board_state: Array = []
 var grid_cols: int = 5
 var grid_rows: int = 5
+# Rolled once per new game; with sessions_played it seeds each shop session.
+# sessions_played also gates the ad grace period, so it counts completed sessions only.
+var run_seed: int = 0
+var sessions_played: int = 0
 # UI-state flag, not core progression. Optional in the save: is_valid_save()
 # does NOT check it, so older saves lacking the field load with false.
 var seen_intro: bool = false
@@ -78,6 +82,16 @@ func add_upgrade(upgrade_id: String) -> void:
 	upgrade_added.emit(upgrade_id)
 
 
+func record_session_played() -> void:
+	sessions_played += 1
+
+
+# Fixed for a given run and session number, so the next session can be
+# previewed in prep and replays the same after a crash.
+func get_session_seed() -> int:
+	return hash([run_seed, sessions_played])
+
+
 func get_reputation_level() -> String:
 	if reputation_points >= 300:
 		return "high"
@@ -119,6 +133,8 @@ func serialize() -> Dictionary:
 		"dungeon_board_state": dungeon_board_state,
 		"grid_cols": grid_cols,
 		"grid_rows": grid_rows,
+		"run_seed": run_seed,
+		"sessions_played": sessions_played,
 		"seen_intro": seen_intro,
 	}
 
@@ -139,6 +155,8 @@ func is_valid_save(data: Dictionary) -> bool:
 	if not _is_valid_board_state(data.get("dungeon_board_state")): return false
 	if not _is_number(data.get("grid_cols")): return false
 	if not _is_number(data.get("grid_rows")): return false
+	if not _is_number(data.get("run_seed")): return false
+	if not _is_number(data.get("sessions_played")): return false
 	return true
 
 
@@ -174,6 +192,8 @@ func deserialize(data: Dictionary) -> void:
 	dungeon_board_state = data.get("dungeon_board_state", [])
 	grid_cols = data.get("grid_cols", 5)
 	grid_rows = data.get("grid_rows", 5)
+	run_seed = int(data.get("run_seed", randi()))
+	sessions_played = int(data.get("sessions_played", 0))
 	seen_intro = data.get("seen_intro", false)
 	gold_changed.emit(gold)
 	reputation_changed.emit(reputation_points)
