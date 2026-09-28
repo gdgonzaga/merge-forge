@@ -797,7 +797,7 @@ Customers are `CustomerDefinition`s and crates `CrateDefinition`s (see Content D
 | `gold_reward` | `int` | Gold awarded on clear |
 | `blueprint_reward` | `BlueprintDefinition` or null | Awarded on clear. Goblin Cave: null. |
 
-Goblin Cave (MVP): walk speed 0.075, encounters at 0.2 / 0.5 / 0.8: two Slimes; a Goblin Archer and a Goblin; two Goblins. 400 gold, no blueprint.
+Goblin Cave (MVP): walk speed 0.075, encounters at 0.2 / 0.5 / 0.8: two Slimes; a Goblin Archer and a Goblin; two Goblins. 120 gold, no blueprint.
 
 ### Definition Schema: EnemyDefinition (`resources/definitions/enemies/*.tres`)
 

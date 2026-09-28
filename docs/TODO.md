@@ -11,3 +11,6 @@
 - Expand reward types for dungeon runs
 - Dungeon buff stacks: dragging boost items onto party members adds to a buff count (crit charges, absorb shield, regen ticks) instead of a one-off effect. See `tmp/buff-stacks/proposal.md`.
 - Attack priority for units: let each party member / enemy define whom it targets (for example front, weakest, highest attack, healer first) instead of the fixed melee-front / missile-weakest rule.
+- Merge float text shows misleading gold: `board/merge_resolver.gd` (~151-152) and `board/merge_board.gd` (`show_gold_text`, ~168) pop `+<result gold_value>` on every merge even though no gold is paid for it — after the retune a Sword merge shows "+280" beside only ~36g of real bonus coins. Drop the float or restyle it so it can't be read as gold earned.
+- Dungeon income: consider paying a bigger reward on the first clear of a dungeon only (needs a new save field and a `SAVE_VERSION` bump), and add dungeon gold-per-minute vs shop gold-per-minute to `tmp/shop-improvements/sim/economy_sim.gd` so a later phase can't reopen a repeatable-dungeon gold loop.
+- Docs sweep: `docs/GDD.md` still refers to `*.json` catalogs (`upgrades.json`, `crates.json`, etc.) in many places; content is now `.tres` under `resources/definitions/`.

@@ -362,13 +362,13 @@ Transitions:
 | Value | Setting | Notes |
 |-------|---------|-------|
 | Target resolution | 1080×1920 portrait | Android primary |
-| Board default size | 5×5 (25 cells) | Expandable to 6×5 via upgrade |
+| Board default size | 5×5 (25 cells) | Expandable to 6×6 via upgrade |
 | Merge minimum | 3 connected identical items | Orthogonally adjacent (4-directional) |
 | Merge result count | floor(count / 3) result items | Groups of 3 each produce 1 upper-tier item |
 | Merge refund | count % 3 source items | Remainder items refunded to board at former positions |
 | Merge bonus gold | (count - 3) × floor(source_value × 0.25) | Gold bonus for groups larger than 3; source = the merged item, not the result |
 | Despawn timer (default) | 12 seconds | Staging area items |
-| Despawn timer (upgraded) | 18 seconds | With Slow Timer upgrade |
+| Despawn timer (upgraded) | 15 seconds | With Slow Timer upgrade |
 | Combat tick interval | 1.0 second | Auto-combat damage frequency |
 | Party: Fighter | HP 120, ATK 11 | Melee. Slot 0 (front); takes all melee damage while standing. Crit "Cleave" |
 | Party: Mage | HP 50, ATK 14 | Missile: hits the weakest enemy. Highest damage. Crit "Fireball". Auto-attack only for MVP |
@@ -386,7 +386,7 @@ Transitions:
 | Reputation reject penalty | 2 points | Per rejected customer |
 | Reputation dungeon fail | 20 points lost | On party wipe |
 | Reputation dungeon clear | 25 points gained | On dungeon completion |
-| Dungeon gold reward | 400g | Goblin Cave (MVP) |
+| Dungeon gold reward | 120g | Goblin Cave (MVP) |
 | Dungeon unlock threshold | 150 reputation points | |
 
 ### Item Catalog (MVP)
@@ -574,6 +574,7 @@ Purchase flow:
 | Crate definitions | Fully data-driven, one `.tres` per crate | Each crate has: name, cost, item_count range, weighted item pool. Whatever crate definitions exist are shown as buy buttons, cheapest first. No hardcoded crate types. |
 | Crates (current) | Basic Crate 10g, Metal Crate 25g, Herb Crate 25g | Basic: iron_ore (weight 3) / herb_leaf (weight 2), 3-5 items. Metal: iron_ore (weight 4) / iron_ingot (weight 1), 3-4 items. Herb Crate (new): herb_leaf (weight 4) / herb_bundle (weight 1), 3-4 items. |
 | Fire Essence price | 100g | 1 reagent, goes directly to inventory |
+| Upgrade costs | Slow Timer 600g, Crate Discount 1200g, Grid Expand 1500g | Data-driven, one `.tres` per upgrade under `resources/definitions/upgrades/` |
 
 **Does NOT:**
 - Set prices dynamically (all prices are fixed in JSON)
@@ -684,7 +685,7 @@ For reagent variants (items with entries in reagent_combos.json), see Reagent Va
 |-----------|------|------|---------|
 | Iron Plate | 150g | Recipe | iron_ingot → iron_plate |
 | Sword | 600g | Recipe | iron_plate → sword |
-| Staff | 30g | Recipe | wood_shaft → staff *(deferred — Wood family)* |
+| Staff | TBD | Recipe | wood_shaft → staff *(deferred — Wood family)* |
 | Healing Potion | 300g | Recipe | herbal_tonic → healing_potion |
 | Battle Elixir | 400g | Recipe | herbal_tonic → battle_elixir |
 | Iron Shield | 900g | Recipe | iron_plate → iron_shield |
@@ -692,9 +693,9 @@ For reagent variants (items with entries in reagent_combos.json), see Reagent Va
 | Cluster Bomb | 1200g | Recipe | bomb → cluster_bomb |
 | Phoenix Draught | 1500g | Variant | herbal_tonic + fire_essence → phoenix_draught |
 | Fire Bomb | 1800g | Variant | bomb + fire_essence → fire_bomb |
-| Wand | 50g | Recipe | magic_focus → wand *(deferred — Wood family)* |
+| Wand | TBD | Recipe | magic_focus → wand *(deferred — Wood family)* |
 | Flame Sword | 1500g | Variant | iron_plate + fire_essence → flame_sword |
-| Flame Staff | 100g | Variant | staff + fire_essence → flame_staff *(deferred — Wood family)* |
+| Flame Staff | TBD | Variant | staff + fire_essence → flame_staff *(deferred — Wood family)* |
 
 **Does NOT:**
 - Change the recipe tree itself (only hides/shows options)
@@ -914,7 +915,7 @@ The player leaving a summary screen for the prep phase: the Session Summary's Co
 | 2026-09-28 | Dungeon item roles and usable-only drops | Herbs heal, metal buffs, powder (new family) damages. Tier 1 stays raw; tiers 2 to 4 are dungeon-usable, and enemy drop pools hold only usable items (Slime: herbs, Archer: powder, Goblin: plates and herbs). refined_potion renamed herbal_tonic (`SAVE_VERSION` 4). Fire essence now makes phoenix_draught from tonics instead of a Healing Potion from herb bundles, which skipped a tier and bp_healing_potion. absorb, crit_charges, revive, damage and enemy targets are defined but not implemented in CombatEngine yet. The old balance targets no longer hold (heals now drop directly); re-sim before tuning. |
 | 2026-09-28 | All content is `.tres`; `data/` is gone | Recipes, reagent variants, blueprints, crates, upgrades, reagents, customers and dungeons moved from JSON to typed definitions under `resources/definitions/`. Definitions reference each other directly, so a broken link shows up in the editor and in the integrity tests instead of as a silent id typo; references only point down the tiers because Godot can't load cyclic resources. Ids are unchanged, so saves still load (no `SAVE_VERSION` bump). Fire Essence costs 100 as specified; `reagents.json` had drifted to 75. Shop listings are ordered cheapest first. |
 | 2026-09-28 | v1.0 is ad-supported: interstitials only | AdMob interstitials at summary-to-prep breaks, with UMP consent (Submodule — Ads). No persistent banner: it would take about 130-240 px of a full portrait layout, and it would sit next to drag-and-drop input, which risks accidental clicks (an AdMob policy violation) for little revenue. No rewarded ads yet. Paid ad removal is deferred (`docs/TODO.md`). Store and account setup: `docs/ADS-COMPLIANCE.md`. |
-| 2026-09-28 | Economy baseline retune | Margins now rise with tier (price / material cost at least 1.3 / 1.6 / 2.0 at depth 2 / 3 / 4); tier-4 herbs had sold below cost. New Herb Crate (herbs cost 6.25g per leaf through the mixed crate). Merge bonus pays 25% of the *source* value per extra item; paying 50% of the result's value on refunded extras was a repeatable gold farm. Blueprint and upgrade costs scaled so buying everything takes about 12 best-case sessions instead of about 2.5. Checked by `tmp/shop-improvements/sim/economy_sim.gd`. |
+| 2026-09-28 | Economy baseline retune | Margins now rise with tier (price / material cost at least 1.3 / 1.6 / 2.0 at depth 2 / 3 / 4); tier-4 herbs had sold below cost. New Herb Crate (herbs cost 6.25g per leaf through the mixed crate). Merge bonus pays 25% of the *source* value per extra item; paying 50% of the result's value on refunded extras was a repeatable gold farm. Blueprint and upgrade costs scaled so buying everything takes about 12 best-case sessions instead of about 2.5. Checked by `tmp/shop-improvements/sim/economy_sim.gd`. Dungeon clear reward 400 -> 120g: runs are free and repeatable, so a bigger reward let repeated dungeon runs out-earn the shop; 120 keeps roughly the old 80g's share of a best-case session (about 11% of about 1032g). |
 
 ---
 
