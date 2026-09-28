@@ -88,7 +88,7 @@ func _roll_orders(archetype: CustomerDefinition, rng: RandomNumberGenerator, is_
 	var target := rng.randi_range(archetype.min_orders, archetype.max_orders)
 	while orders.size() < target and not remaining.is_empty():
 		var template := _pick_template(remaining, rng)
-		remaining.erase(template)
+		remaining = remaining.filter(func(want: OrderTemplate) -> bool: return want.item != template.item)
 		orders.append(_make_order(template, archetype.price_multiplier, rng))
 	return orders
 

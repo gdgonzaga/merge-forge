@@ -9,7 +9,8 @@ class_name CustomerDefinition
 # The customer's portrait.
 @export var sprite: Texture2D
 @export var reputation_required: int = 0
-# Chance of being dealt, relative to the other unlocked archetypes.
+# Each eligible archetype is dealt once per pass through the pool; weight 0
+# doesn't exclude it. Weight only biases the draw order within a pass.
 @export var weight: int = 1
 @export var min_orders: int = 1
 @export var max_orders: int = 1

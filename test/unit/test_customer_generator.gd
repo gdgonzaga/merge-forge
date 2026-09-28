@@ -78,6 +78,17 @@ func test_order_count_stays_in_bounds_without_repeating_an_item() -> void:
 			items[order.item.id] = true
 
 
+func test_never_repeats_an_item_from_two_templates_wanting_it() -> void:
+	var archetypes: Array[CustomerDefinition] = [
+		_archetype("__a", 0, [_want(_ingot, 1, 1, 1), _want(_sword, 1, 1, 1), _want(_sword, 1, 1, 1), _want(_item("__test_herb", 5), 1, 1, 1)], 1, 4),
+	]
+	for customer in _generator.generate(archetypes, 30, 0, 3, _all_craftable):
+		var items := {}
+		for order in customer.orders:
+			assert_bool(items.has(order.item.id)).is_false()
+			items[order.item.id] = true
+
+
 func test_no_customer_follows_itself_when_another_is_available() -> void:
 	var archetypes: Array[CustomerDefinition] = [
 		_archetype("__a", 0, [_want(_ingot, 1, 1, 1)], 1, 1),
