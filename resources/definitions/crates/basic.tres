@@ -4,6 +4,7 @@
 [ext_resource type="Resource" path="res://resources/definitions/items/iron_ore.tres" id="2_vwc10"]
 [ext_resource type="Resource" path="res://resources/definitions/items/herb_leaf.tres" id="3_bssxe"]
 [ext_resource type="Script" path="res://resources/definitions/crate_definition.gd" id="4_p4xv6"]
+[ext_resource type="Texture2D" path="res://resources/sprites/items/crate_basic.png" id="5_sprite"]
 
 [sub_resource type="Resource" id="Resource_vp5bw"]
 script = ExtResource("1_mwoxu")
@@ -19,6 +20,7 @@ weight = 2
 script = ExtResource("4_p4xv6")
 id = "basic"
 name = "Basic Crate"
+sprite = ExtResource("5_sprite")
 cost = 10
 min_items = 3
 max_items = 5

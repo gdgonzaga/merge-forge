@@ -3,6 +3,8 @@
 [ext_resource type="Script" uid="uid://brc1jtn48qdgl" path="res://core/hud.gd" id="1"]
 [ext_resource type="Texture2D" uid="uid://5mc4bc3smh88" path="res://resources/sprites/ui/hud_bg.png" id="2"]
 [ext_resource type="FontFile" path="res://resources/fonts/RobotoCondensed-VariableFont_wght.ttf" id="3_font"]
+[ext_resource type="Texture2D" path="res://resources/sprites/ui/coin_gold.png" id="4_coin"]
+[ext_resource type="Texture2D" path="res://resources/sprites/ui/badge_level.png" id="5_level"]
 
 [node name="HUD" type="Control" unique_id=2046297985]
 layout_mode = 3
@@ -34,13 +36,31 @@ offset_right = -59.0
 offset_bottom = 51.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/separation = 24
+theme_override_constants/separation = 16
+
+[node name="GoldIcon" type="TextureRect" parent="HBox"]
+custom_minimum_size = Vector2(36, 36)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+texture = ExtResource("4_coin")
+expand_mode = 1
+stretch_mode = 5
 
 [node name="GoldLabel" type="Label" parent="HBox" unique_id=1780255889]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("3_font")
 theme_override_font_sizes/font_size = 32
-text = "Gold: 200"
+text = "200"
+
+[node name="LevelIcon" type="TextureRect" parent="HBox"]
+custom_minimum_size = Vector2(36, 36)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+texture = ExtResource("5_level")
+expand_mode = 1
+stretch_mode = 5
 
 [node name="LevelLabel" type="Label" parent="HBox" unique_id=759419846]
 layout_mode = 2

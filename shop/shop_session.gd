@@ -78,6 +78,7 @@ func _build_crate_buttons() -> void:
 		var btn: Button = crate_scene.instantiate()
 		var cost: int = board.get_crate_cost(crate)
 		btn.text = "%s (%dg)" % [crate.name, cost]
+		btn.icon = crate.sprite
 		btn.pressed.connect(try_buy_crate.bind(crate.id))
 		_crate_buttons.add_child(btn)
 

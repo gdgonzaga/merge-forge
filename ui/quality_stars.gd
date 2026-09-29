@@ -20,13 +20,20 @@ func set_quality(value: int) -> void:
 	queue_redraw()
 
 
+const STAR_TEXTURE := preload("res://resources/sprites/ui/star_gold.png")
+
+
 func _draw() -> void:
-	for i in range(quality):
-		var points := _star_points(Vector2(STAR_SIZE * (i + 0.5), STAR_SIZE * 0.5), STAR_SIZE * 0.5, STAR_SIZE * 0.22)
-		draw_colored_polygon(points, FILL)
-		var outline := points.duplicate()
-		outline.append(points[0])
-		draw_polyline(outline, OUTLINE, OUTLINE_WIDTH, true)
+	if STAR_TEXTURE:
+		for i in range(quality):
+			draw_texture_rect(STAR_TEXTURE, Rect2(Vector2(STAR_SIZE * i, 0), Vector2(STAR_SIZE, STAR_SIZE)), false)
+	else:
+		for i in range(quality):
+			var points := _star_points(Vector2(STAR_SIZE * (i + 0.5), STAR_SIZE * 0.5), STAR_SIZE * 0.5, STAR_SIZE * 0.22)
+			draw_colored_polygon(points, FILL)
+			var outline := points.duplicate()
+			outline.append(points[0])
+			draw_polyline(outline, OUTLINE, OUTLINE_WIDTH, true)
 
 
 static func _star_points(center: Vector2, outer: float, inner: float) -> PackedVector2Array:

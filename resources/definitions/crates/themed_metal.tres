@@ -4,6 +4,7 @@
 [ext_resource type="Resource" path="res://resources/definitions/items/iron_ore.tres" id="2_vucyt"]
 [ext_resource type="Resource" path="res://resources/definitions/items/iron_ingot.tres" id="3_1dahh"]
 [ext_resource type="Script" path="res://resources/definitions/crate_definition.gd" id="4_ab6ln"]
+[ext_resource type="Texture2D" path="res://resources/sprites/items/crate_metal.png" id="5_sprite"]
 
 [sub_resource type="Resource" id="Resource_rgade"]
 script = ExtResource("1_vfy4x")
@@ -18,6 +19,7 @@ item = ExtResource("3_1dahh")
 script = ExtResource("4_ab6ln")
 id = "themed_metal"
 name = "Metal Crate"
+sprite = ExtResource("5_sprite")
 cost = 25
 min_shop_level = 3
 min_items = 3

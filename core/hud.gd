@@ -6,14 +6,14 @@ extends Control
 
 
 func _ready() -> void:
-	_gold_label.text = "Gold: %d" % GameManager.gold
+	_gold_label.text = "%d" % GameManager.gold
 	_refresh_level()
 	GameManager.gold_changed.connect(_on_gold_changed)
 	GameManager.shop_xp_changed.connect(_on_shop_xp_changed)
 
 
 func _on_gold_changed(new_amount: int) -> void:
-	_gold_label.text = "Gold: %d" % new_amount
+	_gold_label.text = "%d" % new_amount
 
 
 func _on_shop_xp_changed(_xp: int) -> void:
