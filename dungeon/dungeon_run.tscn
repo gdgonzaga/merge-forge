@@ -12,6 +12,8 @@
 [ext_resource type="Texture2D" path="res://resources/sprites/vfx/line_arrow_head.png" id="10_missile_head"]
 [ext_resource type="Texture2D" path="res://resources/sprites/vfx/line_arrow_head_diagonal.png" id="11_missile_head_diag"]
 [ext_resource type="Texture2D" path="res://resources/sprites/vfx/crit_mark.png" id="12_crit_mark"]
+[ext_resource type="StyleBox" path="res://resources/themes/bar_bg.tres" id="13_bar_bg"]
+[ext_resource type="StyleBox" path="res://resources/themes/bar_fill_dungeon.tres" id="14_bar_fill"]
 
 [node name="DungeonRun" type="Control"]
 layout_mode = 3
@@ -48,6 +50,9 @@ theme_override_constants/separation = 12
 max_value = 100.0
 layout_mode = 2
 size_flags_horizontal = 3
+theme_override_styles/background = ExtResource("13_bar_bg")
+theme_override_styles/fill = ExtResource("14_bar_fill")
+show_percentage = false
 
 [node name="EncounterLabel" type="Label" parent="VBox/TopBar"]
 layout_mode = 2

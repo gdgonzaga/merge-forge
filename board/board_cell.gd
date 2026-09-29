@@ -15,6 +15,19 @@ var grid_owner: Control = null
 @onready var _bg: TextureRect = $BG
 @onready var _stars: Control = %QualityStars
 
+var bg_texture_override: Texture2D = null
+
+
+func _ready() -> void:
+	if bg_texture_override != null and _bg != null:
+		_bg.texture = bg_texture_override
+
+
+func set_bg_texture(tex: Texture2D) -> void:
+	bg_texture_override = tex
+	if _bg != null:
+		_bg.texture = tex
+
 
 func set_item(item_data: Dictionary) -> void:
 	item = item_data

@@ -13,6 +13,7 @@ var grid_cols: int = 5
 var grid_rows: int = 5
 var despawn_time: float = 12.0
 var merges_enabled: bool = true
+@export var cell_bg_texture: Texture2D
 
 var _cell_scene: PackedScene
 var _move_callback: Callable
@@ -58,6 +59,8 @@ func _create_cells() -> void:
 		for c in range(grid_cols):
 			var cell: Control = _cell_scene.instantiate()
 			cell.set_meta("is_board_cell", true)
+			if cell_bg_texture != null and cell.has_method("set_bg_texture"):
+				cell.set_bg_texture(cell_bg_texture)
 			cell.grid_pos = Vector2i(c, r)
 			cell.grid_owner = self
 			cell.cell_drag_ended.connect(_on_cell_drop)

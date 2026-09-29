@@ -3,6 +3,7 @@
 [ext_resource type="Script" uid="uid://c0tjks1t5i6f1" path="res://board/merge_board.gd" id="1"]
 [ext_resource type="Script" uid="uid://2bhy5307p5im" path="res://board/board_grid.gd" id="2"]
 [ext_resource type="Texture2D" uid="uid://2gbrb6kkjdl7" path="res://resources/sprites/ui/staging_bg.png" id="3"]
+[ext_resource type="Texture2D" path="res://resources/sprites/ui/cell_shelf_bg.png" id="4_shelf_bg"]
 
 [node name="MergeBoard" type="Control" unique_id=1408714038]
 layout_mode = 3
@@ -52,6 +53,7 @@ layout_mode = 2
 theme_override_constants/h_separation = 12
 theme_override_constants/v_separation = 12
 script = ExtResource("2")
+cell_bg_texture = ExtResource("4_shelf_bg")
 
 [node name="StagingWrapper" type="Control" parent="VBox" unique_id=1984120953]
 custom_minimum_size = Vector2(0, 160)
