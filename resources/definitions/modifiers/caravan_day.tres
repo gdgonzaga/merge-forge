@@ -3,12 +3,14 @@
 [ext_resource type="Script" path="res://resources/definitions/session_modifier_definition.gd" id="1_mod"]
 [ext_resource type="Script" path="res://resources/definitions/customer_definition.gd" id="2_cust_script"]
 [ext_resource type="Resource" path="res://resources/definitions/customers/cust_08.tres" id="3_maelys"]
+[ext_resource type="Texture2D" path="res://resources/sprites/modifiers/caravan_day.png" id="4_sprite"]
 
 [resource]
 script = ExtResource("1_mod")
 id = "caravan_day"
 name = "Caravan Day"
 description = "A caravan arrives: more customers than usual."
+sprite = ExtResource("4_sprite")
 min_shop_level = 25
 boosted_customers = Array[ExtResource("2_cust_script")]([ExtResource("3_maelys")])
 customer_weight_multiplier = 3.0

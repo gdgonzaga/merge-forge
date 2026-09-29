@@ -3,12 +3,14 @@
 [ext_resource type="Script" path="res://resources/definitions/session_modifier_definition.gd" id="1_mod"]
 [ext_resource type="Script" path="res://resources/definitions/crate_definition.gd" id="2_crate_script"]
 [ext_resource type="Resource" path="res://resources/definitions/crates/themed_metal.tres" id="3_metal_crate"]
+[ext_resource type="Texture2D" path="res://resources/sprites/modifiers/iron_glut.png" id="4_sprite"]
 
 [resource]
 script = ExtResource("1_mod")
 id = "iron_glut"
 name = "Iron Glut"
 description = "Too much ore on the market: metal crates are cheap, and metal goods sell for less."
+sprite = ExtResource("4_sprite")
 min_shop_level = 12
 affected_crates = Array[ExtResource("2_crate_script")]([ExtResource("3_metal_crate")])
 crate_cost_multiplier = 0.7

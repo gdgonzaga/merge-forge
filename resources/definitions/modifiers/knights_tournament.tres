@@ -4,12 +4,14 @@
 [ext_resource type="Script" path="res://resources/definitions/customer_definition.gd" id="2_cust_script"]
 [ext_resource type="Resource" path="res://resources/definitions/customers/cust_05.tres" id="3_roland"]
 [ext_resource type="Resource" path="res://resources/definitions/customers/cust_09.tres" id="4_kaelen"]
+[ext_resource type="Texture2D" path="res://resources/sprites/modifiers/knights_tournament.png" id="5_sprite"]
 
 [resource]
 script = ExtResource("1_mod")
 id = "knights_tournament"
 name = "Knights' Tournament"
 description = "Knights are in town for the tournament."
+sprite = ExtResource("5_sprite")
 min_shop_level = 18
 boosted_customers = Array[ExtResource("2_cust_script")]([ExtResource("3_roland"), ExtResource("4_kaelen")])
 customer_weight_multiplier = 3.0
