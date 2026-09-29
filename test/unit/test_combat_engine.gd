@@ -49,6 +49,40 @@ func test_crit_winds_up_twice_as_long_and_hits_four_times_harder() -> void:
 	assert_int(_engine.get_member_data(0)["current_hp"]).is_equal(88)
 
 
+func test_crit_windup_uses_custom_ticks_when_set() -> void:
+	var custom_enemy := _enemy("Custom", 10000, "melee", 5, 1, 1.0)
+	custom_enemy.crit_windup = 3
+	_engine.start_combat(_spawns([custom_enemy]))
+	_engine.tick()
+	assert_int(_engine.get_member_data(0)["current_hp"]).is_equal(100)
+	_engine.tick()
+	assert_int(_engine.get_member_data(0)["current_hp"]).is_equal(100)
+	_engine.tick()
+	# 5 x 4 = 20 damage lands on tick 3
+	assert_int(_engine.get_member_data(0)["current_hp"]).is_equal(80)
+
+
+func test_crit_windup_falls_back_to_double_when_zero() -> void:
+	var fallback_enemy := _enemy("Fallback", 10000, "melee", 5, 2, 1.0)
+	fallback_enemy.crit_windup = 0
+	_engine.start_combat(_spawns([fallback_enemy]))
+	for _i in range(3):
+		_engine.tick()
+		assert_int(_engine.get_member_data(0)["current_hp"]).is_equal(100)
+	_engine.tick()
+	# 2 * 2 = 4 ticks, 5 x 4 = 20 damage
+	assert_int(_engine.get_member_data(0)["current_hp"]).is_equal(80)
+
+
+func test_crit_sprite_exposed_in_unit_data() -> void:
+	var custom_enemy := _enemy("Custom", 10000, "melee", 5, 1, 1.0)
+	var tex := PlaceholderTexture2D.new()
+	custom_enemy.crit_sprite = tex
+	_engine.start_combat(_spawns([custom_enemy]))
+	assert_object(_engine.get_enemy_data(0)["crit_sprite"]).is_same(tex)
+
+
+
 func test_melee_hits_only_the_front_member() -> void:
 	_engine.start_combat(_spawns([_bruiser]))
 	for _i in range(3):

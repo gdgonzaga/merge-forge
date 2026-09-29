@@ -14,6 +14,7 @@ func setup(def: PartyMemberDefinition, index: int) -> void:
 	_max_hp = def.max_hp
 	_unit.sprite.texture = def.sprite
 	_badge.set_attack_type(def.attack_type)
+	_badge.set_crit_icon(def.crit_sprite)
 	update_hp(_max_hp, _max_hp)
 
 

@@ -7,6 +7,7 @@ extends PanelContainer
 func setup(data: Dictionary) -> void:
 	_unit.sprite.texture = data["sprite"]
 	_badge.set_attack_type(data["attack_type"])
+	_badge.set_crit_icon(data.get("crit_sprite", null))
 	_unit.update_hp(data.get("current_hp", 30), data.get("max_hp", 30))
 
 

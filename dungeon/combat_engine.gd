@@ -292,7 +292,7 @@ func _refresh_windup(side: int, index: int) -> void:
 	if target < 0:
 		return
 	unit["is_crit"] = _roll_crit(unit["crit_chance"])
-	unit["windup_ticks"] = unit["windup"] * (CRIT_WINDUP_MULT if unit["is_crit"] else 1)
+	unit["windup_ticks"] = unit["crit_windup"] if unit["is_crit"] else unit["windup"]
 	unit["ticks_left"] = unit["windup_ticks"]
 	unit["target"] = target
 	windup_changed.emit(side, index, target, unit["is_crit"])
@@ -352,12 +352,16 @@ func _attack_state(def: Resource) -> Dictionary:
 	assert(attack_type in [ATTACK_MELEE, ATTACK_MISSILE], "%s: unknown attack_type '%s'" % [def.id, attack_type])
 	var windup: int = def.windup
 	assert(windup >= 1, "%s: windup must be at least 1 tick" % def.id)
+	var crit_windup: int = def.crit_windup if ("crit_windup" in def and def.crit_windup > 0) else windup * CRIT_WINDUP_MULT
+	var crit_sprite: Texture2D = def.crit_sprite if "crit_sprite" in def else null
 	return {
 		"attack_type": attack_type,
 		"attack": def.attack,
 		"windup": windup,
+		"crit_windup": crit_windup,
 		"crit_chance": def.crit_chance,
 		"crit_name": def.crit_name,
+		"crit_sprite": crit_sprite,
 		"target": -1,
 		"ticks_left": 0,
 		"windup_ticks": 0,

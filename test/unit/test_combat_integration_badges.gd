@@ -86,3 +86,93 @@ func test_combat_badge_gauge_advances_and_launches_on_attack() -> void:
 	vfx.queue_free()
 	party_member.queue_free()
 	enemy_display.queue_free()
+
+
+func test_combat_crit_badge_swaps_during_windup_and_flies_on_attack() -> void:
+	var engine = ENGINE_SCRIPT.new()
+	add_child(engine)
+
+	var presenter = PRESENTER_SCRIPT.new()
+	add_child(presenter)
+
+	var lines = LINES_SCRIPT.new()
+	add_child(lines)
+
+	var vfx = Control.new()
+	add_child(vfx)
+
+	var crit_tex = PlaceholderTexture2D.new()
+
+	var party_member = PARTY_SCENE.instantiate()
+	add_child(party_member)
+	var member_def = PartyMemberDefinition.new()
+	member_def.name = "Knight"
+	member_def.attack = 10
+	member_def.max_hp = 50
+	member_def.windup = 1
+	member_def.crit_windup = 2
+	member_def.attack_type = "melee"
+	member_def.crit_chance = 1.0
+	member_def.crit_sprite = crit_tex
+	party_member.setup(member_def, 0)
+
+	var enemy_display = ENEMY_SCENE.instantiate()
+	add_child(enemy_display)
+	enemy_display.setup({
+		"name": "Slime",
+		"sprite": null,
+		"attack": 5,
+		"max_hp": 30,
+		"current_hp": 30,
+		"windup": 2,
+		"attack_type": "melee",
+		"crit_chance": 0.0
+	})
+
+	presenter.setup(engine, [party_member], vfx, lines)
+	presenter.set_enemy_units([enemy_display])
+
+	engine.init_party([member_def])
+	var enemy_def = EnemyDefinition.new()
+	enemy_def.name = "Slime"
+	enemy_def.max_hp = 100
+	enemy_def.attack = 5
+	enemy_def.windup = 5
+	enemy_def.attack_type = "melee"
+	enemy_def.crit_chance = 0.0
+	var spawn = EnemySpawn.new()
+	spawn.enemy = enemy_def
+	spawn.count = 1
+
+	engine.start_combat([spawn])
+
+	# Update presenter to propagate windup state to badge
+	presenter._process(0.01)
+
+	# Verify badge has swapped to crit_tex during crit windup
+	assert_bool(party_member.get_badge().is_crit_active()).is_true()
+	assert_object(party_member.get_badge().get_icon_texture()).is_same(crit_tex)
+
+	# Advance 1 tick (windup is 2 ticks, so not yet landed)
+	engine.tick()
+	assert_bool(lines.has_active_flights()).is_false()
+
+	# Advance 2nd tick (lands attack)
+	engine.tick()
+	assert_bool(lines.has_active_flights()).is_true()
+	assert_object(lines.get_flight(0).crit_sprite).is_same(crit_tex)
+	assert_bool(lines.get_flight(0).is_crit).is_true()
+
+	# Badge should be emptied and reverted to normal icon
+	assert_float(party_member.get_badge().get_fill_progress()).is_equal(0.0)
+	assert_object(party_member.get_badge().get_icon_texture()).is_not_same(crit_tex)
+
+	# Cleanup
+	engine.stop_combat()
+	engine.queue_free()
+	presenter.queue_free()
+	lines.queue_free()
+	vfx.queue_free()
+	party_member.queue_free()
+	enemy_display.queue_free()
+

@@ -111,7 +111,11 @@ func _on_party_attacked(member_index: int, target: int, damage: int, is_crit: bo
 	_party_in_flight[member_index] = true
 
 	if _lines != null:
-		_lines.launch_attack(ENGINE.SIDE_PARTY, member_index, target, damage, is_crit, flight_duration)
+		var crit_sprite: Texture2D = null
+		if is_crit and _engine != null:
+			var data: Dictionary = _engine.get_member_data(member_index)
+			crit_sprite = data.get("crit_sprite", null)
+		_lines.launch_attack(ENGINE.SIDE_PARTY, member_index, target, damage, is_crit, flight_duration, crit_sprite)
 
 	get_tree().create_timer(flight_duration).timeout.connect(
 		_play_party_hit.bind(member_index, target, damage, is_crit))
@@ -139,7 +143,11 @@ func _on_enemy_attacked(enemy_index: int, target: int, damage: int, is_crit: boo
 	_enemy_in_flight[enemy_index] = true
 
 	if _lines != null:
-		_lines.launch_attack(ENGINE.SIDE_ENEMY, enemy_index, target, damage, is_crit, flight_duration)
+		var crit_sprite: Texture2D = null
+		if is_crit and _engine != null:
+			var data: Dictionary = _engine.get_enemy_data(enemy_index)
+			crit_sprite = data.get("crit_sprite", null)
+		_lines.launch_attack(ENGINE.SIDE_ENEMY, enemy_index, target, damage, is_crit, flight_duration, crit_sprite)
 
 	get_tree().create_timer(flight_duration).timeout.connect(
 		_play_enemy_hit.bind(enemy_index, target, damage, is_crit))

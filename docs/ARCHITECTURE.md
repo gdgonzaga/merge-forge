@@ -833,11 +833,11 @@ Customers are dealt from `CustomerDefinition` archetypes (see Content Definition
 | `dungeon/party_member.tscn` | Scene | Visual: 300 px wide card with a 128x128 sprite, a 270x24 HP bar, an HP number, an attack-type badge and buff text. Accepts drag-drops of usable items. |
 | `dungeon/enemy_display.tscn` | Scene | Visual: enemy sprite + HP bar + attack-type badge (100x140). No interaction. Fades on death but keeps its slot until the encounter ends. |
 | `dungeon/combat_unit.tscn` | Scene | Reusable unit node with sprite, HP bar (with HP ghost overlay), and animation helpers (directional lunge, cast, hit, walk, death). Sprite and bar sizes are exported so PartyMember can enlarge them. Tracks the HP it displays, which trails the engine until a hit plays. Pulses gold while its unit winds up a crit (`play_crit_charge`). |
-| `dungeon/attack_badge.tscn` | Scene | Attack badge with empty slot backing, bottom-to-top windup gauge progress, foreground attack type icon (`badge_icon_melee.png`, `badge_icon_missile.png`), and split-second glow pulse (`play_glow_pulse`). |
-| `dungeon/combat_presenter.gd` | Script | Child node created by dungeon_controller. Plays combat from CombatEngine's signals: coordinates attack badge windup gauges in real-time, triggers badge glow and empty state on attack release, launches battle line heads via CombatLines, and delays impact by tunable `flight_duration` (default 0.25 s) so damage numbers, recoil and HP updates trigger on arrival. Crits add the attacker's `crit_name` popup, gold numbers, a bigger impact and a screen shake; `windup_changed` toggles the attacker's crit charge pulse. |
+| `dungeon/attack_badge.tscn` | Scene | Attack badge with empty slot backing, bottom-to-top windup gauge progress, foreground attack type icon (`badge_icon_melee.png`, `badge_icon_missile.png`), crit icon overlay (`crit_sprite`), and split-second glow pulse (`play_glow_pulse`). Swaps to `crit_sprite` during crit windup and resets to standard attack type icon on empty. |
+| `dungeon/combat_presenter.gd` | Script | Child node created by dungeon_controller. Plays combat from CombatEngine's signals: coordinates attack badge windup gauges in real-time, triggers badge glow and empty state on attack release, launches battle line heads via CombatLines, and delays impact by tunable `flight_duration` (default 0.25 s) so damage numbers, recoil and HP updates trigger on arrival. Crits swap the unit badge to `crit_sprite`, add the attacker's `crit_name` popup, gold numbers, a bigger impact and a screen shake; `windup_changed` toggles the attacker's crit charge pulse. |
 | `dungeon/combat_lane.gd` | Script | Pure lane geometry (RefCounted, static only). Every attack line is shifted and bowed toward the attacker's right, so A-to-B and B-to-A attacks use separate lanes. |
 | `dungeon/hp_ghost.gd` | Script | On CombatUnit's `HPGhost` node, drawn over the HP bar: the pulsing chunk the attacks winding up at the member will take (faster pulse when lethal) and the pale trail of HP just lost draining away. |
-| `dungeon/combat_lines.gd` | Script | On `AnimOverlay/CombatLines` in dungeon_run.tscn; draws active attack flights on their lanes. When an attack launches, a line shoots from the attacker's attack badge screen position to the target over `flight_duration` with `badge_head` (`badge_bg.png`) rotating along the lane trajectory. Lines are pixel art traced with Bresenham onto a 4 px block grid and drawn as solid blocks from a three-shade ramp per side. Thickness is 1 to 4 blocks by the hit's share of the target's displayed HP (`line_thickness`). Normal lines are team colored (party cool, enemy warm); crit lines are gold, outlined over a dark track, ring the target end and put a "!" on the attacker during windup. A hit that would finish the target gets a larger ring, and enemy lines turn red. Pushes each party member's incoming damage to its HP ghost. |
+| `dungeon/combat_lines.gd` | Script | On `AnimOverlay/CombatLines` in dungeon_run.tscn; draws active attack flights on their lanes. When an attack launches, a line shoots from the attacker's attack badge screen position to the target over `flight_duration` with `badge_head` (`badge_bg.png`) and optional `crit_sprite` overlay rotating along the lane trajectory. Lines are pixel art traced with Bresenham onto a 4 px block grid and drawn as solid blocks from a three-shade ramp per side. Thickness is 1 to 4 blocks by the hit's share of the target's displayed HP (`line_thickness`). Normal lines are team colored (party cool, enemy warm); crit lines are gold, outlined over a dark track, ring the target end and put a "!" on the attacker during windup. A hit that would finish the target gets a larger ring, and enemy lines turn red. Pushes each party member's incoming damage to its HP ghost. |
 | `dungeon/dungeon_vfx.gd` | Script | VFX overlay attached to AnimOverlay in dungeon_run.tscn: floating combat text, slashes, impacts, heal/buff sparkles, screen shake. |
 | `dungeon/dungeon_summary.tscn` | Scene | End-of-dungeon results (cleared or failed). |
 
@@ -867,8 +867,10 @@ Goblin Cave (MVP): `min_shop_level` 6, walk speed 0.075, encounters at 0.2 / 0.5
 | `attack_type` | `String` | `"melee"` or `"missile"`; required. Sets whom each attack hits (always one target). Melee hits the front member (the lowest party slot still standing, so the next slot takes over when the front falls); missile hits the weakest standing member (lowest current HP). |
 | `attack` | `int` | Damage of one normal hit. |
 | `windup` | `int` | Ticks a normal attack winds up before it lands; required (0 fails CombatEngine's check). |
-| `crit_chance` | `float` | 0..1, rolled when each windup starts. A crit winds up `CRIT_WINDUP_MULT` (2) times longer and deals `CRIT_DAMAGE_MULT` (4) times the damage. |
+| `crit_windup` | `int` | Ticks a crit attack winds up before it lands; defaults to `windup * 2` if 0. |
+| `crit_chance` | `float` | 0..1, rolled when each windup starts. A crit winds up `crit_windup` ticks and deals `CRIT_DAMAGE_MULT` (4) times the damage. |
 | `crit_name` | `String` | Pops up over the attacker when a crit lands. |
+| `crit_sprite` | `Texture2D` | Alternative badge icon overlaid during crit windup and battle line flight; falls back to melee/missile icon if null. |
 | `min_drops`, `max_drops` | `int` | Number of drops on death |
 | `drop_pool` | `Array[WeightedItem]` | Weighted item pool, same as crate pools. Only dungeon-usable items. |
 | `sprite` | `Texture2D` | Enemy sprite |
@@ -879,7 +881,7 @@ Goblin Cave (MVP): `min_shop_level` 6, walk speed 0.075, encounters at 0.2 / 0.5
 3. Iterate items, accumulating weights — the item whose cumulative range contains the random number is selected
 4. Each roll is independent (same item can drop multiple times from one enemy)
 
-**Example values:** Goblin is melee, 160 HP, attack 7, windup 1, 15% crit "Smash" (28 after a 2-tick windup); Goblin Archer is missile, 60 HP, attack 5, windup 1, 15% crit "Arrow". See the `.tres` files for drop pools.
+**Example values:** Goblin is melee, 160 HP, attack 7, windup 1, 15% crit "Smash" (28 after a 4-tick windup); Goblin Archer is missile, 60 HP, attack 5, windup 1, 15% crit "Arrow" (6-tick windup). See the `.tres` files for drop pools.
 
 ### Definition Schema: PartyMemberDefinition (`resources/definitions/party/*.tres`)
 
@@ -893,10 +895,11 @@ Goblin Cave (MVP): `min_shop_level` 6, walk speed 0.075, encounters at 0.2 / 0.5
 | `max_hp` | `int` | Base HP |
 | `attack` | `int` | Damage of one normal hit (plus attack buffs) |
 | `attack_type` | `String` | `"melee"` or `"missile"`; required (the empty default fails CombatEngine's check). Same rule as enemies: melee hits the front enemy (lowest alive slot); missile hits the weakest alive enemy. |
-| `windup`, `crit_chance`, `crit_name` | `int`, `float`, `String` | Same as on enemies; `windup` is required. |
+| `windup`, `crit_windup`, `crit_chance`, `crit_name`, `crit_sprite` | `int`, `int`, `float`, `String`, `Texture2D` | Same as on enemies; `windup` is required, `crit_windup` defaults to `windup * 2` if 0, `crit_sprite` falls back to normal badge icon if null. |
 | `slot_order` | `int` | Party order, front (0) to back |
 
-MVP party: Fighter (slot 0, 120 HP, 11 ATK, melee, crit "Cleave"), Mage (slot 1, 50 HP, 14 ATK, missile, crit "Fireball"), Healer (slot 2, 60 HP, 4 ATK, melee, crit "Smite"); all windup 1, 15% crit.
+MVP party: Fighter (slot 0, 120 HP, 11 ATK, melee, crit "Cleave", crit windup 2), Mage (slot 1, 50 HP, 14 ATK, missile, crit "Fireball", crit windup 4), Healer (slot 2, 60 HP, 4 ATK, melee, crit "Smite", crit windup 4); all 15% crit.
+
 
 No special abilities for MVP — auto-attack only.
 

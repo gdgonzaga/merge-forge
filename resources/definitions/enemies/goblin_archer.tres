@@ -6,6 +6,7 @@
 [ext_resource type="Resource" path="res://resources/definitions/items/bomb.tres" id="3_1v204"]
 [ext_resource type="Texture2D" path="res://resources/sprites/enemies/goblin.png" id="3_8ia7f"]
 [ext_resource type="Resource" path="res://resources/definitions/items/herb_bundle.tres" id="4_xxrus"]
+[ext_resource type="Texture2D" path="res://resources/sprites/ui/badge_icon_arrow.png" id="5_arrow"]
 
 [sub_resource type="Resource" id="Resource_v2ae0"]
 script = ExtResource("1_jt5v2")
@@ -28,9 +29,12 @@ max_hp = 60
 attack_type = "missile"
 attack = 5
 windup = 1
+crit_windup = 6
 crit_chance = 0.15
 crit_name = "Arrow"
+crit_sprite = ExtResource("5_arrow")
 sprite = ExtResource("3_8ia7f")
 min_drops = 2
 max_drops = 3
 drop_pool = Array[ExtResource("1_jt5v2")]([SubResource("Resource_v2ae0"), SubResource("Resource_d4mg5"), SubResource("Resource_gq3p0")])
+

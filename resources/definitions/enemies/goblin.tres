@@ -6,6 +6,7 @@
 [ext_resource type="Resource" path="res://resources/definitions/items/herb_bundle.tres" id="3_brvmg"]
 [ext_resource type="Texture2D" path="res://resources/sprites/enemies/goblin.png" id="3_dxv5k"]
 [ext_resource type="Resource" path="res://resources/definitions/items/herbal_tonic.tres" id="4_k737f"]
+[ext_resource type="Texture2D" path="res://resources/sprites/ui/badge_icon_smash.png" id="5_smash"]
 
 [sub_resource type="Resource" id="Resource_kp2lk"]
 script = ExtResource("1_wbv7a")
@@ -28,9 +29,12 @@ name = "Goblin"
 max_hp = 160
 attack = 7
 windup = 1
+crit_windup = 4
 crit_chance = 0.15
 crit_name = "Smash"
+crit_sprite = ExtResource("5_smash")
 sprite = ExtResource("3_dxv5k")
 min_drops = 3
 max_drops = 4
 drop_pool = Array[ExtResource("1_wbv7a")]([SubResource("Resource_kp2lk"), SubResource("Resource_65xu4"), SubResource("Resource_42gio")])
+

@@ -82,6 +82,7 @@ class Flight extends RefCounted:
 	var is_crit: bool
 	var duration: float
 	var elapsed: float = 0.0
+	var crit_sprite: Texture2D = null
 
 var _engine: Node
 var _party_units: Array = []
@@ -145,7 +146,7 @@ func hold(enemy_index: int, target: int, damage: int, is_crit: bool, windup_tick
 	_held_total[enemy_index] = windup_ticks * _engine.tick_timer.wait_time + _landing_delay
 
 
-func launch_attack(side: int, attacker: int, target: int, damage: int, is_crit: bool, duration: float) -> void:
+func launch_attack(side: int, attacker: int, target: int, damage: int, is_crit: bool, duration: float, crit_sprite: Texture2D = null) -> void:
 	var f := Flight.new()
 	f.side = side
 	f.attacker = attacker
@@ -154,12 +155,20 @@ func launch_attack(side: int, attacker: int, target: int, damage: int, is_crit: 
 	f.is_crit = is_crit
 	f.duration = duration
 	f.elapsed = 0.0
+	f.crit_sprite = crit_sprite
 	_flights.append(f)
 	queue_redraw()
 
 
+func get_flight(index: int) -> Flight:
+	if index >= 0 and index < _flights.size():
+		return _flights[index]
+	return null
+
+
 func has_active_flights() -> bool:
 	return not _flights.is_empty()
+
 
 
 func advance_flights(delta: float) -> void:
@@ -238,6 +247,8 @@ func _any_held(now: float) -> bool:
 
 # Damage aimed at an enemy by the whole party, for the lethal check.
 func _incoming_on_enemy(enemy_index: int) -> int:
+	if _engine == null:
+		return 0
 	var total := 0
 	for m in range(_party_units.size()):
 		if _engine.is_winding_up(ENGINE.SIDE_PARTY, m) and _engine.get_member_data(m)["target"] == enemy_index:
@@ -306,7 +317,7 @@ func _draw_flight(f: Flight, progress: float) -> void:
 	_draw_blocks(reach, color, thickness, 0)
 	var head_pos := _block_center(reach - 1)
 	var head_aim := _aim(reach - 1)
-	_draw_badge_head(head_pos, head_aim, color, f.is_crit)
+	_draw_badge_head(head_pos, head_aim, color, f.is_crit, f.crit_sprite)
 	if f.is_crit or lethal:
 		var end := _cells[_cell_count - 1]
 		var radius := LETHAL_RING_CELLS if lethal else RING_CELLS
@@ -316,7 +327,7 @@ func _draw_flight(f: Flight, progress: float) -> void:
 		_draw_crit_mark(attackers[f.attacker], color)
 
 
-func _draw_badge_head(pos: Vector2, dir: Vector2, color: Color, is_crit: bool) -> void:
+func _draw_badge_head(pos: Vector2, dir: Vector2, color: Color, is_crit: bool, crit_icon: Texture2D = null) -> void:
 	var tex := badge_head
 	if tex == null:
 		return
@@ -326,6 +337,8 @@ func _draw_badge_head(pos: Vector2, dir: Vector2, color: Color, is_crit: bool) -
 	var angle := dir.angle()
 	draw_set_transform(center, angle)
 	draw_texture_rect(tex, Rect2(-size * 0.5, size), false, color)
+	if is_crit and crit_icon != null:
+		draw_texture_rect(crit_icon, Rect2(-size * 0.5, size), false, Color.WHITE)
 	draw_set_transform(Vector2.ZERO, 0.0)
 
 

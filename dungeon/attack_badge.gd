@@ -21,6 +21,7 @@ var _progress: float = 0.0
 var _is_crit: bool = false
 var _side: int = 0
 var _attack_type: String = "melee"
+var _crit_icon: Texture2D = null
 
 
 func _ready() -> void:
@@ -38,8 +39,24 @@ func set_attack_type(attack_type: String) -> void:
 	_attack_type = attack_type
 	if not is_node_ready():
 		return
-	if _icon:
-		_icon.texture = melee_icon if attack_type == "melee" else missile_icon
+	if _icon and not _is_crit:
+		_icon.texture = _get_normal_icon()
+
+
+func set_crit_icon(crit_texture: Texture2D) -> void:
+	_crit_icon = crit_texture
+	if not is_node_ready():
+		return
+	if _is_crit and _icon:
+		_icon.texture = _crit_icon if _crit_icon != null else _get_normal_icon()
+
+
+func get_icon_texture() -> Texture2D:
+	return _icon.texture if _icon else null
+
+
+func _get_normal_icon() -> Texture2D:
+	return melee_icon if _attack_type == "melee" else missile_icon
 
 
 func set_fill_progress(progress: float, is_crit: bool = false, side: int = 0) -> void:
@@ -51,10 +68,15 @@ func set_fill_progress(progress: float, is_crit: bool = false, side: int = 0) ->
 	_gauge_progress.value = _progress * 1000.0
 	if is_crit:
 		_gauge_progress.modulate = CRIT_COLOR
-	elif side == 0:
-		_gauge_progress.modulate = PARTY_COLOR
+		if _icon:
+			_icon.texture = _crit_icon if _crit_icon != null else _get_normal_icon()
 	else:
-		_gauge_progress.modulate = ENEMY_COLOR
+		if side == 0:
+			_gauge_progress.modulate = PARTY_COLOR
+		else:
+			_gauge_progress.modulate = ENEMY_COLOR
+		if _icon:
+			_icon.texture = _get_normal_icon()
 
 
 func get_fill_progress() -> float:
@@ -71,6 +93,9 @@ func set_empty() -> void:
 	if not is_node_ready():
 		return
 	_gauge_progress.value = 0.0
+	if _icon:
+		_icon.texture = _get_normal_icon()
+
 
 
 func play_glow_pulse() -> void:
