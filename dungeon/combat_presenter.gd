@@ -13,6 +13,7 @@ extends Node
 const ENGINE := preload("res://dungeon/combat_engine.gd")
 
 const ENEMY_VOLLEY_DELAY := 0.3
+const DEFAULT_ATTACK_FLIGHT_DURATION := 0.25
 const MELEE := "melee"
 const LUNGE_DISTANCE := 20.0
 const CRIT_LUNGE_DISTANCE := 30.0
@@ -24,6 +25,7 @@ const CRIT_NAME_COLOR := Color(1.0, 0.6, 0.15)
 # is offset by its slot so they don't print on top of each other.
 const NUMBER_SPREAD := 40.0
 
+var flight_duration: float = DEFAULT_ATTACK_FLIGHT_DURATION
 var _engine: Node
 var _party_units: Array = []
 var _enemy_units: Array = []
@@ -31,6 +33,16 @@ var _vfx: Control
 var _lines: Control
 # Enemy indices whose death has been shown this encounter.
 var _dead_shown: Dictionary = {}
+var _party_in_flight: Dictionary = {}
+var _enemy_in_flight: Dictionary = {}
+
+
+func get_flight_duration() -> float:
+	return flight_duration
+
+
+func set_flight_duration(val: float) -> void:
+	flight_duration = val
 
 
 func setup(engine: Node, party_units: Array, vfx: Control, lines: Control) -> void:
@@ -38,12 +50,39 @@ func setup(engine: Node, party_units: Array, vfx: Control, lines: Control) -> vo
 	_party_units = party_units
 	_vfx = vfx
 	_lines = lines
-	_lines.setup(engine, party_units, ENEMY_VOLLEY_DELAY)
+	_lines.setup(engine, party_units, flight_duration)
 	engine.party_attacked.connect(_on_party_attacked)
 	engine.enemy_attacked.connect(_on_enemy_attacked)
 	engine.windup_changed.connect(_on_windup_changed)
 	engine.effect_applied.connect(_on_effect_applied)
 	engine.tick_resolved.connect(_on_tick_resolved)
+	engine.encounter_ended.connect(_on_encounter_ended)
+
+
+func _process(_delta: float) -> void:
+	if _engine == null or not _engine.is_combat_running():
+		return
+	for m in range(_party_units.size()):
+		if _valid(_party_units, m):
+			if _party_in_flight.has(m):
+				continue
+			if _engine.is_winding_up(ENGINE.SIDE_PARTY, m):
+				var data: Dictionary = _engine.get_member_data(m)
+				var progress: float = _engine.get_windup_progress(ENGINE.SIDE_PARTY, m, 0.0)
+				_party_units[m].set_windup_progress(progress, data.get("is_crit", false))
+			else:
+				_party_units[m].clear_badge_gauge()
+
+	for e in range(_enemy_units.size()):
+		if _valid(_enemy_units, e):
+			if _enemy_in_flight.has(e):
+				continue
+			if _engine.is_winding_up(ENGINE.SIDE_ENEMY, e):
+				var data: Dictionary = _engine.get_enemy_data(e)
+				var progress: float = _engine.get_windup_progress(ENGINE.SIDE_ENEMY, e, 0.0)
+				_enemy_units[e].set_windup_progress(progress, data.get("is_crit", false))
+			else:
+				_enemy_units[e].clear_badge_gauge()
 
 
 # Called at each encounter start (and with an empty array when it's cleared),
@@ -51,6 +90,8 @@ func setup(engine: Node, party_units: Array, vfx: Control, lines: Control) -> vo
 func set_enemy_units(enemy_units: Array) -> void:
 	_enemy_units = enemy_units
 	_dead_shown.clear()
+	_party_in_flight.clear()
+	_enemy_in_flight.clear()
 	_lines.set_enemy_units(enemy_units)
 
 
@@ -64,6 +105,22 @@ func refresh_member(member_index: int) -> void:
 func _on_party_attacked(member_index: int, target: int, damage: int, is_crit: bool) -> void:
 	if not _valid(_party_units, member_index):
 		return
+	var attacker_unit: Control = _party_units[member_index]
+	attacker_unit.play_badge_glow()
+	attacker_unit.clear_badge_gauge()
+	_party_in_flight[member_index] = true
+
+	if _lines != null:
+		_lines.launch_attack(ENGINE.SIDE_PARTY, member_index, target, damage, is_crit, flight_duration)
+
+	get_tree().create_timer(flight_duration).timeout.connect(
+		_play_party_hit.bind(member_index, target, damage, is_crit))
+
+
+func _play_party_hit(member_index: int, target: int, damage: int, is_crit: bool) -> void:
+	_party_in_flight.erase(member_index)
+	if not _valid(_party_units, member_index):
+		return
 	var data: Dictionary = _engine.get_member_data(member_index)
 	_play_attack(_party_units[member_index], data, _enemy_units, target, is_crit)
 	if _valid(_enemy_units, target):
@@ -74,13 +131,22 @@ func _on_party_attacked(member_index: int, target: int, damage: int, is_crit: bo
 
 
 func _on_enemy_attacked(enemy_index: int, target: int, damage: int, is_crit: bool) -> void:
-	var windup_ticks: int = _engine.get_enemy_data(enemy_index)["windup_ticks"]
-	_lines.hold(enemy_index, target, damage, is_crit, windup_ticks)
-	get_tree().create_timer(ENEMY_VOLLEY_DELAY).timeout.connect(
+	if not _valid(_enemy_units, enemy_index):
+		return
+	var attacker_unit: Control = _enemy_units[enemy_index]
+	attacker_unit.play_badge_glow()
+	attacker_unit.clear_badge_gauge()
+	_enemy_in_flight[enemy_index] = true
+
+	if _lines != null:
+		_lines.launch_attack(ENGINE.SIDE_ENEMY, enemy_index, target, damage, is_crit, flight_duration)
+
+	get_tree().create_timer(flight_duration).timeout.connect(
 		_play_enemy_hit.bind(enemy_index, target, damage, is_crit))
 
 
 func _play_enemy_hit(enemy_index: int, target: int, damage: int, is_crit: bool) -> void:
+	_enemy_in_flight.erase(enemy_index)
 	if not _valid(_enemy_units, enemy_index):
 		return
 	var data: Dictionary = _engine.get_enemy_data(enemy_index)
@@ -184,3 +250,16 @@ func _center(unit: Control) -> Vector2:
 
 func _valid(units: Array, index: int) -> bool:
 	return index >= 0 and index < units.size() and is_instance_valid(units[index])
+
+
+func _on_encounter_ended() -> void:
+	_party_in_flight.clear()
+	_enemy_in_flight.clear()
+	if _lines != null and _lines.has_method("clear_flights"):
+		_lines.clear_flights()
+	for p in _party_units:
+		if is_instance_valid(p) and p.has_method("clear_badge_gauge"):
+			p.clear_badge_gauge()
+	for e in _enemy_units:
+		if is_instance_valid(e) and e.has_method("clear_badge_gauge"):
+			e.clear_badge_gauge()

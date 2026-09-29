@@ -6,7 +6,7 @@ var _max_hp: int = 50
 @onready var _unit = %Unit
 @onready var _hp_label: Label = %HPLabel
 @onready var _buff_label: Label = %BuffLabel
-@onready var _badge: TextureRect = %AttackBadge
+@onready var _badge: AttackBadge = %AttackBadge
 
 
 func setup(def: PartyMemberDefinition, index: int) -> void:
@@ -45,6 +45,29 @@ func update_buffs(buffs: Array) -> void:
 
 func set_ko() -> void:
 	modulate = Color(0.4, 0.4, 0.4, 1.0)
+
+
+func get_badge() -> AttackBadge:
+	return _badge
+
+
+func get_badge_center() -> Vector2:
+	return _badge.get_badge_center() if _badge else get_global_rect().get_center()
+
+
+func set_windup_progress(progress: float, is_crit: bool = false) -> void:
+	if _badge:
+		_badge.set_fill_progress(progress, is_crit, 0)
+
+
+func play_badge_glow() -> void:
+	if _badge:
+		_badge.play_glow_pulse()
+
+
+func clear_badge_gauge() -> void:
+	if _badge:
+		_badge.set_empty()
 
 
 func get_unit() -> Control:

@@ -62,6 +62,7 @@ const ARRIVAL_SPREAD := 20.0
 # quarter turns cover the other six directions without resampling a pixel.
 # Without a diagonal, the straight head is turned 45 degrees instead, which
 # resamples its pixels.
+@export var badge_head: Texture2D = preload("res://resources/sprites/ui/badge_bg.png")
 @export var melee_head: Texture2D
 @export var melee_head_diagonal: Texture2D
 @export var missile_head: Texture2D
@@ -72,6 +73,15 @@ const ARRIVAL_SPREAD := 20.0
 # Tinted like the heads; drawn upright, so it needs no diagonal.
 @export var crit_mark: Texture2D
 @export_range(1, 6) var crit_mark_scale := 2
+
+class Flight extends RefCounted:
+	var side: int
+	var attacker: int
+	var target: int
+	var damage: int
+	var is_crit: bool
+	var duration: float
+	var elapsed: float = 0.0
 
 var _engine: Node
 var _party_units: Array = []
@@ -84,6 +94,7 @@ var _points := PackedVector2Array()
 var _cells := PackedVector2Array()
 var _cell_count := 0
 var _drew_last_frame := false
+var _flights: Array[Flight] = []
 
 # Landed enemy attacks held at full until their hit plays, indexed by enemy.
 var _held_target := PackedInt32Array()
@@ -134,6 +145,39 @@ func hold(enemy_index: int, target: int, damage: int, is_crit: bool, windup_tick
 	_held_total[enemy_index] = windup_ticks * _engine.tick_timer.wait_time + _landing_delay
 
 
+func launch_attack(side: int, attacker: int, target: int, damage: int, is_crit: bool, duration: float) -> void:
+	var f := Flight.new()
+	f.side = side
+	f.attacker = attacker
+	f.target = target
+	f.damage = damage
+	f.is_crit = is_crit
+	f.duration = duration
+	f.elapsed = 0.0
+	_flights.append(f)
+	queue_redraw()
+
+
+func has_active_flights() -> bool:
+	return not _flights.is_empty()
+
+
+func advance_flights(delta: float) -> void:
+	var remaining: Array[Flight] = []
+	for f in _flights:
+		f.elapsed += delta
+		if f.elapsed < f.duration:
+			remaining.append(f)
+	_flights = remaining
+	if has_active_flights() or _drew_last_frame:
+		queue_redraw()
+
+
+func clear_flights() -> void:
+	_flights.clear()
+	queue_redraw()
+
+
 # Thickness in blocks by the hit's share of the target's HP, one block per
 # quarter, so a line that would finish its target is as thick as lines get.
 static func line_thickness(damage: int, target_hp: int) -> int:
@@ -141,13 +185,14 @@ static func line_thickness(damage: int, target_hp: int) -> int:
 	return mini(1 + floori(share * MAX_THICKNESS), MAX_THICKNESS)
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
+	advance_flights(delta)
 	if _engine == null:
 		return
 	var now := _now()
 	var running: bool = _engine.is_combat_running()
 	_push_incoming(running, now)
-	var active := running or _any_held(now)
+	var active := running or has_active_flights() or _any_held(now)
 	if active or _drew_last_frame:
 		queue_redraw()
 	_drew_last_frame = active
@@ -203,30 +248,92 @@ func _incoming_on_enemy(enemy_index: int) -> int:
 # --- Drawing ---
 
 func _draw() -> void:
-	if _engine == null:
-		return
 	var now := _now()
-	if _engine.is_combat_running():
+	if _engine != null and _engine.is_combat_running():
 		for m in range(_party_units.size()):
-			_draw_windup(ENGINE.SIDE_PARTY, m)
+			if _engine.is_winding_up(ENGINE.SIDE_PARTY, m) and _unit_data(ENGINE.SIDE_PARTY, m).get("is_crit", false):
+				if _unit_valid(_party_units, m):
+					_draw_crit_mark(_party_units[m], CRIT_RAMP[RAMP_LIGHT])
 		for e in range(_enemy_units.size()):
-			_draw_windup(ENGINE.SIDE_ENEMY, e)
-	for e in range(_enemy_units.size()):
+			if _engine.is_winding_up(ENGINE.SIDE_ENEMY, e) and _unit_data(ENGINE.SIDE_ENEMY, e).get("is_crit", false):
+				if _unit_valid(_enemy_units, e):
+					_draw_crit_mark(_enemy_units[e], CRIT_RAMP[RAMP_LIGHT])
+
+	for f in _flights:
+		var dur: float = f.duration if f.duration > 0.001 else 0.001
+		var progress := clampf(f.elapsed / dur, 0.0, 1.0)
+		_draw_flight(f, progress)
+
+	for e in range(_held_target.size()):
 		var held := _held_progress(e, now)
 		if held < 1.0:
 			_draw_attack(ENGINE.SIDE_ENEMY, e, _held_target[e], _held_damage[e], _held_crit[e] == 1,
 				held, (1.0 - held) * _held_total[e])
 
 
-func _draw_windup(side: int, index: int) -> void:
-	var delay := 0.0 if side == ENGINE.SIDE_PARTY else _landing_delay
-	var progress: float = _engine.get_windup_progress(side, index, delay)
-	if progress < 0.0:
+func _draw_flight(f: Flight, progress: float) -> void:
+	var party_side := f.side == ENGINE.SIDE_PARTY
+	var attackers := _party_units if party_side else _enemy_units
+	var targets := _enemy_units if party_side else _party_units
+	if not _unit_valid(attackers, f.attacker) or not _unit_valid(targets, f.target):
 		return
-	var unit: Dictionary = _unit_data(side, index)
-	var total: float = int(unit["windup_ticks"]) * _engine.tick_timer.wait_time + delay
-	_draw_attack(side, index, unit["target"], _engine.get_pending_damage(side, index), unit["is_crit"],
-		progress, (1.0 - progress) * total)
+	var from := _attacker_badge_anchor(attackers[f.attacker])
+	var to: Vector2
+	if party_side:
+		to = _enemy_anchor(f.target, f.attacker, _party_units.size())
+	else:
+		to = _party_anchor(f.target, f.attacker, _enemy_units.size())
+	_fill_curve(from, to)
+	_trace_lane()
+
+	var target_hp: int = targets[f.target].get_displayed_hp()
+	var incoming: int = _incoming_on_enemy(f.target) if party_side else _incoming[f.target]
+	var lethal := incoming >= target_hp
+	var thickness := line_thickness(f.damage, target_hp)
+	var ramp := PARTY_RAMP if party_side else ENEMY_RAMP
+	if f.is_crit:
+		ramp = CRIT_RAMP
+		thickness = maxi(thickness, CRIT_MIN_THICKNESS)
+	if lethal and not party_side:
+		ramp = LETHAL_RAMP
+	var color := ramp[RAMP_MID]
+
+	if f.is_crit:
+		_draw_blocks(_cell_count, OUTLINE_COLOR, thickness + 2, 0)
+		_draw_blocks(_cell_count, ramp[RAMP_DARK], thickness, 0)
+
+	var reach := clampi(ceili(progress * _cell_count), 1, _cell_count)
+	_draw_blocks(reach, color, thickness, 0)
+	var head_pos := _block_center(reach - 1)
+	var head_aim := _aim(reach - 1)
+	_draw_badge_head(head_pos, head_aim, color, f.is_crit)
+	if f.is_crit or lethal:
+		var end := _cells[_cell_count - 1]
+		var radius := LETHAL_RING_CELLS if lethal else RING_CELLS
+		_draw_ring(end, radius + 1, OUTLINE_COLOR)
+		_draw_ring(end, radius, color)
+	if f.is_crit:
+		_draw_crit_mark(attackers[f.attacker], color)
+
+
+func _draw_badge_head(pos: Vector2, dir: Vector2, color: Color, is_crit: bool) -> void:
+	var tex := badge_head
+	if tex == null:
+		return
+	var base_size := Vector2(40.0, 40.0)
+	var size := base_size * (1.2 if is_crit else 1.0)
+	var center := ((pos - size * 0.5) / PIXEL).floor() * PIXEL + size * 0.5
+	var angle := dir.angle()
+	draw_set_transform(center, angle)
+	draw_texture_rect(tex, Rect2(-size * 0.5, size), false, color)
+	draw_set_transform(Vector2.ZERO, 0.0)
+
+
+func _attacker_badge_anchor(unit: Control) -> Vector2:
+	if unit.has_method("get_badge_center"):
+		return _to_local_point(unit.get_badge_center())
+	var rect: Rect2 = unit.get_global_rect()
+	return _to_local_point(rect.get_center())
 
 
 func _draw_attack(side: int, attacker: int, target: int, damage: int, is_crit: bool, progress: float, remaining: float) -> void:

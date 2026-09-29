@@ -20,3 +20,10 @@
 - No crate sells the powder family (`blast_powder`). The bomb blueprints (Bomb, Cluster Bomb, Fire Bomb) therefore unlock nothing craftable from the shop. Decide on a powder source (a crate, or a dungeon drop) or move those blueprints.
 - Level gates stretch pace. The sim's ungated pace check says everything is bought in about 10.5 sessions, but with level gates every blueprint is owned only at about session 26 (`tmp/shop-improvements/sim/economy_sim.gd`, Task 8). Decide whether the Phase 1 target (10-15 sessions) still applies, and make the sim check the gated number.
 - Fill shop levels 17-60 (Phases 4-8 of `tmp/shop-improvements/`). Until then those levels unlock nothing, and the level-up panel shows only the banner.
+- Add visual marker when a possible merge but the player does not have the necessary blueprint/level gate.
+- Add a blueprint tree
+- Reset SAVE_VERSION before release
+- Implement save migrations for production
+- Hide or mark gated customer requests
+- Add a short pause and indicator when ending a shop run.
+- [x] In dungeon mode, fix battle line heads: use the attack badge instead: during the windup period, the badge background fills up from below like a gauge. When full, the badge background serve as the attack line head. They move towards the target. The attack badge indicator below the character sprite loses its background. Also give a small vfx glow effect for a split second when the windup time fills. The main attack badge remains in place. This change implies that the attack badge and the attack badge background will be split to two separate assets.
