@@ -1,78 +1,75 @@
 [gd_scene format=3 uid="uid://dhyn1rli2peei"]
 
-[ext_resource type="Script" path="res://core/forecast_panel.gd" id="1"]
-[ext_resource type="FontFile" path="res://resources/fonts/MedievalSharp-Regular.ttf" id="2_medieval"]
-[ext_resource type="FontFile" path="res://resources/fonts/RobotoCondensed-VariableFont_wght.ttf" id="3_roboto"]
+[ext_resource type="Script" uid="uid://daphyo31p6ga1" path="res://core/forecast_panel.gd" id="1"]
+[ext_resource type="FontFile" uid="uid://b6q6irvwv0uyg" path="res://resources/fonts/MedievalSharp-Regular.ttf" id="2_medieval"]
 
-[node name="ForecastPanel" type="VBoxContainer"]
+[node name="ForecastPanel" type="VBoxContainer" unique_id=1849747914]
 size_flags_horizontal = 3
 theme_override_constants/separation = 24
 script = ExtResource("1")
 
-[node name="ModifierCard" type="PanelContainer" parent="."]
+[node name="ModifierCard" type="PanelContainer" parent="." unique_id=354522799]
 unique_name_in_owner = true
 layout_mode = 2
 
-[node name="HBoxContainer" type="HBoxContainer" parent="ModifierCard"]
+[node name="HBoxContainer" type="HBoxContainer" parent="ModifierCard" unique_id=924360817]
 layout_mode = 2
 theme_override_constants/separation = 16
 
-[node name="ModifierIcon" type="TextureRect" parent="ModifierCard/HBoxContainer"]
+[node name="ModifierIcon" type="TextureRect" parent="ModifierCard/HBoxContainer" unique_id=1741794235]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(120, 120)
 layout_mode = 2
-stretch_mode = 5
 expand_mode = 1
+stretch_mode = 5
 
-[node name="VBoxContainer" type="VBoxContainer" parent="ModifierCard/HBoxContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="ModifierCard/HBoxContainer" unique_id=1921783781]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="ModifierName" type="Label" parent="ModifierCard/HBoxContainer/VBoxContainer"]
+[node name="ModifierName" type="Label" parent="ModifierCard/HBoxContainer/VBoxContainer" unique_id=1590185065]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_fonts/font = ExtResource("2_medieval")
 theme_override_font_sizes/font_size = 44
 text = "Modifier"
 
-[node name="ModifierDescription" type="Label" parent="ModifierCard/HBoxContainer/VBoxContainer"]
+[node name="ModifierDescription" type="Label" parent="ModifierCard/HBoxContainer/VBoxContainer" unique_id=1703540816]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_fonts/font = ExtResource("3_roboto")
 theme_override_font_sizes/font_size = 36
 text = "Description"
 autowrap_mode = 3
 
-[node name="DemandTitle" type="Label" parent="."]
+[node name="DemandTitle" type="Label" parent="." unique_id=919679877]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("2_medieval")
 theme_override_font_sizes/font_size = 40
 text = "Demand"
 
-[node name="DemandList" type="VBoxContainer" parent="."]
+[node name="DemandList" type="VBoxContainer" parent="." unique_id=2052760353]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="CustomersTitle" type="Label" parent="."]
+[node name="CustomersTitle" type="Label" parent="." unique_id=213398557]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_fonts/font = ExtResource("2_medieval")
 theme_override_font_sizes/font_size = 40
 text = "First customers"
 
-[node name="CustomerPortraits" type="HFlowContainer" parent="."]
+[node name="CustomerPortraits" type="HFlowContainer" parent="." unique_id=1857775672]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_constants/h_separation = 24
 theme_override_constants/v_separation = 24
 
-[node name="EmptyLabel" type="Label" parent="."]
+[node name="EmptyLabel" type="Label" parent="." unique_id=926389687]
 unique_name_in_owner = true
 visible = false
 layout_mode = 2
-theme_override_fonts/font = ExtResource("3_roboto")
 theme_override_font_sizes/font_size = 36
 text = "Nobody wants anything you can make yet. Buy a blueprint or a crate."
 autowrap_mode = 3

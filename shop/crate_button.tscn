@@ -3,13 +3,11 @@
 [ext_resource type="StyleBox" uid="uid://di32cxyt2hjgl" path="res://resources/themes/button_secondary.tres" id="1"]
 [ext_resource type="StyleBox" uid="uid://b1x10x6pumhm0" path="res://resources/themes/button_secondary_pressed.tres" id="2"]
 [ext_resource type="StyleBox" uid="uid://c3ogmo02ytwex" path="res://resources/themes/button_secondary_disabled.tres" id="3"]
-[ext_resource type="FontFile" path="res://resources/fonts/RobotoCondensed-VariableFont_wght.ttf" id="4_font"]
 
 [node name="CrateButton" type="Button" unique_id=996645086]
 custom_minimum_size = Vector2(0, 48)
 size_flags_horizontal = 3
-theme_override_fonts/font = ExtResource("4_font")
-theme_override_font_sizes/font_size = 18
+theme_override_font_sizes/font_size = 24
 theme_override_styles/normal = ExtResource("1")
 theme_override_styles/pressed = ExtResource("2")
 theme_override_styles/hover = ExtResource("1")

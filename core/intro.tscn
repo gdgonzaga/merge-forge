@@ -3,7 +3,6 @@
 [ext_resource type="Script" uid="uid://c8a530as1xf5c" path="res://core/intro.gd" id="1"]
 [ext_resource type="Texture2D" uid="uid://u0nn0v7av4hr" path="res://resources/sprites/backgrounds/bg_main_menu.png" id="2"]
 [ext_resource type="FontFile" uid="uid://b6q6irvwv0uyg" path="res://resources/fonts/MedievalSharp-Regular.ttf" id="3_font"]
-[ext_resource type="FontFile" uid="uid://di5l3rf27vxbh" path="res://resources/fonts/RobotoCondensed-VariableFont_wght.ttf" id="4_font"]
 [ext_resource type="StyleBox" uid="uid://di32cxyt2hjgl" path="res://resources/themes/button_secondary.tres" id="5_akioh"]
 [ext_resource type="StyleBox" uid="uid://b6pmxlfy8xrn2" path="res://resources/themes/button_primary.tres" id="5_apigr"]
 [ext_resource type="StyleBox" uid="uid://b1x10x6pumhm0" path="res://resources/themes/button_secondary_pressed.tres" id="6_akioh"]
@@ -55,7 +54,6 @@ layout_mode = 2
 size_flags_vertical = 3
 theme_override_colors/font_outline_color = Color(0, 0, 0, 0.6)
 theme_override_constants/outline_size = 4
-theme_override_fonts/font = ExtResource("4_font")
 theme_override_font_sizes/font_size = 26
 text = "Body"
 horizontal_alignment = 1
@@ -69,7 +67,6 @@ alignment = 1
 [node name="SkipBtn" type="Button" parent="VBox/BtnBox" unique_id=1199956837]
 custom_minimum_size = Vector2(180, 64)
 layout_mode = 2
-theme_override_fonts/font = ExtResource("4_font")
 theme_override_font_sizes/font_size = 24
 theme_override_styles/normal = ExtResource("5_akioh")
 theme_override_styles/pressed = ExtResource("6_akioh")
@@ -79,7 +76,6 @@ text = "Skip"
 [node name="NextBtn" type="Button" parent="VBox/BtnBox" unique_id=1254784979]
 custom_minimum_size = Vector2(180, 64)
 layout_mode = 2
-theme_override_fonts/font = ExtResource("4_font")
 theme_override_font_sizes/font_size = 24
 theme_override_styles/normal = ExtResource("5_apigr")
 theme_override_styles/pressed = ExtResource("8_w46f1")
@@ -91,7 +87,6 @@ text = "Next"
 visible = false
 custom_minimum_size = Vector2(180, 64)
 layout_mode = 2
-theme_override_fonts/font = ExtResource("4_font")
 theme_override_font_sizes/font_size = 24
 theme_override_styles/normal = ExtResource("5_apigr")
 theme_override_styles/pressed = ExtResource("8_w46f1")

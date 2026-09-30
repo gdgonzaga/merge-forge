@@ -2,7 +2,7 @@ extends Control
 
 const CONFIRM_DIALOG := preload("res://ui/confirm_dialog.tscn")
 const PURCHASES := preload("res://core/purchases.gd")
-const TAB_FONT := preload("res://resources/fonts/RobotoCondensed-VariableFont_wght.ttf")
+const TAB_FONT := preload("res://resources/fonts/ModernAntiqua-Regular.ttf")
 const SAFE_MARGIN := 48.0
 const TAB_PADDING_VERTICAL := 42.0
 

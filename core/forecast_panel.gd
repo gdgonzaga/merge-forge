@@ -7,7 +7,7 @@ const PORTRAIT_SIZE := 200
 const ROW_FONT_SIZE := 40
 const NAME_FONT_SIZE := 32
 const ORDER_FONT_SIZE := 32
-const BODY_FONT := preload("res://resources/fonts/RobotoCondensed-VariableFont_wght.ttf")
+const BODY_FONT := preload("res://resources/fonts/ModernAntiqua-Regular.ttf")
 
 @onready var _modifier_card: PanelContainer = %ModifierCard
 @onready var _modifier_icon: TextureRect = %ModifierIcon

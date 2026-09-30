@@ -4,7 +4,6 @@
 [ext_resource type="PackedScene" uid="uid://sjtl4wi2reqq" path="res://board/merge_board.tscn" id="2"]
 [ext_resource type="PackedScene" uid="uid://v0mmjm7vvs1e" path="res://dungeon/party_member.tscn" id="3"]
 [ext_resource type="Texture2D" uid="uid://deou3tddru4cx" path="res://resources/sprites/backgrounds/bg_dungeon_run.png" id="4"]
-[ext_resource type="FontFile" uid="uid://di5l3rf27vxbh" path="res://resources/fonts/RobotoCondensed-VariableFont_wght.ttf" id="5_font"]
 [ext_resource type="Script" uid="uid://cuq8fbted8drh" path="res://dungeon/dungeon_vfx.gd" id="6"]
 [ext_resource type="Script" uid="uid://chqkusjg6pmtq" path="res://dungeon/combat_lines.gd" id="7"]
 [ext_resource type="Texture2D" uid="uid://bj5h1gi5jiled" path="res://resources/sprites/vfx/line_slash_head.png" id="8_melee_head"]
@@ -54,7 +53,6 @@ show_percentage = false
 
 [node name="EncounterLabel" type="Label" parent="VBox/TopBar" unique_id=17271739]
 layout_mode = 2
-theme_override_fonts/font = ExtResource("5_font")
 theme_override_font_sizes/font_size = 18
 text = "Walking..."
 

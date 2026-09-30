@@ -2,7 +2,6 @@
 
 [ext_resource type="Script" uid="uid://d4c1mn6ifjn7e" path="res://dungeon/party_member.gd" id="1"]
 [ext_resource type="PackedScene" uid="uid://combatunit001" path="res://dungeon/combat_unit.tscn" id="2"]
-[ext_resource type="FontFile" uid="uid://di5l3rf27vxbh" path="res://resources/fonts/RobotoCondensed-VariableFont_wght.ttf" id="3_font"]
 [ext_resource type="PackedScene" path="res://dungeon/attack_badge.tscn" id="4"]
 
 [node name="PartyMember" type="PanelContainer" unique_id=503239150]
@@ -31,7 +30,6 @@ size_flags_vertical = 3
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_fonts/font = ExtResource("3_font")
 theme_override_font_sizes/font_size = 32
 
 [node name="AttackBadge" parent="VBox/StatusRow" unique_id=1075512255 instance=ExtResource("4")]
@@ -45,6 +43,5 @@ unique_name_in_owner = true
 custom_minimum_size = Vector2(110, 0)
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.8, 0.2, 1)
-theme_override_fonts/font = ExtResource("3_font")
 theme_override_font_sizes/font_size = 32
 horizontal_alignment = 2
