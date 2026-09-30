@@ -27,3 +27,6 @@
 - Hide or mark gated customer requests
 - Add a short pause and indicator when ending a shop run.
 - [x] In dungeon mode, fix battle line heads: use the attack badge instead: during the windup period, the badge background fills up from below like a gauge. When full, the badge background serve as the attack line head. They move towards the target. The attack badge indicator below the character sprite loses its background. Also give a small vfx glow effect for a split second when the windup time fills. The main attack badge remains in place. This change implies that the attack badge and the attack badge background will be split to two separate assets.
+- Shop session UI order containers, alot space for the max number of orders so bottom ui elements don't reposition
+- Shop session UI order buttons: use button_secondary_disabled for orders that cannot be fulfilled yet
+- Shop session UI order buttons: when an unfulfillable order (using the disabled button theme) becomes fulfillable, show a slight glow on the button and change the theme to button_secondary.
