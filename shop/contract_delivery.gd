@@ -23,7 +23,11 @@ func setup(session: Control) -> void:
 
 func open() -> void:
 	_rebuild()
-	popup(_popup_rect())
+	var rect := _popup_rect()
+	popup(rect)
+	# Embedded PopupPanel may keep its default 640x480 size after popup().
+	position = rect.position
+	size = rect.size
 
 
 # The project-wide quit_on_go_back setting remains a separate screen-flow issue.
