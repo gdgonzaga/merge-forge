@@ -85,8 +85,8 @@ layout_mode = 2
 size_flags_horizontal = 3
 
 [node name="Content" type="Control" parent="CustomerBox/CustomerAndLabels/Customers/PendingCustomers" unique_id=1963642320]
-clip_contents = true
 custom_minimum_size = Vector2(0, 200)
+clip_contents = true
 layout_mode = 2
 size_flags_vertical = 4
 
@@ -108,7 +108,7 @@ theme_override_fonts/font = ExtResource("10_font")
 theme_override_font_sizes/font_size = 16
 horizontal_alignment = 1
 
-[node name="LoyaltyLabel" type="Label" parent="CustomerBox/CustomerAndLabels"]
+[node name="LoyaltyLabel" type="Label" parent="CustomerBox/CustomerAndLabels" unique_id=1930670869]
 unique_name_in_owner = true
 visible = false
 layout_mode = 2
@@ -131,12 +131,18 @@ layout_mode = 2
 [node name="PlaceholderOrder" parent="CustomerBox/ActionPanel/OrderActionsContainer/OrdersContainer" unique_id=1522279436 instance=ExtResource("3")]
 layout_mode = 2
 
-[node name="ContractsInset" type="MarginContainer" parent="CustomerBox/ActionPanel/OrderActionsContainer"]
+[node name="PlaceholderOrder2" parent="CustomerBox/ActionPanel/OrderActionsContainer/OrdersContainer" unique_id=1243468917 instance=ExtResource("3")]
+layout_mode = 2
+
+[node name="PlaceholderOrder3" parent="CustomerBox/ActionPanel/OrderActionsContainer/OrdersContainer" unique_id=834954572 instance=ExtResource("3")]
+layout_mode = 2
+
+[node name="ContractsInset" type="MarginContainer" parent="CustomerBox/ActionPanel/OrderActionsContainer" unique_id=2020068203]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_constants/margin_left = 48
 
-[node name="ContractsBtn" type="Button" parent="CustomerBox/ActionPanel/OrderActionsContainer/ContractsInset"]
+[node name="ContractsBtn" type="Button" parent="CustomerBox/ActionPanel/OrderActionsContainer/ContractsInset" unique_id=731406432]
 unique_name_in_owner = true
 visible = false
 custom_minimum_size = Vector2(210, 120)
@@ -210,5 +216,5 @@ layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
-[node name="ContractDelivery" parent="." instance=ExtResource("11_contracts")]
+[node name="ContractDelivery" parent="." unique_id=69356368 instance=ExtResource("11_contracts")]
 unique_name_in_owner = true
