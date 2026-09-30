@@ -32,7 +32,7 @@ res://
     - `MainMenu` (`main_menu.tscn`)
     - `ShopSession` (`shop_session.tscn`) → instances `MergeBoard` (`merge_board.tscn`) (shop board; `MergeBoard/VBox/ShelfArea/ShelfGrid` is the display shelf, a second `board_grid.gd` with merges off, hidden without slots)
     - `SessionSummary` (`session_summary.tscn`)
-    - `PrepPhase` (`prep_phase.tscn`) → TabContainer: Forecast / Blueprints / Upgrades / Reagents (Forecast tab holds `ForecastPanel`, `core/forecast_panel.tscn`)
+    - `PrepPhase` (`prep_phase.tscn`) → TabContainer: Forecast / Contracts / Blueprints / Upgrades / Reagents (Forecast holds `ForecastPanel`; Contracts holds `ContractsPanel`)
     - `DungeonRun` (`dungeon_run.tscn`) → instances `MergeBoard` (`merge_board.tscn`) (dungeon board, separate state)
     - `DungeonSummary` (`dungeon_summary.tscn`)
 
@@ -63,8 +63,8 @@ No autoload uses `class_name` — globally accessible by registration name only 
 | `session_summary_dismissed()` | `session_summary.gd` | `main.gd` | Player taps Continue, go to prep |
 | `prep_start_session()` | `prep_phase.gd` | `main.gd` | Player starts next shop session |
 | `prep_enter_dungeon(dungeon_id: String)` | `prep_phase.gd` | `main.gd` | Player enters that dungeon (if unlocked) |
-| `dungeon_cleared(rewards: Dictionary)` | `dungeon_controller.gd` | `main.gd`, `save_manager.gd` | Dungeon completed. Rewards: `{cleared: true, gold_reward: int, blueprint_reward: String or null, xp_gained: int, level_before: int, level_after: int}` |
-| `dungeon_failed(summary: Dictionary)` | `dungeon_controller.gd` | `main.gd`, `save_manager.gd` | Dungeon failed. Summary: `{cleared: false, gold_reward: 0, blueprint_reward: null, xp_gained: 0, level_before: int, level_after: int}` |
+| `dungeon_cleared(rewards: Dictionary)` | `dungeon_controller.gd` | `main.gd`, `save_manager.gd` | Dungeon completed. Rewards: `{cleared: true, gold_reward: int, blueprint_reward: String or null, xp_gained: int, reagent_rewards: Dictionary, level_before: int, level_after: int}`; reagent rewards map id to count. |
+| `dungeon_failed(summary: Dictionary)` | `dungeon_controller.gd` | `main.gd`, `save_manager.gd` | Dungeon failed. Summary: `{cleared: false, gold_reward: 0, blueprint_reward: null, xp_gained: 0, reagent_rewards: {}, level_before: int, level_after: int}` |
 | `dungeon_summary_dismissed()` | `dungeon_summary.gd` | `main.gd` | Player taps Continue, return to prep |
 | `new_game_started()` | `main_menu.gd` | `main.gd` | Player starts new game |
 | `continue_game()` | `main_menu.gd` | `main.gd` | Player loads save |
@@ -524,7 +524,7 @@ Fits a 6x6 board of 128 px cells plus a 6-slot shelf on the shop screen at 1080x
 
 **Extends:** PopupPanel
 **Script:** `board/merge_choice_popup.gd`
-**Description:** Displays 2–4 merge result options as tappable buttons. Non-blocking — does NOT pause the game. No cancel button, no timer. If dismissed without a pick (Esc / tap-outside), falls back to the first option via `choice_made` so the merge resolves and the queue doesn't deadlock — the merge can't be safely undone because the source items were already consumed by the time the popup appears.
+**Description:** Displays 2–4 merge result options as tappable buttons with 120 px height and 32 px text. A variant option carries `reagent_name` and `reagent_left` alongside `reagent_cost`, so its button shows the remaining stock and any gold cost. Non-blocking — does NOT pause the game. No cancel button, no timer. If dismissed without a pick (Esc / tap-outside), falls back to the first option via `choice_made` so the merge resolves and the queue doesn't deadlock — the merge can't be safely undone because the source items were already consumed by the time the popup appears.
 
 **Properties:**
 
@@ -602,18 +602,21 @@ Each catalog is a folder of `.tres` files under `resources/definitions/`; the fi
 | `reagents/` | `ReagentDefinition` | `id`, `name`, `cost`, `description`, `sprite`, `min_shop_level` |
 | `blueprints/` | `BlueprintDefinition` | `id`, `name`, `cost`, `dependencies: Array[BlueprintDefinition]`, `min_shop_level` |
 | `crates/` | `CrateDefinition` | `id`, `name`, `cost`, `min_items`, `max_items`, `pool: Array[WeightedItem]`, `min_shop_level` |
-| `upgrades/` | `UpgradeDefinition` | A leveled track: `id`, `name`, `description`, `effect` (`grid_size`, `despawn_time`, `crate_discount`, `shelf_slots`, `forecast_detail` or `order_price`), `levels: Array[UpgradeLevel]`. `max_level()` is `levels.size()`; `next_level(level)` is the level bought after `level`, or null at the max. Buying an upgrade buys its next level. |
-| `customers/` | `CustomerDefinition` | A customer *archetype*, not a fixed customer: `id`, `name`, `role`, `sprite` (portrait), `min_shop_level`, `weight` (a real frequency weight: how often this archetype is dealt relative to the other eligible archetypes — see Shop Session), `min_orders`, `max_orders`, `price_multiplier` (scales every rolled order's price), `wants: Array[OrderTemplate]` |
-| `shop_rules/` | `ShopRulesDefinition` | One definition, id `"default"`: `id`, `session_size`, `modifier_chance`, `forecast_customers`, `xp_per_gold`, `streak_step`, `streak_cap`, `level_xp_base`, `level_xp_exponent`, `max_level` |
+| `upgrades/` | `UpgradeDefinition` | A leveled track: `id`, `name`, `description`, `effect` (`grid_size`, `despawn_time`, `crate_discount`, `shelf_slots`, `forecast_detail`, `order_price` or `contract_slots`), `levels: Array[UpgradeLevel]`. `max_level()` is `levels.size()`; `next_level(level)` is the level bought after `level`, or null at the max. Buying an upgrade buys its next level. |
+| `customers/` | `CustomerDefinition` | A customer *archetype*, not a fixed customer: `id`, `name`, `role`, `sprite` (portrait), `min_shop_level`, `weight` (a real frequency weight: how often this archetype is dealt relative to the other eligible archetypes — see Shop Session), `min_orders`, `max_orders`, `price_multiplier` (scales every rolled order's price), `wants: Array[OrderTemplate]`, `loyalty_rewards: Array[LoyaltyReward]` |
+| `contracts/` | `ContractDefinition` | A multi-session order from a regular: giver, item requirements, session limit and rewards. Loaded by `DefinitionLibrary.get_catalogs()` with the other catalogs. |
+| `shop_rules/` | `ShopRulesDefinition` | One definition, id `"default"`: `id`, `session_size`, `modifier_chance`, `forecast_customers`, `contract_offers`, `xp_per_gold`, `streak_step`, `streak_cap`, `level_xp_base`, `level_xp_exponent`, `max_level` |
 | `dungeons/` | `DungeonDefinition` | See the Dungeon Run subsystem. |
 | `modifiers/` | `SessionModifierDefinition` | A market event a shop session may roll, at most one per session (`ShopRulesDefinition.modifier_chance`): `id`, `name`, `description`, `sprite`, `min_shop_level`, `weight`, `boosted_customers: Array[CustomerDefinition]`, `customer_weight_multiplier`, `family`, `family_price_multiplier`, `affected_crates: Array[CrateDefinition]`, `crate_cost_multiplier`, `session_size_delta` |
 | (inline) | `EffectDefinition` | `type`, `value`, `duration` (ticks, 0 = instant). The `value` meaning per type is in `effect_definition.gd`. |
 | (inline) | `MergeResult` | `result: ItemDefinition`, `blueprint: BlueprintDefinition` (null = always available) |
 | (inline) | `ReagentVariant` | `result: ItemDefinition`, `reagent: ReagentDefinition`, `blueprint` (null = always available) |
+| (inline) | `ReagentReward` | `reagent: ReagentDefinition`, `min_count`, `max_count`, `chance`; each dungeon clear rolls it independently. |
 | (inline) | `UpgradeLevel` | One level of an upgrade track: `cost`, `value` (the absolute value at this level, not a step: seconds for despawn_time, price multiplier for crate_discount and order_price, slots for shelf_slots, customers revealed for forecast_detail with 0 meaning every customer plus their orders), `grid_cols` and `grid_rows` (what this level adds to the board, for grid_size), `min_shop_level` (default 1). Costs rise within a track (checked by `test_definition_library`). |
 | (inline) | `WeightedItem` | `item: ItemDefinition`, `weight: int` (relative; 0 never rolls) |
 | (inline) | `OrderTemplate` | A thing a customer archetype may ask for, on `CustomerDefinition.wants`: `item: ItemDefinition`, `weight: int`, `min_quantity`, `max_quantity`, `min_quality: int` (0 any, 1 Fine or better, 2 Masterwork; only meaningful on an item at least `min_quality` merges deep — a crate item can never be Fine). Rolled into an `OrderDefinition` per session (see Shop Session). |
 | (inline) | `OrderDefinition` | A rolled order on a dealt `ShopCustomer`: `item: ItemDefinition`, `quantity`, `gold_reward`, `min_quality: int` (copied from the template; priced by `ShopRulesDefinition.quality_price_multipliers[min_quality]`) |
+| (inline) | `LoyaltyReward` | A sub-resource of `CustomerDefinition.loyalty_rewards`: loyalty `points` threshold, `title`, and optional gold, blueprint or reagent gift. |
 | (inline) | `EncounterDefinition`, `EnemySpawn` | `spawns: Array[EnemySpawn]`; `enemy: EnemyDefinition`, `count` |
 
 Saves store ids only, never resources, so an id is part of the save format: renaming one needs a `SAVE_VERSION` bump.
@@ -676,7 +679,7 @@ RecipeResolver has no signals — it is queried synchronously by MergeResolver, 
 | `get_all_party_members()` | Ordered by `slot_order`: index 0 is the front member. |
 | `get_all_blueprints()`, `get_all_crates()`, `get_all_upgrades()`, `get_all_reagents()` | Typed arrays, cheapest first (ties by id). |
 | `get_all_customers() -> Array[CustomerDefinition]` | Sorted by id: the archetype pool `autoloads/customer_generator.gd` deals a session from. Not a fixed order — the generator decides who's dealt. |
-| `get_shop_rules() -> ShopRulesDefinition` | The one `shop_rules` definition, id `"default"` (`session_size`, `modifier_chance`, `forecast_customers`, `quality_price_multipliers` (`default.tres` ships `[1.0, 1.2, 1.5]`, indexed by `min_quality`), `xp_per_gold`, `streak_step`, `streak_cap`, `level_xp_base`, `level_xp_exponent`, `max_level`). |
+| `get_shop_rules() -> ShopRulesDefinition` | The one `shop_rules` definition, id `"default"` (`session_size`, `modifier_chance`, `forecast_customers`, `contract_offers`, `quality_price_multipliers` (`default.tres` ships `[1.0, 1.2, 1.5]`, indexed by `min_quality`), `xp_per_gold`, `streak_step`, `streak_cap`, `level_xp_base`, `level_xp_exponent`, `max_level`). |
 | `get_all_dungeons()` | Ordered by `min_shop_level` (unlock order), ties by id. PrepPhase's Enter Dungeon button targets the first. |
 | `get_all_modifiers() -> Array[SessionModifierDefinition]` | Sorted by id, so a seeded modifier roll can't depend on catalog load order. |
 | `get_unlocks_between(old_level: int, new_level: int) -> Array[Resource]` | Every definition across every catalog whose `min_shop_level` is above `old_level` and at or below `new_level` (exclusive below, inclusive above). Sorted by level, then folder, then id. Used by `LevelUpPanel` to list what a level-up opened. |
@@ -696,6 +699,7 @@ RecipeResolver has no signals — it is queried synchronously by MergeResolver, 
 | `has_blueprint(bp_id: String) -> bool` | Checks `GameManager.unlocked_blueprints`. |
 | `are_dependencies_met(blueprint: BlueprintDefinition) -> bool` | True when every dependency is owned. |
 | `is_craftable(item: ItemDefinition) -> bool` | True if the item is raw, or can be reached today via merge results and reagent variants whose source is craftable — counting only crates open at the player's level (`GameManager.meets_level(crate.min_shop_level)`) and reagents for sale at their level or already in stock. Used by `autoloads/customer_generator.gd` to keep every dealt order deliverable. |
+| `is_within_one_blueprint(items: Array[ItemDefinition]) -> bool` | True when all items are craftable now or with one blueprint the player can buy at their current level with owned dependencies. Gold is not considered. Used to gate contract offers. |
 | `roll_weighted_pool(pool: Array[WeightedItem], min_rolls: int, max_rolls: int) -> Array[ItemDefinition]` | Static. Rolls `randi_range(min_rolls, max_rolls)` independent picks, each weighted by `weight`. Shared by crates and enemy drops. |
 
 ---
@@ -706,16 +710,22 @@ RecipeResolver has no signals — it is queried synchronously by MergeResolver, 
 
 | File | Type | Responsibility |
 |------|------|----------------|
-| `shop/shop_session.tscn` | Scene | Top-level shop session. Layout: `HBoxContainer [CustomerDisplay | MergeBoard | CratePanel]`. CustomerDisplay and CratePanel are sub-components within this scene (no separate scene files). CratePanel is a VBoxContainer on the right with crate buy buttons populated dynamically from the crate definitions and a discard trash bin below. |
+| `shop/shop_session.tscn` | Scene | Top-level shop session. Layout: `HBoxContainer [CustomerDisplay | MergeBoard | CratePanel]`. CustomerDisplay and CratePanel are sub-components within this scene (no separate scene files). `%LoyaltyLabel` shows the current regular's title and progress. `%ContractsBtn` opens the direct-child `%ContractDelivery` sheet while a contract and customer are active. CratePanel is a VBoxContainer on the right with crate buy buttons populated dynamically from the crate definitions and a discard trash bin below. |
 | `shop/shop_session.gd` | Script | Orchestrates the session loop: customer display, order fulfillment, session end, crate purchasing. Does NOT own board logic or merge resolution. Gets its `plan: SessionPlan` (and `customers`, `= plan.customers`) from `SessionPlanner.plan_next_session()`. |
 | `shop/order_card.tscn` | Scene | One order display: item icon, quantity, reward, and a `ui/quality_stars.tscn` badge (`_stars.set_quality(order.min_quality)`) for a Fine or Masterwork order. Tappable to fulfill. |
 | `shop/order_streak.gd` | Script (`RefCounted`) | Tracks the fulfil streak for the current session (`count`, not saved). `fulfill(gold_reward, rules)` returns the order's XP via `ShopRulesDefinition.order_xp` and then grows the streak; `reject()` resets it to 0. A rejection breaks the streak and earns no XP. |
-| `shop/session_summary.tscn` | Scene | End-of-session summary. Animated gold counter, XP earned, items sold, fulfilled/rejected counts, customer portraits, and a `LevelUpPanel` if a level was crossed. |
+| `shop/reward_grant.gd` | Script (`RefCounted`) | Grants a loyalty gift or contract reward: gold, a blueprint (or its cost if already owned), and reagents. Returns summary lines for each grant. |
+| `shop/contract_progress.gd` | Script (`RefCounted`) | Tracks delivered quantities and remaining sessions for one active contract. ShopSession stores its entry in GameManager. |
+| `shop/contract_delivery.tscn`, `.gd` | Scene and script | PopupPanel showing active contracts and delivery options; sizes its scrollable sheet inside the display safe area. |
+| `shop/contract_row.tscn`, `.gd` | Scene and script | One requirement's progress, available item count, and Give 1/Give N actions. |
+| `shop/session_summary.tscn` | Scene | End-of-session summary. Animated gold counter, XP earned, items sold, fulfilled/rejected counts, reward and contract notes in `%NotesLabel`, customer portraits, and a `LevelUpPanel` if a level was crossed. |
 | `ui/level_up_panel.tscn`, `.gd` | Scene (shared, `ui/`) | The "Level N!" banner plus "Unlocked: X" lines. `setup(old_level: int, new_level: int)`: visible only when `new_level > old_level`; lists `DefinitionLibrary.get_unlocks_between(old_level, new_level)` by `definition.name`. Used by both `session_summary.tscn` and `dungeon/dungeon_summary.tscn` — a shared `ui/` widget, not owned by either subsystem. |
 
 ### Customers and Crates
 
 Customers are dealt from `CustomerDefinition` archetypes (see Content Definitions) by `autoloads/customer_generator.gd`, called only through `SessionPlanner.plan_next_session()`, and crates are `CrateDefinition`s. No separate premium tier: later archetypes gated by `min_shop_level` fill that role. The generator does a weighted draw with replacement from every level-unlocked, currently-craftable archetype: each draw is weighted by `weight` (a real frequency, not just a tiebreaker), with no archetype repeating back-to-back while another is eligible (`pick_weighted` treats a non-positive weight as 0, falling back to a uniform draw if every weight is non-positive). A fresh game only unlocks the archetypes with `min_shop_level` 1, so only those compete for every slot in a `session_size`-customer session (`ShopRulesDefinition`, default 10) until the player's level clears the next archetype's `min_shop_level`. Each dealt customer gets `min_orders` to `max_orders` orders, the first always for something the player can craft today and the rest possibly gated behind a blueprint. Whatever crates are defined and open at the player's level are rendered as buy buttons in the shop's CratePanel, cheapest first; crate cost is multiplied by the Crate Discount upgrade and, when the dealt session rolled a market modifier, that modifier's `crate_cost_multiplier` for the crates it affects (see MergeBoard's `get_crate_cost`). The panel rebuilds on `GameManager.shop_level_changed` so a newly-unlocked crate appears immediately.
+
+**Contract offers:** `autoloads/contract_offers.gd` ranks each eligible contract with a seeded exponential race, giving each id an independent weighted key so changes elsewhere in the pool do not reshuffle it. A contract needs positive weight, an unlocked contract level and giver, requirements within `RecipeResolver.is_within_one_blueprint`, and no settled active entry. `ShopRulesDefinition.contract_offers` limits the count (default 2); `SessionPlanner` stores the result in `SessionPlan.contract_offers`. An accepted contract stays in the offer during prep while its `sessions_left` equals `sessions_allowed`; after a session reduces that value, it is settled and excluded while active.
 
 **Crate generation algorithm:** For each item slot (rolled `min_items` to `max_items` times, independently):
 1. Sum all weights in the pool
@@ -742,10 +752,10 @@ Customers are dealt from `CustomerDefinition` archetypes (see Content Definition
 2. `shop_session.gd` displays first customer: portrait on left, 1–3 order cards stacked vertically on right, silhouette of remaining customers behind
 3. Player crafts items on the merge board (standard merge board flow) or buys crates from the CratePanel on the right (crate button → `shop_session.try_buy_crate(crate_id)` → picks random items from the crate's weighted pool, places on board via merge-safe placement, staging area as fallback). Available crates are the level-unlocked crate definitions; the panel rebuilds on `shop_level_changed`.
 4. Player taps one of the displayed `order_card.gd` options → emits `order_tapped(index)` → `shop_session.gd.try_fulfill_order(index)`. Only one order can be fulfilled per customer — the chosen order is fulfilled, all other orders for that customer are discarded.
-5. If board has required items for the chosen order: remove items, add gold to GameManager, compute XP via `order_streak.gd.fulfill(reward, rules)` (grows the streak) and add it with `GameManager.add_shop_xp`, emit `customer_fulfilled` via EventBus, discard remaining orders, advance customer
+5. If board has required items for the chosen order: remove items, add gold to GameManager, compute XP via `order_streak.gd.fulfill(reward, rules)` (grows the streak) and add it with `GameManager.add_shop_xp`, emit `customer_fulfilled` via EventBus, save the board and shelf with the gold, discard remaining orders, advance customer
 6. If board lacks items for the chosen order: flash order card red, no action, other orders remain available to tap
 7. Player taps reject → `order_streak.gd.reject()` breaks the fulfil streak (no XP change), emit `customer_rejected` via EventBus, advance customer
-8. After the last customer (`customers.size()`, the dealt session's count — `_rules.session_size` defaults to 10, but a market modifier's `session_size_delta` can change it) → compile summary data (including `xp_earned`, `level_before`, `level_after`), emit `session_ended(summary)` via EventBus → Main transitions to `session_summary.tscn`
+8. After the last customer (`customers.size()`, the dealt session's count — `_rules.session_size` defaults to 10, but a market modifier's `session_size_delta` can change it) → decrement each active contract's remaining sessions and remove expired contracts with a summary note, compile summary data (including `xp_earned`, `level_before`, `level_after`), emit `session_ended(summary)` via EventBus → Main transitions to `session_summary.tscn`
 
 **End state:** GameManager updated with gold and XP changes, SessionSummary displayed (with a `LevelUpPanel` if a level was crossed), auto-save triggered.
 
@@ -756,10 +766,21 @@ Customers are dealt from `CustomerDefinition` archetypes (see Content Definition
 1. `order_card.gd` emits `order_tapped(order_index)` → `shop_session.gd.try_fulfill_order(index)`
 2. `shop_session.gd` reads the chosen order's requirements: `{item_id: quantity}` plus `order.min_quality`
 3. Calls `board.count_sellable(item_id, order.min_quality)` for each required item (board plus display shelf, counting only items at `min_quality` or above)
-4. If all requirements met: `board.take_sellable(item_id, qty, order.min_quality)` for each (the lowest qualifying quality first, so a Masterwork is never spent on a Normal order; within one quality, shelf first, then board), `GameManager.add_gold(reward)`, `GameManager.add_shop_xp(_streak.fulfill(reward, _rules))` (`ShopRulesDefinition.order_xp`: `round(gold x xp_per_gold x (1 + min(streak x streak_step, streak_cap)))`), emit `customer_fulfilled`, discard all other unfulfilled orders for this customer
-5. Advance to next customer (or end session if last)
+4. If all requirements met: `board.take_sellable(item_id, qty, order.min_quality)` for each (the lowest qualifying quality first, so a Masterwork is never spent on a Normal order; within one quality, shelf first, then board), `GameManager.add_gold(reward)`, `GameManager.add_shop_xp(_streak.fulfill(reward, _rules))` (`ShopRulesDefinition.order_xp`: `round(gold x xp_per_gold x (1 + min(streak x streak_step, streak_cap)))`)
+5. `_award_loyalty(customer, loyalty_per_order or loyalty_per_quality_order)` gives regulars points. Each threshold reached pays its gift through `reward_grant.gd` and adds a note to `summary_data`; then emit `customer_fulfilled` and discard other orders.
+6. Advance to next customer (or end session if last)
 
-**End state:** Chosen order fulfilled, remaining orders discarded, items removed from the shelf and board, gold and XP added, customer replaced. At session end ShopSession saves the board to `GameManager.shop_board_state` and the shelf to `GameManager.shop_shelf_state`.
+**End state:** Chosen order fulfilled, remaining orders discarded, items removed from the shelf and board, gold and XP added, customer replaced. Each fulfil saves the board and shelf with its gold and XP; session end also saves their final state.
+
+### Flow Trace: Contract Delivery
+
+**Trigger:** Player gives an item through the shop's Contracts sheet.
+
+1. `%ContractsBtn` opens `contract_delivery.gd`; each `contract_row.gd` shows progress and the available count, then asks the sheet to call `shop_session.gd.deliver_to_contract(contract_id, item_id, count)` for an active contract.
+2. ShopSession checks the requirement, then calls `board.count_sellable(item_id, requirement.min_quality)` and caps the quantity at the contract's remaining need and the player's available items.
+3. `board.take_sellable(item_id, moved, requirement.min_quality)` removes the qualifying items from the shelf and board; `ContractProgress.deliver` records the same quantity.
+4. If every requirement is complete, ShopSession removes the contract, grants its reward through `reward_grant.gd`, adds a summary note, and awards loyalty to its giver.
+5. `_store_contracts()` writes active progress to GameManager, then `_save_mid_session()` copies the board and shelf into GameManager and requests a save. The spent items and earned reward or progress reach the same save.
 
 ### Class Reference
 
@@ -777,7 +798,7 @@ Customers are dealt from `CustomerDefinition` archetypes (see Content Definition
 | `customers: Array[ShopCustomer]` | Array | `= plan.customers`, as dealt by `autoloads/customer_generator.gd` |
 | `current_index: int` | int | Current customer index (0 to `session_size - 1`) |
 | `board: Control (MergeBoard instance)` | Control | Reference to instanced merge board |
-| `summary_data: Dictionary` | Dictionary | Accumulated stats: gold_earned, items_sold, fulfilled, rejected, portraits, xp_earned, level_before, level_after |
+| `summary_data: Dictionary` | Dictionary | Accumulated stats: gold_earned, items_sold, fulfilled, rejected, portraits, xp_earned, level_before, level_after, notes |
 
 **Functions:**
 
@@ -786,6 +807,8 @@ Customers are dealt from `CustomerDefinition` archetypes (see Content Definition
 | `advance_customer()` | Displays next customer. If index >= `customers.size()` (the dealt session's count), ends session. |
 | `try_fulfill_order(order_index: int)` | Checks board for items for the chosen order. If met: fulfills, awards XP via `order_streak.gd`, discards remaining orders, advances customer. If not: flashes red. |
 | `reject_customer()` | Breaks the fulfil streak via `order_streak.gd.reject()` (no XP change), advances. |
+| `get_contracts() -> Array[RefCounted]` | Returns the active contract progress objects for the shop's Contracts sheet. |
+| `deliver_to_contract(contract_id: String, item_id: String, count: int) -> int` | Moves up to `count` qualifying items into an active contract, grants a completed contract once, and saves the spent board and shelf with progress and rewards. Returns the quantity moved. |
 | `try_buy_crate(crate_id: String) -> bool` | Delegates to `board.buy_crate(crate_id)`. MergeBoard handles discount, pool rolling, and merge-safe placement internally, and refuses (returning false) a crate below `GameManager.meets_level(crate.min_shop_level)`. |
 
 #### OrderCard
@@ -837,7 +860,7 @@ Customers are dealt from `CustomerDefinition` archetypes (see Content Definition
 | `dungeon/combat_presenter.gd` | Script | Child node created by dungeon_controller. Plays combat from CombatEngine's signals: coordinates attack badge windup gauges in real-time, triggers badge glow and empty state on attack release, launches battle line heads via CombatLines, and delays impact by tunable `flight_duration` (default 0.25 s) so damage numbers, recoil and HP updates trigger on arrival. Crits swap the unit badge to `crit_sprite`, add the attacker's `crit_name` popup, gold numbers, a bigger impact and a screen shake; `windup_changed` toggles the attacker's crit charge pulse. |
 | `dungeon/combat_lane.gd` | Script | Pure lane geometry (RefCounted, static only). Every attack line is shifted and bowed toward the attacker's right, so A-to-B and B-to-A attacks use separate lanes. |
 | `dungeon/hp_ghost.gd` | Script | On CombatUnit's `HPGhost` node, drawn over the HP bar: the pulsing chunk the attacks winding up at the member will take (faster pulse when lethal) and the pale trail of HP just lost draining away. |
-| `dungeon/combat_lines.gd` | Script | On `AnimOverlay/CombatLines` in dungeon_run.tscn; draws active attack flights on their lanes. When an attack launches, a line shoots from the attacker's attack badge screen position to the target over `flight_duration` with `badge_head` (`badge_bg.png`) and optional `crit_sprite` overlay rotating along the lane trajectory. Lines are pixel art traced with Bresenham onto a 4 px block grid and drawn as solid blocks from a three-shade ramp per side. Thickness is 1 to 4 blocks by the hit's share of the target's displayed HP (`line_thickness`). Normal lines are team colored (party cool, enemy warm); crit lines are gold, outlined over a dark track, ring the target end and put a "!" on the attacker during windup. A hit that would finish the target gets a larger ring, and enemy lines turn red. Pushes each party member's incoming damage to its HP ghost. |
+| `dungeon/combat_lines.gd` | Script | On `AnimOverlay/CombatLines` in dungeon_run.tscn; draws active attack flights on their lanes. When an attack launches, a line shoots from the attacker's attack badge screen position to the target over `flight_duration` with `badge_head` (`badge_bg.png`) and optional `crit_sprite` overlay rotating along the lane trajectory. Lines are pixel art traced with Bresenham onto a 4 px block grid and drawn as solid blocks from a three-shade ramp per side. Thickness is 1 to 4 blocks by the hit's share of the target's displayed HP (`line_thickness`). Normal lines are team colored (party cool, enemy warm); crit lines are gold, outlined over a dark track, and ring the target end. A hit that would finish the target gets a larger ring, and enemy lines turn red. Pushes each party member's incoming damage to its HP ghost. |
 | `dungeon/dungeon_vfx.gd` | Script | VFX overlay attached to AnimOverlay in dungeon_run.tscn: floating combat text, slashes, impacts, heal/buff sparkles, screen shake. |
 | `dungeon/dungeon_summary.tscn` | Scene | End-of-dungeon results (cleared or failed). |
 
@@ -853,6 +876,7 @@ Customers are dealt from `CustomerDefinition` archetypes (see Content Definition
 | `encounters` | `Array[EncounterDefinition]` | One per encounter point. Each holds `spawns: Array[EnemySpawn]` (`enemy`, `count`). |
 | `gold_reward` | `int` | Gold awarded on clear |
 | `blueprint_reward` | `BlueprintDefinition` or null | Awarded on clear. Goblin Cave: null. |
+| `reagent_rewards` | `Array[ReagentReward]` | Each entry independently rolls a chance and a count on clear. |
 | `xp_reward` | `int` | Shop XP awarded on clear. A wipe gives none. Goblin Cave: 60. |
 
 Goblin Cave (MVP): `min_shop_level` 6, walk speed 0.075, encounters at 0.2 / 0.5 / 0.8: two Slimes; a Goblin Archer and a Goblin; two Goblins. 120 gold, 60 XP, no blueprint.
@@ -941,10 +965,10 @@ No special abilities for MVP — auto-attack only.
 6. During combat, player merges on the dungeon board (standard merge flow, combat continues)
 7. During combat, player drags usable items to party member portraits → `dungeon_controller.apply_usable_item(index, item)` → `combat_engine.apply_effect(index, effect)`
 8. All enemies dead → `encounter_ended()` → walk timer **resumes** → encounters at next threshold (0.5, 0.8) → repeat steps 3–7
-9. Progress reaches 1.0 AND all encounters cleared → `end_dungeon_cleared()` calculates rewards (gold + blueprint, if any + `xp_reward`) → emit `dungeon_cleared({cleared: true, gold_reward, blueprint_reward, xp_gained, level_before, level_after})` via EventBus → Main transitions to DungeonSummary (cleared)
-10. OR all members KO → `end_dungeon_failed()` → emit `dungeon_failed({cleared: false, gold_reward: 0, blueprint_reward: null, xp_gained: 0, level_before, level_after})` via EventBus → Main transitions to DungeonSummary (failed)
+9. Progress reaches 1.0 AND all encounters cleared → `end_dungeon_cleared()` calculates gold, blueprint and XP, then `grant_reagent_rewards()` rolls each reagent reward into GameManager inventory → emit `dungeon_cleared({cleared: true, gold_reward, blueprint_reward, xp_gained, reagent_rewards, level_before, level_after})` via EventBus → Main transitions to DungeonSummary (cleared)
+10. OR all members KO → `end_dungeon_failed()` → emit `dungeon_failed({cleared: false, gold_reward: 0, blueprint_reward: null, xp_gained: 0, reagent_rewards: {}, level_before, level_after})` via EventBus → Main transitions to DungeonSummary (failed)
 
-**End state (cleared):** Rewards (gold, blueprint, XP) applied to GameManager, dungeon board discarded, auto-save triggered.
+**End state (cleared):** Rewards (gold, blueprint, XP, reagents) applied to GameManager, dungeon board discarded, auto-save triggered.
 **End state (failed):** No XP, dungeon board items lost, shop board unaffected, auto-save triggered.
 
 ### Flow Trace: Usable Item Applied to Party Member
@@ -1005,8 +1029,9 @@ No special abilities for MVP — auto-attack only.
 | `start_encounter(encounter_idx: int)` | Looks up encounter data by index, spawns EnemyDisplay nodes, calls `setup(enemy_data)` on each, starts combat via combat_engine, pauses walk timer. |
 | `end_encounter()` | After `END_BEAT` (0.8 s, so the final volley plays out), frees all EnemyDisplay nodes, clears `enemy_displays`, resumes walking. A party wipe waits the same beat before `end_dungeon_failed()`. |
 | `apply_usable_item(member_index: int, item_data: Dictionary)` | Routes item effect to combat_engine, removes item from board, and has combat_presenter refresh that member at once. |
-| `end_dungeon_cleared()` | Calculates rewards (gold, blueprint if any, `xp_reward`), applies to GameManager (`add_gold`, `add_blueprint`, `add_shop_xp`), emits `dungeon_cleared({cleared: true, gold_reward, blueprint_reward, xp_gained, level_before, level_after})`. |
-| `end_dungeon_failed()` | No rewards, no XP. Emits `dungeon_failed({cleared: false, gold_reward: 0, blueprint_reward: null, xp_gained: 0, level_before, level_after})`. |
+| `end_dungeon_cleared()` | Calculates rewards, applies gold, blueprint and XP to GameManager, calls `grant_reagent_rewards()`, and emits `dungeon_cleared` with a `reagent_rewards` id-to-count dictionary. |
+| `grant_reagent_rewards(dungeon: DungeonDefinition, rng: RandomNumberGenerator) -> Dictionary` | Rolls each configured reagent reward, adds successful counts to GameManager inventory and returns the counts granted by id. |
+| `end_dungeon_failed()` | No rewards, no XP. Emits `dungeon_failed` with `reagent_rewards: {}`. |
 
 #### CombatEngine
 
@@ -1165,7 +1190,7 @@ No special abilities for MVP — auto-attack only.
 
 | Function | Description |
 |----------|-------------|
-| `display_results(data: Dictionary)` | Populates summary. data: `{cleared, gold_reward, blueprint_reward, xp_gained, level_before, level_after}`. Cleared shows "XP: +N"; failed shows "No XP". Both call `LevelUpPanel.setup(level_before, level_after)`. |
+| `display_results(data: Dictionary)` | Populates summary. data: `{cleared, gold_reward, blueprint_reward, xp_gained, reagent_rewards, level_before, level_after}`. Cleared shows "XP: +N" and `ReagentLabel` lists reagents found; failed shows "No XP" and hides the reagent label. Both call `LevelUpPanel.setup(level_before, level_after)`. |
 
 ---
 
@@ -1175,9 +1200,13 @@ No special abilities for MVP — auto-attack only.
 
 | File | Type | Responsibility |
 |------|------|----------------|
-| `core/prep_phase.tscn` | Scene | Prep phase with TabContainer: Forecast (next session preview), Blueprints (buy blueprints), Upgrades (buy upgrades), Reagents (buy reagents). Crates are purchased during shop sessions, not here. |
+| `core/prep_phase.tscn` | Scene | Prep phase with TabContainer: Forecast (next session preview), Contracts (offers and active progress), Blueprints (buy blueprints), Upgrades (buy upgrades), Reagents (buy reagents). Crates are purchased during shop sessions, not here. |
 | `core/forecast_panel.tscn` | Scene | The Forecast tab's content: `SessionPlanner.plan_next_session()`'s modifier card, demand by item family, and the first `forecast_customers` customers. |
 | `core/forecast_panel.gd` | Script | `setup(plan: SessionPlan, reveal_count: int)`. Rebuilds its demand rows and customer portraits each call; frees the previous ones with `queue_free`. |
+| `core/contracts_panel.tscn` | Scene | The Contracts tab's slots, next-session offers, active contracts and empty state. |
+| `core/contracts_panel.gd` | Script | `setup(plan: SessionPlan)` rebuilds cards. `accept(contract_id)` requires a current offer and free slot, appends `{id, delivered: {}, sessions_left: sessions_allowed}` to GameManager and requests a save. |
+| `core/contract_card.tscn` | Scene | A contract offer or active contract card with requirement, reward and session text. |
+| `core/contract_card.gd` | Script | Formats offer requirements or delivered progress and emits `accept_pressed` for the panel. |
 | `autoloads/game_manager.gd` | Autoload | Persistent state data store. No game logic — pure state with change signals. |
 | `core/purchases.gd` | RefCounted | Purchase rules for blueprints, upgrades and reagents: checks (including `GameManager.meets_level(min_shop_level)` for blueprints and reagents), charges and grants, and refuses without charging when a check fails. Held by PrepPhase. |
 
@@ -1185,7 +1214,11 @@ No special abilities for MVP — auto-attack only.
 
 Upgrades are `UpgradeDefinition`s and reagents `ReagentDefinition`s (see Content Definitions). Each upgrade is a track of `UpgradeLevel`s; `GameManager.upgrade_levels` maps an upgrade id to the level bought (0 or absent = none). GameManager finds an upgrade's effect by its `effect` type, never by upgrade id, and reads the value at the bought level (capped at the track's length). `core/purchases.gd buy_upgrade` buys the next level: it checks the next level exists, `meets_level(next.min_shop_level)` and gold, charges `next.cost`, adds the level's `grid_cols`/`grid_rows` to `GameManager.grid_cols`/`grid_rows` for `grid_size`, then calls `GameManager.raise_upgrade_level(id)`. The Upgrades tab shows "Name (k/N)", the next level's value and cost, "Max" at the top level and "Unlocks at level N" while the next level is locked. Upgrade levels are not listed on the level-up panel (it lists catalog entries with a top-level `min_shop_level`).
 
-Reagents are bought in the prep phase and stored in `GameManager.reagent_inventory` as counts. They are never placed on the board. At merge time, the merged item's `reagent_variants` whose reagent is in stock become extra options (see Resolve Reagent Variants).
+Reagents with a positive cost are bought in the prep phase. A reagent with `cost` 0 is dungeon-only: the card says "Dungeon only", lists its dungeon sources and cannot be bought. All reagents are stored in `GameManager.reagent_inventory` as counts and never placed on the board. At merge time, the merged item's `reagent_variants` whose reagent is in stock become extra options (see Resolve Reagent Variants).
+
+### Loyalty and contracts state
+
+`GameManager.regular_loyalty` maps customer ids to points and never decreases. `GameManager.active_contracts` holds accepted contracts oldest first, each as `{id, delivered: {item_id: count}, sessions_left}`; a saved active contract has at least one session left. `get_contract_slots()` reads the `contract_slots` upgrade effect and defaults to 0. `SAVE_VERSION` is 9; this schema change is breaking, so older saves load as CORRUPT.
 
 ### Signals
 
@@ -1273,7 +1306,7 @@ Reagents are bought in the prep phase and stored in `GameManager.reagent_invento
 **Extends:** Control
 **Script:** `core/prep_phase.gd`
 **Scene:** `core/prep_phase.tscn`
-**Description:** TabContainer-based prep phase with 4 tabs: Forecast (first, opens by default), Blueprints, Upgrades, Reagents. Does not instance a MergeBoard — board rearrange deferred to post-MVP. Layout is scene-based with placeholder PurchaseCard instances in each purchase tab (cleared at runtime).
+**Description:** TabContainer-based prep phase with 5 tabs: Forecast (first, opens by default), Contracts, Blueprints, Upgrades, Reagents. The shared tab strip uses at least 32 px text and 120 px touch areas. On Android, the anchored content layout converts `DisplayServer.get_display_safe_area()` through the viewport screen transform and adds 48 canvas px on every side; elsewhere it adds 48 px within the viewport because desktop safe rectangles can cover the whole display rather than the app window. It updates on viewport resize. Does not instance a MergeBoard — board rearrange deferred to post-MVP. Layout is scene-based with placeholder PurchaseCard instances in each purchase tab (cleared at runtime).
 
 **Properties:**
 
@@ -1286,6 +1319,7 @@ Reagents are bought in the prep phase and stored in `GameManager.reagent_invento
 | `_dungeon: DungeonDefinition` | DungeonDefinition | The button's target: `DefinitionLibrary.get_all_dungeons()[0]`, the first dungeon to unlock. Sets the button text and the `meets_level` check. |
 | `_purchases: RefCounted` | `core/purchases.gd` | Purchase rules; `try_purchase` delegates to it |
 | `_forecast_panel: VBoxContainer` | `@onready %ForecastPanel` | The Forecast tab's content; `_refresh_forecast()` calls `setup(plan, forecast_customers)` on it |
+| `_contracts_panel: VBoxContainer` | `@onready %ContractsPanel` | The Contracts tab's content; `_refresh_forecast()` calls `setup(plan)` on it |
 | `_plan: SessionPlan` | SessionPlan | The next session, from `SessionPlanner.plan_next_session()`; exposed via `get_forecast_plan()` and used to feed the forecast panel |
 
 **Functions:**
@@ -1293,15 +1327,16 @@ Reagents are bought in the prep phase and stored in `GameManager.reagent_invento
 | Function | Description |
 |----------|-------------|
 | `get_forecast_plan() -> SessionPlan` | Returns `_plan`, the session the Forecast tab is showing. `shop_session.gd` deals the same plan (both call `SessionPlanner.plan_next_session()`, a pure function of GameManager's state). |
+| `apply_safe_area(safe_area: Rect2i, screen_transform: Transform2D, platform_name: String)` | On Android, positions prep inside the screen-space safe rectangle with 48 canvas px padding; on desktop, pads the viewport. Explicit inputs let layout tests simulate device insets and a larger desktop display. |
 | `try_purchase(type: String, id: String) -> bool` | Delegates a blueprint, upgrade or reagent purchase to its `core/purchases.gd` helper. Returns true on success. |
-| `_refresh_forecast()` | Rolls `_plan` from `SessionPlanner` and calls `_forecast_panel.setup(_plan, GameManager.get_forecast_customers())`. Called from `_ready`, and from the `blueprint_added`, `reagent_count_changed`, `shop_level_changed` and `upgrade_level_changed` handlers whenever a purchase or level-up could change what's craftable. |
+| `_refresh_forecast()` | Rolls `_plan` from `SessionPlanner` and refreshes the forecast and contracts panels. Called from `_ready`, and from the `blueprint_added`, `reagent_count_changed`, `shop_level_changed` and `upgrade_level_changed` handlers whenever a purchase or level-up could change what's craftable. |
 | `_debug_unlock_all()` | Debug: sets debug_mode, grants 20000g, 1000 rep, all blueprints, 5 of every reagent. |
 
 #### GameManager
 
 **Extends:** Node
 **Script:** `autoloads/game_manager.gd`
-**Description:** Singleton data store for all persistent game state. No game logic — getters, setters, and change signals only. `SAVE_VERSION` is 8: every board entry (`shop_board_state`, `shop_shelf_state`, `dungeon_board_state`) gained `quality`, validated as a number in 0..`ItemDefinition.MAX_QUALITY`; a missing or out-of-range `quality` makes that entry, and the save, CORRUPT. Older saves are rejected as CORRUPT.
+**Description:** Singleton data store for all persistent game state. No game logic — getters, setters, and change signals only. `SAVE_VERSION` is 9: loyalty points and active contract entries are now required; older saves are rejected as CORRUPT. Board entries retain the `quality` field introduced in version 8.
 
 **Properties:**
 
@@ -1319,6 +1354,8 @@ Reagents are bought in the prep phase and stored in `GameManager.reagent_invento
 | `grid_rows: int` | int | Board height (5 default; Board Expansion adds its levels' `grid_rows`) |
 | `run_seed: int` | int | Rolled once per new game; combined with `sessions_played` to seed each shop session. `SAVE_VERSION` 5. |
 | `sessions_played: int` | int | Completed shop-session count. Incremented by `record_session_played()` at `end_session()`, saved right then. Also the ad grace-period counter (Submodule — Ads). `SAVE_VERSION` 5. |
+| `regular_loyalty: Dictionary` | Dictionary | Customer id → nonnegative whole-number points; never decreases. Required in `SAVE_VERSION` 9. |
+| `active_contracts: Array` | Array | Oldest first; `{id, delivered: {item_id: count}, sessions_left}`. Each id is unique, delivered counts are nonnegative whole numbers, and sessions left is at least 1. Required in `SAVE_VERSION` 9. |
 
 **Signals:**
 
@@ -1343,6 +1380,8 @@ Reagents are bought in the prep phase and stored in `GameManager.reagent_invento
 | `add_reagent(reagent_id: String, count: int)` | Updates inventory dict, emits `reagent_count_changed`. |
 | `consume_reagent(reagent_id: String) -> bool` | Deducts 1 if count > 0. Returns false if none. |
 | `get_upgrade_level(upgrade_id: String) -> int` | Level bought (0 if none). |
+| `get_loyalty(customer_id: String) -> int` | Current loyalty points, or 0 if absent. |
+| `add_loyalty(customer_id: String, points: int)` | Adds positive points; ignores zero and negative gains. |
 | `raise_upgrade_level(upgrade_id: String)` | Adds one level, emits `upgrade_level_changed(upgrade_id, level)`. Charging, checks and grid growth are the caller's (`core/purchases.gd buy_upgrade`). |
 | `get_shop_level() -> int` | Returns `DefinitionLibrary.get_shop_rules().level_for_xp(shop_xp)`. |
 | `meets_level(min_shop_level: int) -> bool` | Returns `get_shop_level() >= min_shop_level`. |
@@ -1350,6 +1389,7 @@ Reagents are bought in the prep phase and stored in `GameManager.reagent_invento
 | `get_crate_discount() -> float` | Bought level's `value` of the `crate_discount` track, else 1.0. |
 | `get_shelf_slots() -> int` | Bought level's `value` of the `shelf_slots` track, else `DEFAULT_SHELF_SLOTS` (0). |
 | `get_order_price_multiplier() -> float` | Bought level's `value` of the `order_price` track (Shop Signage), else 1.0. `SessionPlanner` passes it to the generator, which multiplies it into order gold before the one rounding. |
+| `get_contract_slots() -> int` | Bought level's `value` of the `contract_slots` track, else 0. |
 | `get_forecast_customers() -> int` | Bought level's `value` of the `forecast_detail` track (Town Crier), else `ShopRulesDefinition.forecast_customers`. 0 means every customer, plus their orders. |
 | `record_session_played()` | Increments `sessions_played`. Called once, at the end of a shop session. |
 | `get_session_seed() -> int` | `hash([run_seed, sessions_played])`. Fixed for a given run and session number: previewable in prep. A crash mid-session replays the same customers unless the shop level crossed an archetype's `min_shop_level` mid-session. |

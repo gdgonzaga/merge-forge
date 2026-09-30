@@ -20,3 +20,8 @@ const QUALITY_NAMES: Array[String] = ["Normal", "Fine", "Masterwork"]
 # player choose.
 @export var merge_results: Array[MergeResult] = []
 @export var reagent_variants: Array[ReagentVariant] = []
+
+
+# Shared wording for quality requirements shown in prep and the shop.
+func name_at_quality(quality: int) -> String:
+	return name if quality <= 0 else "%s %s" % [QUALITY_NAMES[quality], name]

@@ -23,6 +23,7 @@ var _presenter: Node
 var _dungeon: DungeonDefinition
 var _walk_timer: Timer
 var _walk_phase: float = 0.0
+var _rng := RandomNumberGenerator.new()
 
 @onready var board: Control = $VBox/Board
 @onready var vfx: Control = $AnimOverlay
@@ -34,6 +35,7 @@ var _walk_phase: float = 0.0
 
 
 func _ready() -> void:
+	_rng.randomize()
 	_dungeon = DefinitionLibrary.get_dungeon(dungeon_id)
 	if _dungeon == null:
 		push_error("DungeonRun: unknown dungeon '%s'" % dungeon_id)
@@ -166,6 +168,7 @@ func end_dungeon_cleared() -> void:
 		GameManager.add_blueprint(bp_reward)
 	GameManager.add_gold(gold_reward)
 	GameManager.add_shop_xp(_dungeon.xp_reward)
+	var reagents := grant_reagent_rewards(_dungeon, _rng)
 	_save_board_state()
 	EventBus.save_requested.emit()
 	EventBus.dungeon_cleared.emit({
@@ -173,6 +176,7 @@ func end_dungeon_cleared() -> void:
 		"gold_reward": gold_reward,
 		"blueprint_reward": bp_reward,
 		"xp_gained": _dungeon.xp_reward,
+		"reagent_rewards": reagents,
 		"level_before": level_before,
 		"level_after": GameManager.get_shop_level(),
 	})
@@ -188,9 +192,20 @@ func end_dungeon_failed() -> void:
 		"gold_reward": 0,
 		"blueprint_reward": null,
 		"xp_gained": 0,
+		"reagent_rewards": {},
 		"level_before": GameManager.get_shop_level(),
 		"level_after": GameManager.get_shop_level(),
 	})
+
+
+func grant_reagent_rewards(dungeon: DungeonDefinition, rng: RandomNumberGenerator) -> Dictionary:
+	var given := {}
+	for reward in dungeon.reagent_rewards:
+		var count := reward.roll(rng)
+		if count > 0:
+			GameManager.add_reagent(reward.reagent.id, count)
+			given[reward.reagent.id] = int(given.get(reward.reagent.id, 0)) + count
+	return given
 
 
 func _on_walk_tick() -> void:

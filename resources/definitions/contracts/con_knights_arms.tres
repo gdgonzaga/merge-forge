@@ -1,0 +1,31 @@
+[gd_resource type="Resource" script_class="ContractDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/contract_definition.gd" id="1_contract"]
+[ext_resource type="Script" path="res://resources/definitions/order_template.gd" id="2_tpl"]
+[ext_resource type="Resource" path="res://resources/definitions/customers/cust_05.tres" id="3_giver"]
+[ext_resource type="Resource" path="res://resources/definitions/items/sword.tres" id="item_0"]
+[ext_resource type="Resource" path="res://resources/definitions/items/iron_shield.tres" id="item_1"]
+
+[sub_resource type="Resource" id="Resource_req_0"]
+script = ExtResource("2_tpl")
+item = ExtResource("item_0")
+min_quantity = 1
+max_quantity = 1
+
+[sub_resource type="Resource" id="Resource_req_1"]
+script = ExtResource("2_tpl")
+item = ExtResource("item_1")
+min_quantity = 1
+max_quantity = 1
+
+[resource]
+script = ExtResource("1_contract")
+id = "con_knights_arms"
+name = "Ser Roland's Arms"
+giver = ExtResource("3_giver")
+min_shop_level = 14
+weight = 1
+requirements = Array[ExtResource("2_tpl")]([SubResource("Resource_req_0"), SubResource("Resource_req_1")])
+sessions_allowed = 3
+reward_gold = 750
+loyalty_points = 4

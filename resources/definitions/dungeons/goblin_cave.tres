@@ -7,6 +7,11 @@
 [ext_resource type="Resource" path="res://resources/definitions/enemies/goblin.tres" id="5_bhjox"]
 [ext_resource type="Script" path="res://resources/definitions/dungeon_definition.gd" id="6_3xp5g"]
 
+[ext_resource type="Script" path="res://resources/definitions/reagent_reward.gd" id="p7_reward"]
+[ext_resource type="Resource" path="res://resources/definitions/reagents/ice_essence.tres" id="p7_ice_essence"]
+[ext_resource type="Resource" path="res://resources/definitions/reagents/shadow_essence.tres" id="p7_shadow_essence"]
+[ext_resource type="Resource" path="res://resources/definitions/reagents/holy_essence.tres" id="p7_holy_essence"]
+
 [sub_resource type="Resource" id="Resource_blhq5"]
 script = ExtResource("2_at71i")
 enemy = ExtResource("3_vahml")
@@ -37,6 +42,21 @@ count = 2
 script = ExtResource("1_5lyl5")
 spawns = Array[ExtResource("2_at71i")]([SubResource("Resource_gls51")])
 
+[sub_resource type="Resource" id="Resource_reward_ice_essence"]
+script = ExtResource("p7_reward")
+reagent = ExtResource("p7_ice_essence")
+chance = 0.5
+
+[sub_resource type="Resource" id="Resource_reward_shadow_essence"]
+script = ExtResource("p7_reward")
+reagent = ExtResource("p7_shadow_essence")
+chance = 0.5
+
+[sub_resource type="Resource" id="Resource_reward_holy_essence"]
+script = ExtResource("p7_reward")
+reagent = ExtResource("p7_holy_essence")
+chance = 0.35
+
 [resource]
 script = ExtResource("6_3xp5g")
 id = "goblin_cave"
@@ -47,3 +67,4 @@ encounter_points = Array[float]([0.2, 0.5, 0.8])
 encounters = Array[ExtResource("1_5lyl5")]([SubResource("Resource_supk0"), SubResource("Resource_0nrh2"), SubResource("Resource_kryoi")])
 gold_reward = 120
 xp_reward = 60
+reagent_rewards = Array[ExtResource("p7_reward")]([SubResource("Resource_reward_ice_essence"), SubResource("Resource_reward_shadow_essence"), SubResource("Resource_reward_holy_essence")])

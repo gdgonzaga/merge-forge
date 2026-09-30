@@ -22,10 +22,8 @@ Open `dungeon/dungeon_run.tscn`, select `AnimOverlay/CombatLines`, and set these
 | `missile_head_diagonal` | Missile head, drawn pointing **down-right** |
 | `head_scale` | Line blocks per sprite pixel for normal heads (default 2) |
 | `crit_head_scale` | Line blocks per sprite pixel for crit heads (default 3) |
-| `crit_mark` | The "!" over an attacker winding up a crit, drawn upright |
-| `crit_mark_scale` | Line blocks per sprite pixel for the crit mark (default 2) |
 
-The shipped heads are `resources/sprites/vfx/line_slash_head.png`, `line_arrow_head.png` and their `_diagonal` versions; the shipped crit mark is `vfx/crit_mark.png` (5x12). The crit mark follows the same drawing rules as the heads below, but it never turns, so it has no diagonal version and needn't be square. The old `slash.png` and `arrow.png` are still used by the attack badge and the slash hit effect, so don't reuse them for heads.
+The shipped heads are `resources/sprites/vfx/line_slash_head.png`, `line_arrow_head.png` and their `_diagonal` versions. The old `slash.png` and `arrow.png` are still used by the attack badge and the slash hit effect, so don't reuse them for heads.
 
 ### Why there are straight and diagonal versions
 
@@ -59,6 +57,19 @@ The lines themselves are drawn in code (`dungeon/combat_lines.gd`), not from tex
 To change the look, edit those constants in `dungeon/combat_lines.gd`.
 
 ---
+
+## Placeholder art (Phase 7)
+
+These six definitions currently reuse existing item sprites and need their own 64x64 art in the same item frame:
+
+| Definition | Current placeholder | Needed look |
+|---|---|---|
+| `ice_essence` | `resources/sprites/items/fire_essence.png` | A pale blue ice shard with a cold glow. |
+| `shadow_essence` | `resources/sprites/items/fire_essence.png` | A dark violet wisp with a faint edge. |
+| `holy_essence` | `resources/sprites/items/fire_essence.png` | A warm white glow from a small shrine fragment. |
+| `frost_blade` | `resources/sprites/items/flame_sword.png` | A pale blue blade rimmed with frost. |
+| `holy_draught` | `resources/sprites/items/phoenix_draught.png` | A bright, gold-tinted potion with a white aura. |
+| `nightshade_tonic` | `resources/sprites/items/herbal_tonic.png` | A deep purple tonic with shadow around its bottle. |
 
 ## Known gaps
 

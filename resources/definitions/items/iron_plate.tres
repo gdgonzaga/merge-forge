@@ -13,6 +13,10 @@
 [ext_resource type="Resource" path="res://resources/definitions/reagents/fire_essence.tres" id="9_ckduu"]
 [ext_resource type="Resource" path="res://resources/definitions/items/flame_sword.tres" id="10_tdmy6"]
 
+[ext_resource type="Resource" path="res://resources/definitions/items/frost_blade.tres" id="p7_result"]
+[ext_resource type="Resource" path="res://resources/definitions/reagents/ice_essence.tres" id="p7_reagent"]
+[ext_resource type="Resource" path="res://resources/definitions/blueprints/bp_frost_blade.tres" id="p7_blueprint"]
+
 [sub_resource type="Resource" id="Resource_effect"]
 script = ExtResource("1_effect")
 type = "absorb"
@@ -34,6 +38,12 @@ result = ExtResource("10_tdmy6")
 reagent = ExtResource("9_ckduu")
 blueprint = ExtResource("8_iuuhy")
 
+[sub_resource type="Resource" id="Resource_phase7_variant"]
+script = ExtResource("7_2bqob")
+result = ExtResource("p7_result")
+reagent = ExtResource("p7_reagent")
+blueprint = ExtResource("p7_blueprint")
+
 [resource]
 script = ExtResource("2_item")
 id = "iron_plate"
@@ -45,4 +55,4 @@ dungeon_use_target = "party-individual"
 effect = SubResource("Resource_effect")
 sprite = ExtResource("3_sprite")
 merge_results = Array[ExtResource("2_6o27b")]([SubResource("Resource_b7t8e"), SubResource("Resource_if6qg")])
-reagent_variants = Array[ExtResource("7_2bqob")]([SubResource("Resource_jwhu2")])
+reagent_variants = Array[ExtResource("7_2bqob")]([SubResource("Resource_jwhu2"), SubResource("Resource_phase7_variant")])

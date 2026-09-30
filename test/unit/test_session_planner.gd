@@ -48,3 +48,44 @@ func _customer(items: Array) -> ShopCustomer:
 		order.quantity = 1
 		orders.append(order)
 	return ShopCustomer.new().setup(CustomerDefinition.new(), orders)
+
+
+# Accepting in prep leaves the visible offer unchanged. A session tick removes
+# it from later offers while it remains active.
+func test_an_accepted_contract_stays_on_offer_until_a_session_has_passed() -> void:
+	var contract := _reachable_contract()
+	GameManager.active_contracts = [{"id": "__test_contract", "delivered": {}, "sessions_left": 3}]
+	assert_bool(contract in SessionPlanner.plan_next_session().contract_offers).is_true()
+	GameManager.active_contracts[0]["sessions_left"] = 2
+	assert_bool(contract in SessionPlanner.plan_next_session().contract_offers).is_false()
+
+
+func test_planning_twice_offers_the_same_contracts() -> void:
+	var contract := _reachable_contract()
+	assert_bool(contract in SessionPlanner.plan_next_session().contract_offers).is_true()
+	assert_bool(contract in SessionPlanner.plan_next_session().contract_offers).is_true()
+
+
+func _reachable_contract() -> ContractDefinition:
+	for contract: ContractDefinition in DefinitionLibrary.contracts.values().duplicate():
+		var moved: ContractDefinition = contract.duplicate()
+		moved.min_shop_level = 9999
+		set_definition(DefinitionLibrary.contracts, moved)
+	var item := ItemDefinition.new()
+	item.id = "__test_contract_item"
+	set_definition(DefinitionLibrary.items, item)
+	var entry := WeightedItem.new()
+	entry.item = item
+	var crate := CrateDefinition.new()
+	crate.id = "__test_contract_crate"
+	crate.pool = [entry]
+	set_definition(DefinitionLibrary.crates, crate)
+	var requirement := OrderTemplate.new()
+	requirement.item = item
+	var contract := ContractDefinition.new()
+	contract.id = "__test_contract"
+	contract.giver = CustomerDefinition.new()
+	contract.requirements = [requirement]
+	contract.sessions_allowed = 3
+	set_definition(DefinitionLibrary.contracts, contract)
+	return contract

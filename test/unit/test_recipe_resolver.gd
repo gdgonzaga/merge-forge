@@ -208,6 +208,75 @@ func test_reagent_for_sale_above_the_level_does_not_count() -> void:
 	assert_bool(RecipeResolver.is_craftable(fancy)).is_true()
 
 
+func test_items_craftable_now_are_within_one_blueprint() -> void:
+	var raw := _item("__test_raw")
+	set_definition(DefinitionLibrary.items, raw)
+	set_definition(DefinitionLibrary.crates, _crate("__test_crate", [raw]))
+	assert_bool(RecipeResolver.is_within_one_blueprint([raw] as Array[ItemDefinition])).is_true()
+
+
+func test_items_one_buyable_blueprint_away_are_within_reach() -> void:
+	var chain := _gated_chain()
+	assert_bool(RecipeResolver.is_within_one_blueprint([chain[1]] as Array[ItemDefinition])).is_true()
+
+
+func test_items_two_blueprints_away_are_out_of_reach() -> void:
+	var chain := _gated_chain()
+	assert_bool(RecipeResolver.is_within_one_blueprint([chain[2]] as Array[ItemDefinition])).is_false()
+	GameManager.add_blueprint("__test_bp_a")
+	assert_bool(RecipeResolver.is_within_one_blueprint([chain[2]] as Array[ItemDefinition])).is_true()
+
+
+func test_two_items_needing_different_blueprints_are_out_of_reach() -> void:
+	var raw := _item("__test_raw")
+	var left := _item("__test_left")
+	var right := _item("__test_right")
+	raw.merge_results.append(_merge_result(left, _buyable("__test_bp_a")))
+	raw.merge_results.append(_merge_result(right, _buyable("__test_bp_b")))
+	for item in [raw, left, right]:
+		set_definition(DefinitionLibrary.items, item)
+	set_definition(DefinitionLibrary.crates, _crate("__test_crate", [raw]))
+	assert_bool(RecipeResolver.is_within_one_blueprint([left, right] as Array[ItemDefinition])).is_false()
+
+
+func test_a_blueprint_above_the_level_brings_nothing_within_reach() -> void:
+	set_definition(DefinitionLibrary.shop_rules, _level_rules())
+	var chain := _gated_chain()
+	DefinitionLibrary.get_blueprint("__test_bp_a").min_shop_level = 2
+	assert_bool(RecipeResolver.is_within_one_blueprint([chain[1]] as Array[ItemDefinition])).is_false()
+	GameManager.shop_xp = 100
+	assert_bool(RecipeResolver.is_within_one_blueprint([chain[1]] as Array[ItemDefinition])).is_true()
+
+
+func test_a_blueprint_with_a_missing_dependency_brings_nothing_within_reach() -> void:
+	var chain := _gated_chain()
+	var needed := _buyable("__test_bp_dep")
+	DefinitionLibrary.get_blueprint("__test_bp_a").dependencies = [needed]
+	assert_bool(RecipeResolver.is_within_one_blueprint([chain[1]] as Array[ItemDefinition])).is_false()
+	GameManager.add_blueprint("__test_bp_dep")
+	assert_bool(RecipeResolver.is_within_one_blueprint([chain[1]] as Array[ItemDefinition])).is_true()
+
+
+func _gated_chain() -> Array[ItemDefinition]:
+	var raw := _item("__test_raw")
+	var mid := _item("__test_mid")
+	var top := _item("__test_top")
+	raw.merge_results.append(_merge_result(mid, _buyable("__test_bp_a")))
+	mid.merge_results.append(_merge_result(top, _buyable("__test_bp_b")))
+	for item in [raw, mid, top]:
+		set_definition(DefinitionLibrary.items, item)
+	set_definition(DefinitionLibrary.crates, _crate("__test_crate", [raw]))
+	return [raw, mid, top] as Array[ItemDefinition]
+
+
+func _buyable(id: String) -> BlueprintDefinition:
+	var blueprint := BlueprintDefinition.new()
+	blueprint.id = id
+	blueprint.cost = 10
+	set_definition(DefinitionLibrary.blueprints, blueprint)
+	return blueprint
+
+
 func _level_rules() -> ShopRulesDefinition:
 	var rules := ShopRulesDefinition.new()
 	rules.id = "default"

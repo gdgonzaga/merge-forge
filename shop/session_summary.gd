@@ -5,6 +5,7 @@ extends Control
 @onready var _sold_label: Label = $VBox/SoldLabel
 @onready var _fulfilled_label: Label = $VBox/FulfilledLabel
 @onready var _rejected_label: Label = $VBox/RejectedLabel
+@onready var _notes_label: Label = %NotesLabel
 @onready var _level_up_panel: VBoxContainer = $VBox/LevelUpPanel
 
 var _target_gold: int = 0
@@ -25,6 +26,9 @@ func display_summary(data: Dictionary) -> void:
 	_sold_label.text = "Items Sold: %d" % data.get("items_sold", 0)
 	_fulfilled_label.text = "Fulfilled: %d" % data.get("fulfilled", 0)
 	_rejected_label.text = "Rejected: %d" % data.get("rejected", 0)
+	var notes: Array = data.get("notes", [])
+	_notes_label.text = "\n".join(PackedStringArray(notes))
+	_notes_label.visible = not notes.is_empty()
 	_xp_label.text = "XP Earned: %d" % data.get("xp_earned", 0)
 	_level_up_panel.setup(data.get("level_before", 1), data.get("level_after", 1))
 

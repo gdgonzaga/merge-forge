@@ -32,10 +32,13 @@ func show_options(options: Array[Dictionary]) -> void:
 		var quality: int = opt.get("result_quality", 0)
 		if quality > 0:
 			details.append(ItemDefinition.QUALITY_NAMES[quality])
-		if is_variant and reagent_cost > 0:
-			details.append("%dg" % reagent_cost)
+		if is_variant:
+			details.append("%d %s left" % [opt["reagent_left"], opt["reagent_name"]])
+			if reagent_cost > 0:
+				details.append("%dg" % reagent_cost)
 		btn.text = display_name if details.is_empty() else "%s (%s)" % [display_name, ", ".join(details)]
-		btn.custom_minimum_size = Vector2(220, 48)
+		btn.custom_minimum_size = Vector2(220, 120)
+		btn.add_theme_font_size_override("font_size", 32)
 		var item_id: String = opt.get("item_id", "")
 		var reagent_id: String = opt.get("reagent_id", "")
 		btn.pressed.connect(_on_button_pressed.bind(item_id, is_variant, reagent_id))

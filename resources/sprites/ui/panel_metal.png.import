@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bxfeori2f3o1c"
-path="res://.godot/imported/panel_pressed.png-6de7517538519162e36d0120340163af.ctex"
+uid="uid://c7s4phoa8fere"
+path="res://.godot/imported/panel_metal.png-dcc9e31d8501d54f5fb75152a268fa35.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://resources/sprites/ui/panel_pressed.png"
-dest_files=["res://.godot/imported/panel_pressed.png-6de7517538519162e36d0120340163af.ctex"]
+source_file="res://resources/sprites/ui/panel_metal.png"
+dest_files=["res://.godot/imported/panel_metal.png-dcc9e31d8501d54f5fb75152a268fa35.ctex"]
 
 [params]
 

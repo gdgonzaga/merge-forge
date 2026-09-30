@@ -56,19 +56,42 @@ func are_dependencies_met(blueprint: BlueprintDefinition) -> bool:
 # something craftable. A reagent variant counts when the reagent is for sale
 # at their level or in stock.
 func is_craftable(item: ItemDefinition) -> bool:
-	return _is_craftable(item, {})
+	return _is_craftable(item, {}, "")
+
+
+# A contract can ask for items craftable now or opened by one blueprint the
+# player could buy at their current level. Gold is not considered.
+func is_within_one_blueprint(items: Array[ItemDefinition]) -> bool:
+	if _all_craftable(items, ""):
+		return true
+	for blueprint in DefinitionLibrary.get_all_blueprints():
+		if _is_buyable(blueprint) and _all_craftable(items, blueprint.id):
+			return true
+	return false
+
+
+func _all_craftable(items: Array[ItemDefinition], extra_blueprint: String) -> bool:
+	for item in items:
+		if not _is_craftable(item, {}, extra_blueprint):
+			return false
+	return true
+
+
+func _is_buyable(blueprint: BlueprintDefinition) -> bool:
+	return blueprint.cost > 0 and not has_blueprint(blueprint.id) \
+		and GameManager.meets_level(blueprint.min_shop_level) and are_dependencies_met(blueprint)
 
 
 # `visited` holds ids already on the path or already disproven, so a cycle in
-# content can't recurse forever.
-func _is_craftable(item: ItemDefinition, visited: Dictionary) -> bool:
+# content can't recurse forever. `extra_blueprint` counts as owned.
+func _is_craftable(item: ItemDefinition, visited: Dictionary, extra_blueprint: String) -> bool:
 	if item == null or visited.has(item.id):
 		return false
 	if _sold_in_a_crate(item):
 		return true
 	visited[item.id] = true
 	for source: ItemDefinition in DefinitionLibrary.get_all_items().values():
-		if _makes(source, item) and _is_craftable(source, visited):
+		if _makes(source, item, extra_blueprint) and _is_craftable(source, visited, extra_blueprint):
 			return true
 	return false
 
@@ -84,14 +107,18 @@ func _sold_in_a_crate(item: ItemDefinition) -> bool:
 
 
 # Whether merging `source` can give `target` with what the player owns.
-func _makes(source: ItemDefinition, target: ItemDefinition) -> bool:
+func _makes(source: ItemDefinition, target: ItemDefinition, extra_blueprint: String) -> bool:
 	for option in source.merge_results:
-		if option.result == target and is_unlocked(option.blueprint):
+		if option.result == target and _is_unlocked_with(option.blueprint, extra_blueprint):
 			return true
 	for variant in source.reagent_variants:
-		if variant.result == target and is_unlocked(variant.blueprint) and _can_get_reagent(variant.reagent):
+		if variant.result == target and _is_unlocked_with(variant.blueprint, extra_blueprint) and _can_get_reagent(variant.reagent):
 			return true
 	return false
+
+
+func _is_unlocked_with(blueprint: BlueprintDefinition, extra_blueprint: String) -> bool:
+	return is_unlocked(blueprint) or (blueprint != null and blueprint.id == extra_blueprint)
 
 
 func _can_get_reagent(reagent: ReagentDefinition) -> bool:

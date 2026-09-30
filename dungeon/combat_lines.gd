@@ -53,8 +53,6 @@ const FLASH_FPS := 8.0
 const FLASH_CYCLE := 4
 # Blocks back from the fill's head used to aim the head sprite.
 const HEAD_LOOKBACK := 3
-# Crit mark top-left, from the attacker's top-right corner.
-const MARK_OFFSET := Vector2(-48.0, 4.0)
 # Arrivals on one unit are spread along its edge by the attacker's slot.
 const ARRIVAL_SPREAD := 20.0
 
@@ -70,9 +68,6 @@ const ARRIVAL_SPREAD := 20.0
 # Blocks per head-sprite pixel.
 @export_range(1, 6) var head_scale := 2
 @export_range(1, 6) var crit_head_scale := 3
-# Tinted like the heads; drawn upright, so it needs no diagonal.
-@export var crit_mark: Texture2D
-@export_range(1, 6) var crit_mark_scale := 2
 
 class Flight extends RefCounted:
 	var side: int
@@ -260,16 +255,6 @@ func _incoming_on_enemy(enemy_index: int) -> int:
 
 func _draw() -> void:
 	var now := _now()
-	if _engine != null and _engine.is_combat_running():
-		for m in range(_party_units.size()):
-			if _engine.is_winding_up(ENGINE.SIDE_PARTY, m) and _unit_data(ENGINE.SIDE_PARTY, m).get("is_crit", false):
-				if _unit_valid(_party_units, m):
-					_draw_crit_mark(_party_units[m], CRIT_RAMP[RAMP_LIGHT])
-		for e in range(_enemy_units.size()):
-			if _engine.is_winding_up(ENGINE.SIDE_ENEMY, e) and _unit_data(ENGINE.SIDE_ENEMY, e).get("is_crit", false):
-				if _unit_valid(_enemy_units, e):
-					_draw_crit_mark(_enemy_units[e], CRIT_RAMP[RAMP_LIGHT])
-
 	for f in _flights:
 		var dur: float = f.duration if f.duration > 0.001 else 0.001
 		var progress := clampf(f.elapsed / dur, 0.0, 1.0)
@@ -323,8 +308,6 @@ func _draw_flight(f: Flight, progress: float) -> void:
 		var radius := LETHAL_RING_CELLS if lethal else RING_CELLS
 		_draw_ring(end, radius + 1, OUTLINE_COLOR)
 		_draw_ring(end, radius, color)
-	if f.is_crit:
-		_draw_crit_mark(attackers[f.attacker], color)
 
 
 func _draw_badge_head(pos: Vector2, dir: Vector2, color: Color, is_crit: bool, crit_icon: Texture2D = null) -> void:
@@ -397,8 +380,6 @@ func _draw_attack(side: int, attacker: int, target: int, damage: int, is_crit: b
 		var radius := LETHAL_RING_CELLS if lethal else RING_CELLS
 		_draw_ring(end, radius + 1, OUTLINE_COLOR)
 		_draw_ring(end, radius, color)
-	if is_crit:
-		_draw_crit_mark(attackers[attacker], color)
 
 
 # Samples the lane from `from` to `to` into _points.
@@ -524,16 +505,6 @@ func _plot_octants(center: Vector2, x: int, y: int, color: Color) -> void:
 
 func _plot(cell: Vector2, color: Color) -> void:
 	draw_rect(Rect2(cell * PIXEL, Vector2.ONE * PIXEL), color)
-
-
-# "!" at the attacker's top-right corner for the whole crit windup.
-func _draw_crit_mark(attacker: Control, color: Color) -> void:
-	if crit_mark == null:
-		return
-	var rect: Rect2 = attacker.get_global_rect()
-	var corner := _to_local_point(Vector2(rect.end.x, rect.position.y)) + MARK_OFFSET
-	var size := crit_mark.get_size() * PIXEL * crit_mark_scale
-	draw_texture_rect(crit_mark, Rect2((corner / PIXEL).floor() * PIXEL, size), false, color)
 
 
 # Off until the last FINAL_PULSE_SECONDS, then toggles at FINAL_PULSE_HZ.

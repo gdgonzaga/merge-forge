@@ -7,6 +7,10 @@
 [ext_resource type="Script" path="res://resources/definitions/customer_definition.gd" id="5_cust"]
 [ext_resource type="Texture2D" path="res://resources/sprites/portraits/customer_07.png" id="6_sprite"]
 
+[ext_resource type="Script" path="res://resources/definitions/loyalty_reward.gd" id="p7_loyalty"]
+[ext_resource type="Resource" path="res://resources/definitions/reagents/fire_essence.tres" id="p7_gift15"]
+[ext_resource type="Resource" path="res://resources/definitions/reagents/holy_essence.tres" id="p7_gift30"]
+
 [sub_resource type="Resource" id="Resource_potion"]
 script = ExtResource("1_tpl")
 item = ExtResource("2_potion")
@@ -22,6 +26,27 @@ item = ExtResource("4_tonic")
 min_quantity = 2
 max_quantity = 3
 
+[sub_resource type="Resource" id="Resource_loyalty_5"]
+script = ExtResource("p7_loyalty")
+points = 5
+title = "Familiar Face"
+gold = 200
+
+[sub_resource type="Resource" id="Resource_loyalty_15"]
+script = ExtResource("p7_loyalty")
+points = 15
+title = "Regular"
+reagent = ExtResource("p7_gift15")
+reagent_count = 2
+
+[sub_resource type="Resource" id="Resource_loyalty_30"]
+script = ExtResource("p7_loyalty")
+points = 30
+title = "Old Friend"
+gold = 200
+reagent = ExtResource("p7_gift30")
+reagent_count = 1
+
 [resource]
 script = ExtResource("5_cust")
 id = "cust_07"
@@ -31,3 +56,4 @@ sprite = ExtResource("6_sprite")
 min_shop_level = 8
 max_orders = 3
 wants = Array[ExtResource("1_tpl")]([SubResource("Resource_potion"), SubResource("Resource_elixir"), SubResource("Resource_tonic")])
+loyalty_rewards = Array[ExtResource("p7_loyalty")]([SubResource("Resource_loyalty_5"), SubResource("Resource_loyalty_15"), SubResource("Resource_loyalty_30")])

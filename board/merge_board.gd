@@ -79,7 +79,6 @@ func buy_crate(crate_id: String) -> bool:
 	AudioManager.play_sfx("crate_open")
 	for item in RecipeResolver.roll_weighted_pool(crate.pool, crate.min_items, crate.max_items):
 		place_drop(RecipeResolver.make_item(item))
-	EventBus.save_requested.emit()
 	return true
 
 

@@ -46,7 +46,7 @@ func buy_upgrade(upgrade_id: String) -> bool:
 
 func buy_reagent(reagent_id: String) -> bool:
 	var reagent := DefinitionLibrary.get_reagent(reagent_id)
-	if reagent == null:
+	if reagent == null or reagent.cost <= 0:
 		return false
 	if not GameManager.meets_level(reagent.min_shop_level):
 		return false

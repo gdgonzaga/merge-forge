@@ -2,12 +2,19 @@ extends Control
 
 const CONFIRM_DIALOG := preload("res://ui/confirm_dialog.tscn")
 const PURCHASES := preload("res://core/purchases.gd")
+const TAB_FONT := preload("res://resources/fonts/RobotoCondensed-VariableFont_wght.ttf")
+const SAFE_MARGIN := 48.0
+const TAB_PADDING_VERTICAL := 42.0
+
+@onready var _layout: VBoxContainer = %VBox
+@onready var _tabs: TabContainer = %TabContainer
 
 @onready var _bp_scroll: VBoxContainer = $VBox/TabContainer/Blueprints/BpContent
 @onready var _upgrade_scroll: VBoxContainer = $VBox/TabContainer/Upgrades/UpgradeContent
 @onready var _reagent_scroll: VBoxContainer = $VBox/TabContainer/Reagents/ReagentContent
 @onready var _dungeon_btn: Button = %DungeonBtn
 @onready var _forecast_panel: VBoxContainer = %ForecastPanel
+@onready var _contracts_panel: VBoxContainer = %ContractsPanel
 
 var _purchases: RefCounted = PURCHASES.new()
 # Today's single Enter Dungeon button targets the first dungeon to unlock.
@@ -17,6 +24,9 @@ var _plan: SessionPlan
 
 
 func _ready() -> void:
+	_configure_tabs()
+	_apply_display_safe_area()
+	get_viewport().size_changed.connect(_apply_display_safe_area)
 	for child in _bp_scroll.get_children():
 		child.queue_free()
 	for child in _upgrade_scroll.get_children():
@@ -40,6 +50,36 @@ func _ready() -> void:
 	GameManager.shop_level_changed.connect(_on_shop_level_changed)
 	_refresh_all()
 	_refresh_forecast()
+
+
+# Android reports the window's safe rectangle in physical pixels. Desktop
+# reports the whole display, which may be larger than the app window.
+func apply_safe_area(safe_area: Rect2i, screen_transform: Transform2D, platform_name: String) -> void:
+	var viewport_size := get_viewport_rect().size
+	var visible := Rect2(Vector2.ZERO, viewport_size)
+	if platform_name == "Android" and safe_area.has_area():
+		var to_canvas := screen_transform.affine_inverse()
+		var start := to_canvas * Vector2(safe_area.position)
+		var end := to_canvas * Vector2(safe_area.end)
+		visible = visible.intersection(Rect2(start, end - start))
+	_layout.offset_left = visible.position.x + SAFE_MARGIN
+	_layout.offset_top = visible.position.y + SAFE_MARGIN
+	_layout.offset_right = visible.end.x - viewport_size.x - SAFE_MARGIN
+	_layout.offset_bottom = visible.end.y - viewport_size.y - SAFE_MARGIN
+
+
+func _configure_tabs() -> void:
+	_tabs.add_theme_font_override("font", TAB_FONT)
+	_tabs.add_theme_font_size_override("font_size", 32)
+	for style_name: String in ["tab_selected", "tab_unselected", "tab_hovered", "tab_disabled"]:
+		var style: StyleBox = _tabs.get_theme_stylebox(style_name).duplicate()
+		style.set_content_margin(SIDE_TOP, TAB_PADDING_VERTICAL)
+		style.set_content_margin(SIDE_BOTTOM, TAB_PADDING_VERTICAL)
+		_tabs.add_theme_stylebox_override(style_name, style)
+
+
+func _apply_display_safe_area() -> void:
+	apply_safe_area(DisplayServer.get_display_safe_area(), get_viewport().get_screen_transform(), OS.get_name())
 
 
 # Quit to menu drops any in-flight prep/board state. Confirm before leaving.
@@ -109,6 +149,7 @@ func _refresh_all() -> void:
 func _refresh_forecast() -> void:
 	_plan = SessionPlanner.plan_next_session()
 	_forecast_panel.setup(_plan, GameManager.get_forecast_customers())
+	_contracts_panel.setup(_plan)
 
 
 func _refresh_blueprints() -> void:
@@ -190,6 +231,9 @@ func _describe_value(effect: String, level: UpgradeLevel) -> String:
 			return "every customer and order" if int(level.value) <= 0 else "%d customers" % int(level.value)
 		"order_price":
 			return "orders x%d%%" % roundi(level.value * 100.0)
+		"contract_slots":
+			var slots := int(level.value)
+			return "%d contract%s at once" % [slots, "" if slots == 1 else "s"]
 	return effect
 
 
@@ -200,11 +244,24 @@ func _refresh_reagents() -> void:
 	for reagent in DefinitionLibrary.get_all_reagents():
 		var owned_count: int = GameManager.reagent_inventory.get(reagent.id, 0)
 		var level_ok := GameManager.meets_level(reagent.min_shop_level)
-		var desc := reagent.description if level_ok else "Unlocks at level %d" % reagent.min_shop_level
-		var disabled := not level_ok or GameManager.gold < reagent.cost
 		var card: PanelContainer = card_scene.instantiate()
 		_reagent_scroll.add_child(card)
+		if reagent.cost <= 0:
+			var dungeon_desc := _dungeon_reagent_text(reagent) if level_ok else "Unlocks at level %d" % reagent.min_shop_level
+			card.setup("%s (x%d)" % [reagent.name, owned_count], dungeon_desc, Color(0.7, 0.7, 0.7), "Dungeon only", true, Callable(), 72)
+			continue
+		var desc := reagent.description if level_ok else "Unlocks at level %d" % reagent.min_shop_level
+		var disabled := not level_ok or GameManager.gold < reagent.cost
 		card.setup("%s (x%d)" % [reagent.name, owned_count], desc, Color(0.7, 0.7, 0.7), "%dg" % reagent.cost, disabled, try_purchase.bind("reagent", reagent.id), 72)
+
+
+func _dungeon_reagent_text(reagent: ReagentDefinition) -> String:
+	var sources: PackedStringArray = []
+	for dungeon in DefinitionLibrary.get_all_dungeons():
+		for reward in dungeon.reagent_rewards:
+			if reward.reagent == reagent and not dungeon.name in sources:
+				sources.append(dungeon.name)
+	return "%s\nFound in: %s" % [reagent.description, ", ".join(sources)]
 
 
 func _debug_unlock_all() -> void:

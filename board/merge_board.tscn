@@ -2,8 +2,8 @@
 
 [ext_resource type="Script" uid="uid://c0tjks1t5i6f1" path="res://board/merge_board.gd" id="1"]
 [ext_resource type="Script" uid="uid://2bhy5307p5im" path="res://board/board_grid.gd" id="2"]
-[ext_resource type="Texture2D" uid="uid://2gbrb6kkjdl7" path="res://resources/sprites/ui/staging_bg.png" id="3"]
-[ext_resource type="Texture2D" path="res://resources/sprites/ui/cell_shelf_bg.png" id="4_shelf_bg"]
+[ext_resource type="Texture2D" uid="uid://c27lrc5nxq6wy" path="res://resources/sprites/ui/panel_secondary.png.png" id="4_oe2na"]
+[ext_resource type="Texture2D" uid="uid://dft3wt3r10nx5" path="res://resources/sprites/ui/cell_shelf_bg.png" id="4_shelf_bg"]
 
 [node name="MergeBoard" type="Control" unique_id=1408714038]
 layout_mode = 3
@@ -37,17 +37,17 @@ theme_override_constants/v_separation = 12
 columns = 5
 script = ExtResource("2")
 
-[node name="ShelfGap" type="Control" parent="VBox"]
+[node name="ShelfGap" type="Control" parent="VBox" unique_id=2110400616]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 8)
 layout_mode = 2
 
-[node name="ShelfArea" type="PanelContainer" parent="VBox"]
+[node name="ShelfArea" type="PanelContainer" parent="VBox" unique_id=1371718275]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 4
 
-[node name="ShelfGrid" type="GridContainer" parent="VBox/ShelfArea"]
+[node name="ShelfGrid" type="GridContainer" parent="VBox/ShelfArea" unique_id=313539860]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_constants/h_separation = 12
@@ -59,17 +59,19 @@ cell_bg_texture = ExtResource("4_shelf_bg")
 custom_minimum_size = Vector2(0, 160)
 layout_mode = 2
 
-[node name="StagingBg" type="TextureRect" parent="VBox/StagingWrapper" unique_id=1709171760]
+[node name="StagingBg" type="NinePatchRect" parent="VBox/StagingWrapper" unique_id=1479484967]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-mouse_filter = 2
-texture = ExtResource("3")
-expand_mode = 1
-stretch_mode = 6
+texture = ExtResource("4_oe2na")
+region_rect = Rect2(0, 0, 256, 158)
+patch_margin_left = 18
+patch_margin_top = 21
+patch_margin_right = 20
+patch_margin_bottom = 21
 
 [node name="StagingArea" type="FlowContainer" parent="VBox/StagingWrapper" unique_id=1145141524]
 layout_mode = 1

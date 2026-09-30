@@ -13,6 +13,10 @@
 [ext_resource type="Resource" path="res://resources/definitions/reagents/fire_essence.tres" id="9_w60kj"]
 [ext_resource type="Resource" path="res://resources/definitions/items/phoenix_draught.tres" id="10_wpsqe"]
 
+[ext_resource type="Resource" path="res://resources/definitions/items/holy_draught.tres" id="p7_result"]
+[ext_resource type="Resource" path="res://resources/definitions/reagents/holy_essence.tres" id="p7_reagent"]
+[ext_resource type="Resource" path="res://resources/definitions/blueprints/bp_holy_draught.tres" id="p7_blueprint"]
+
 [sub_resource type="Resource" id="Resource_effect"]
 script = ExtResource("1_effect")
 type = "heal"
@@ -34,6 +38,12 @@ result = ExtResource("10_wpsqe")
 reagent = ExtResource("9_w60kj")
 blueprint = ExtResource("8_8f6t6")
 
+[sub_resource type="Resource" id="Resource_phase7_variant"]
+script = ExtResource("7_7vyvl")
+result = ExtResource("p7_result")
+reagent = ExtResource("p7_reagent")
+blueprint = ExtResource("p7_blueprint")
+
 [resource]
 script = ExtResource("2_item")
 id = "herbal_tonic"
@@ -45,4 +55,4 @@ dungeon_use_target = "party-individual"
 effect = SubResource("Resource_effect")
 sprite = ExtResource("3_sprite")
 merge_results = Array[ExtResource("2_qs3oq")]([SubResource("Resource_yycr2"), SubResource("Resource_3ig5s")])
-reagent_variants = Array[ExtResource("7_7vyvl")]([SubResource("Resource_5q303")])
+reagent_variants = Array[ExtResource("7_7vyvl")]([SubResource("Resource_5q303"), SubResource("Resource_phase7_variant")])

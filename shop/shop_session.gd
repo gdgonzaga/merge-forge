@@ -1,7 +1,10 @@
 extends Control
 
 const PORTRAIT_SIZE := 200
+const CONTRACT_SAFE_MARGIN := 48
 const ORDER_STREAK := preload("res://shop/order_streak.gd")
+const REWARD_GRANT := preload("res://shop/reward_grant.gd")
+const CONTRACT_PROGRESS := preload("res://shop/contract_progress.gd")
 
 var plan: SessionPlan
 var customers: Array[ShopCustomer] = []
@@ -9,6 +12,8 @@ var current_index: int = 0
 var summary_data: Dictionary = {}
 var _rules: ShopRulesDefinition
 var _streak := ORDER_STREAK.new()
+var _grant := REWARD_GRANT.new()
+var _contracts: Array[RefCounted] = []
 # Per-position shadow alpha in the pending queue: the back of a full queue
 # tops out just under 100% (e.g. 8 / 9 with 10 customers). Fixed for the
 # session, so the stack lightens as it shrinks.
@@ -18,10 +23,14 @@ var _shadow_step: float = 0.0
 @onready var _portrait_rect: TextureRect = $CustomerBox/CustomerAndLabels/Customers/CurrentCustomer/PortraitWrapper/PortraitRect
 @onready var _customer_label: Label = $CustomerBox/CustomerAndLabels/CustomerLabels/CustomerLabel
 @onready var _remaining_label: Label = $CustomerBox/CustomerAndLabels/CustomerLabels/RemainingLabel
+@onready var _loyalty_label: Label = %LoyaltyLabel
 @onready var _orders_container: VBoxContainer = $CustomerBox/ActionPanel/OrderActionsContainer/OrdersContainer
 @onready var _crate_panel: VBoxContainer = $CustomerBox/ActionPanel/CratePanel
 @onready var _crate_buttons: FlowContainer = $CustomerBox/ActionPanel/CratePanel/CrateButtonsPanel
 @onready var _reject_btn: Button = $CustomerBox/ActionPanel/OrderActionsContainer/RejectBtn
+@onready var _contracts_btn: Button = %ContractsBtn
+@onready var _contracts_inset: MarginContainer = %ContractsInset
+@onready var _contract_sheet: PopupPanel = %ContractDelivery
 @onready var _pending_content: Control = $CustomerBox/CustomerAndLabels/Customers/PendingCustomers/Content
 
 
@@ -34,6 +43,7 @@ func _ready() -> void:
 		"portraits": [],
 		"xp_earned": 0,
 		"level_before": GameManager.get_shop_level(),
+		"notes": [] as Array[String],
 	}
 
 	_rules = DefinitionLibrary.get_shop_rules()
@@ -55,6 +65,12 @@ func _ready() -> void:
 		if board_grid:
 			board_grid.load_board_state(GameManager.shop_board_state)
 	board.load_shelf_state(GameManager.shop_shelf_state)
+	_load_contracts()
+	_contract_sheet.setup(self)
+	_contracts_btn.pressed.connect(_contract_sheet.open)
+	_refresh_contracts_button()
+	_refresh_contract_button_safe_area()
+	get_viewport().size_changed.connect(_refresh_contract_button_safe_area)
 
 	_build_crate_buttons()
 	GameManager.shop_level_changed.connect(_on_shop_level_changed)
@@ -194,8 +210,10 @@ func try_fulfill_order(order_index: int) -> void:
 	GameManager.add_gold(reward)
 	var xp: int = _streak.fulfill(reward, _rules)
 	GameManager.add_shop_xp(xp)
+	var points := _rules.loyalty_per_quality_order if order.min_quality > 0 else _rules.loyalty_per_order
+	_award_loyalty(customer.definition, points)
 	EventBus.customer_fulfilled.emit(item_id)
-	EventBus.save_requested.emit()
+	_save_mid_session()
 
 	summary_data["gold_earned"] = summary_data.get("gold_earned", 0) + reward
 	summary_data["items_sold"] = summary_data.get("items_sold", 0) + needed
@@ -213,12 +231,50 @@ func reject_customer() -> void:
 
 	_streak.reject()
 	EventBus.customer_rejected.emit(customers[current_index].definition.id)
-	EventBus.save_requested.emit()
+	_save_mid_session()
 
 	summary_data["rejected"] = summary_data.get("rejected", 0) + 1
 
 	current_index += 1
 	advance_customer()
+
+
+func get_contracts() -> Array[RefCounted]:
+	return _contracts
+
+
+func deliver_to_contract(contract_id: String, item_id: String, count: int) -> int:
+	if current_index >= customers.size() or board == null or not is_instance_valid(board):
+		return 0
+	var progress := _find_contract(contract_id)
+	if progress == null:
+		return 0
+	var requirement: OrderTemplate = progress.definition.requirement_for(item_id)
+	if requirement == null:
+		return 0
+	var available: int = board.count_sellable(item_id, requirement.min_quality)
+	var moved := mini(count, mini(progress.remaining(item_id), available))
+	if moved <= 0:
+		return 0
+	board.take_sellable(item_id, moved, requirement.min_quality)
+	progress.deliver(item_id, moved, requirement.min_quality)
+	if progress.is_complete():
+		_complete_contract(progress)
+	_store_contracts()
+	_refresh_contracts_button()
+	_save_mid_session()
+	return moved
+
+
+# A track marks a regular. Each crossed threshold pays once at fulfillment.
+func _award_loyalty(customer: CustomerDefinition, points: int) -> void:
+	if customer == null or customer.loyalty_rewards.is_empty() or points <= 0:
+		return
+	var before := GameManager.get_loyalty(customer.id)
+	GameManager.add_loyalty(customer.id, points)
+	for reward in customer.rewards_crossed(before, before + points):
+		var given := _grant.grant(reward.gold, reward.blueprint, reward.reagent, reward.reagent_count)
+		summary_data["notes"].append("%s gives you: %s" % [customer.name, ", ".join(given)])
 
 
 func end_session() -> void:
@@ -227,6 +283,8 @@ func end_session() -> void:
 		_customer_label.text = "Session Complete!"
 	if is_instance_valid(_remaining_label):
 		_remaining_label.text = ""
+	if is_instance_valid(_loyalty_label):
+		_loyalty_label.visible = false
 	if is_instance_valid(_portrait_rect):
 		_portrait_rect.texture = null
 	if is_instance_valid(_reject_btn):
@@ -239,6 +297,8 @@ func end_session() -> void:
 
 	if board and is_instance_valid(board):
 		GameManager.shop_shelf_state = board.get_shelf_state()
+	_tick_contracts()
+	_refresh_contracts_button()
 
 	summary_data["level_after"] = GameManager.get_shop_level()
 	GameManager.record_session_played()
@@ -247,9 +307,10 @@ func end_session() -> void:
 
 
 func try_buy_crate(crate_id: String) -> bool:
-	if board and is_instance_valid(board):
-		return board.buy_crate(crate_id)
-	return false
+	if board == null or not is_instance_valid(board) or not board.buy_crate(crate_id):
+		return false
+	_save_mid_session()
+	return true
 
 
 func _display_customer(customer: ShopCustomer) -> void:
@@ -257,6 +318,8 @@ func _display_customer(customer: ShopCustomer) -> void:
 	_customer_label.text = customer.definition.name if customer.definition.role.is_empty() \
 		else "%s the %s" % [customer.definition.name, customer.definition.role]
 	_remaining_label.text = "Customer %d of %d" % [current_index + 1, customers.size()]
+	_loyalty_label.text = _loyalty_text(customer.definition)
+	_loyalty_label.visible = not _loyalty_label.text.is_empty()
 
 	_clear_orders()
 	var order_card_scene: PackedScene = load("res://shop/order_card.tscn")
@@ -270,11 +333,88 @@ func _display_customer(customer: ShopCustomer) -> void:
 	_reject_btn.visible = true
 
 
+func _loyalty_text(customer: CustomerDefinition) -> String:
+	if customer.loyalty_rewards.is_empty():
+		return ""
+	var points := GameManager.get_loyalty(customer.id)
+	var next := customer.next_threshold(points)
+	var progress := "Loyalty max" if next < 0 else "Loyalty %d/%d" % [points, next]
+	var title := customer.title_at(points)
+	return progress if title.is_empty() else "%s · %s" % [title, progress]
+
+
 func _clear_orders() -> void:
 	for child in _orders_container.get_children():
-		if child == _reject_btn:
-			continue
 		child.queue_free()
+
+
+func _load_contracts() -> void:
+	_contracts.clear()
+	for entry: Dictionary in GameManager.active_contracts:
+		var contract := DefinitionLibrary.get_contract(entry["id"])
+		if contract == null:
+			push_error("ShopSession: active contract '%s' is not in the catalog" % entry["id"])
+			continue
+		_contracts.append(CONTRACT_PROGRESS.new().setup(contract, entry))
+	_store_contracts()
+
+
+func _find_contract(contract_id: String) -> RefCounted:
+	for progress in _contracts:
+		if progress.definition.id == contract_id:
+			return progress
+	return null
+
+
+func _complete_contract(progress: RefCounted) -> void:
+	_contracts.erase(progress)
+	var contract: ContractDefinition = progress.definition
+	var given := _grant.grant(contract.reward_gold, contract.reward_blueprint, contract.reward_reagent, contract.reward_reagent_count)
+	summary_data["notes"].append("%s complete" % contract.name if given.is_empty() else "%s complete: %s" % [contract.name, ", ".join(given)])
+	_award_loyalty(contract.giver, contract.loyalty_points)
+
+
+func _tick_contracts() -> void:
+	for progress in _contracts.duplicate():
+		if progress.tick_session():
+			_contracts.erase(progress)
+			summary_data["notes"].append("%s expired" % progress.definition.name)
+	_store_contracts()
+
+
+func _store_contracts() -> void:
+	var entries: Array = []
+	for progress in _contracts:
+		entries.append(progress.to_entry())
+	GameManager.active_contracts = entries
+
+
+func _refresh_contracts_button() -> void:
+	var show_button := not _contracts.is_empty() and current_index < customers.size()
+	_contracts_inset.visible = show_button
+	_contracts_btn.visible = show_button
+	_contracts_btn.text = "Contracts (%d)" % _contracts.size()
+
+
+func apply_contract_button_safe_area(safe_area: Rect2i, screen_transform: Transform2D, platform_name: String) -> void:
+	var left_margin := CONTRACT_SAFE_MARGIN
+	if platform_name == "Android" and safe_area.has_area():
+		var safe_start := screen_transform.affine_inverse() * Vector2(safe_area.position)
+		left_margin = maxi(left_margin, ceili(safe_start.x) + CONTRACT_SAFE_MARGIN)
+	_contracts_inset.add_theme_constant_override("margin_left", left_margin)
+
+
+func _refresh_contract_button_safe_area() -> void:
+	apply_contract_button_safe_area(DisplayServer.get_display_safe_area(), get_viewport().get_screen_transform(), OS.get_name())
+
+
+func _save_mid_session() -> void:
+	var board_grid := _get_board_grid()
+	if board_grid != null and is_instance_valid(board_grid):
+		GameManager.shop_board_state = board_grid.get_board_state()
+	if board != null and is_instance_valid(board):
+		GameManager.shop_shelf_state = board.get_shelf_state()
+	EventBus.save_requested.emit()
 
 
 func _get_board_grid() -> Node:

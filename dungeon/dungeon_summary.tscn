@@ -2,11 +2,11 @@
 
 [ext_resource type="Script" uid="uid://cc6lkqy87yg63" path="res://dungeon/dungeon_summary.gd" id="1"]
 [ext_resource type="Texture2D" uid="uid://deou3tddru4cx" path="res://resources/sprites/backgrounds/bg_dungeon_run.png" id="2_nnjlt"]
-[ext_resource type="StyleBox" uid="uid://b6pmxlfy8xrn2" path="res://resources/themes/button_main.tres" id="3_pudtw"]
-[ext_resource type="StyleBox" uid="uid://b66un13e0502r" path="res://resources/themes/button_pressed.tres" id="3_uocvm"]
-[ext_resource type="StyleBox" uid="uid://d13ojkcc4ssv4" path="res://resources/themes/button_disabled.tres" id="5_6kn8q"]
-[ext_resource type="FontFile" path="res://resources/fonts/MedievalSharp-Regular.ttf" id="6_font"]
-[ext_resource type="FontFile" path="res://resources/fonts/RobotoCondensed-VariableFont_wght.ttf" id="7_font"]
+[ext_resource type="StyleBox" uid="uid://b6pmxlfy8xrn2" path="res://resources/themes/button_primary.tres" id="3_pudtw"]
+[ext_resource type="StyleBox" uid="uid://b66un13e0502r" path="res://resources/themes/button_primary_pressed.tres" id="3_uocvm"]
+[ext_resource type="StyleBox" uid="uid://d13ojkcc4ssv4" path="res://resources/themes/button_primary_disabled.tres" id="5_6kn8q"]
+[ext_resource type="FontFile" uid="uid://b6q6irvwv0uyg" path="res://resources/fonts/MedievalSharp-Regular.ttf" id="6_font"]
+[ext_resource type="FontFile" uid="uid://di5l3rf27vxbh" path="res://resources/fonts/RobotoCondensed-VariableFont_wght.ttf" id="7_font"]
 [ext_resource type="PackedScene" path="res://ui/level_up_panel.tscn" id="8_level_up"]
 
 [node name="DungeonSummary" type="Control" unique_id=1460587252]
@@ -63,8 +63,17 @@ horizontal_alignment = 1
 [node name="BpLabel" type="Label" parent="VBox" unique_id=1499032464]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("7_font")
-theme_override_font_sizes/font_size = 24
+theme_override_font_sizes/font_size = 32
 horizontal_alignment = 1
+
+[node name="ReagentLabel" type="Label" parent="VBox"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_override_fonts/font = ExtResource("7_font")
+theme_override_font_sizes/font_size = 32
+horizontal_alignment = 1
+autowrap_mode = 3
 
 [node name="LevelUpPanel" parent="VBox" instance=ExtResource("8_level_up")]
 layout_mode = 2

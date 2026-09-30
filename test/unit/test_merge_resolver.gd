@@ -114,6 +114,30 @@ func test_a_group_with_no_merge_options_is_left_alone() -> void:
 	assert_bool(_board._resolver.is_processing).is_false()
 
 
+func test_a_variant_option_says_how_many_of_its_reagent_are_left() -> void:
+	var ice := ReagentDefinition.new()
+	ice.id = "__test_ice"
+	ice.name = "Test Ice"
+	var frost := _item("__test_frost", null)
+	var variant := ReagentVariant.new()
+	variant.result = frost
+	variant.reagent = ice
+	_ore.reagent_variants = [variant]
+	GameManager.add_reagent("__test_ice", 1)
+	_lay_row(_ore, [0, 0])
+	_grid.place_item(RecipeResolver.make_item(_ore, 0), Vector2i(2, 0))
+	var popup: PopupPanel = _board.find_children("*", "PopupPanel", true, false)[0]
+	var frames := 0
+	while not popup.visible and frames < MAX_FRAMES:
+		await get_tree().process_frame
+		frames += 1
+	var texts: Array = []
+	for button: Button in popup.find_children("*", "Button", true, false):
+		if not button.is_queued_for_deletion():
+			texts.append(button.text)
+	assert_array(texts).is_equal(["__test_ingot", "__test_frost (1 Test Ice left)"])
+
+
 # Fills row 0 from column 0 without triggering detection.
 func _lay_row(def: ItemDefinition, qualities: Array) -> void:
 	for col in range(qualities.size()):

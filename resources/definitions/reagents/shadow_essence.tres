@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="ReagentDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/reagent_definition.gd" id="1_reagent"]
+[ext_resource type="Texture2D" path="res://resources/sprites/items/fire_essence.png" id="2_sprite"]
+
+[resource]
+script = ExtResource("1_reagent")
+id = "shadow_essence"
+name = "Shadow Essence"
+cost = 0
+min_shop_level = 6
+description = "A wisp of living shadow, found only in the dark below."
+sprite = ExtResource("2_sprite")

@@ -6,6 +6,8 @@ class_name SessionPlan
 var customers: Array[ShopCustomer] = []
 # Null when no market modifier rolled.
 var modifier: SessionModifierDefinition
+# The contracts prep offers before this session.
+var contract_offers: Array[ContractDefinition] = []
 
 
 func setup(dealt: Array[ShopCustomer], rolled: SessionModifierDefinition) -> SessionPlan:

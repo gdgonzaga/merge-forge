@@ -148,6 +148,8 @@ func _build_options(item_id: String) -> Array[Dictionary]:
 			"is_variant": true,
 			"reagent_id": variant.reagent.id,
 			"reagent_cost": variant.reagent.cost,
+			"reagent_name": variant.reagent.name,
+			"reagent_left": int(GameManager.reagent_inventory.get(variant.reagent.id, 0)),
 		})
 	return all_options
 

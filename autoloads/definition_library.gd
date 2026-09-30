@@ -17,6 +17,7 @@ var customers: Dictionary = {}
 var dungeons: Dictionary = {}
 var shop_rules: Dictionary = {}
 var modifiers: Dictionary = {}
+var contracts: Dictionary = {}
 
 
 func _ready() -> void:
@@ -50,6 +51,7 @@ func get_catalogs() -> Dictionary:
 		"dungeons": dungeons,
 		"shop_rules": shop_rules,
 		"modifiers": modifiers,
+		"contracts": contracts,
 	}
 
 
@@ -189,6 +191,20 @@ func get_all_modifiers() -> Array[SessionModifierDefinition]:
 	var result: Array[SessionModifierDefinition] = []
 	result.assign(modifiers.values())
 	result.sort_custom(func(a: SessionModifierDefinition, b: SessionModifierDefinition) -> bool:
+		return a.id < b.id
+	)
+	return result
+
+
+func get_contract(id: String) -> ContractDefinition:
+	return contracts.get(id, null)
+
+
+# Sorted by id, so a seeded offer can't depend on catalog load order.
+func get_all_contracts() -> Array[ContractDefinition]:
+	var result: Array[ContractDefinition] = []
+	result.assign(contracts.values())
+	result.sort_custom(func(a: ContractDefinition, b: ContractDefinition) -> bool:
 		return a.id < b.id
 	)
 	return result

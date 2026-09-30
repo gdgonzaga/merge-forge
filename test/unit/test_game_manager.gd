@@ -14,6 +14,8 @@ func test_default_state() -> void:
 	assert_array(GameManager.unlocked_blueprints).is_empty()
 	assert_dict(GameManager.reagent_inventory).is_empty()
 	assert_dict(GameManager.upgrade_levels).is_empty()
+	assert_dict(GameManager.regular_loyalty).is_empty()
+	assert_array(GameManager.active_contracts).is_empty()
 	assert_array(GameManager.shop_shelf_state).is_empty()
 	assert_int(GameManager.grid_cols).is_equal(5)
 	assert_int(GameManager.grid_rows).is_equal(5)
@@ -231,6 +233,30 @@ func _track(id: String, effect: String, values: Array[float]) -> UpgradeDefiniti
 	return upgrade
 
 
+# --- loyalty and contracts ---
+
+func test_loyalty_adds_up_per_customer() -> void:
+	GameManager.add_loyalty("__a", 2)
+	GameManager.add_loyalty("__a", 1)
+	GameManager.add_loyalty("__b", 4)
+	assert_int(GameManager.get_loyalty("__a")).is_equal(3)
+	assert_int(GameManager.get_loyalty("__b")).is_equal(4)
+	assert_int(GameManager.get_loyalty("__c")).is_equal(0)
+
+
+func test_loyalty_ignores_zero_and_negative_gains() -> void:
+	GameManager.add_loyalty("__a", 0)
+	GameManager.add_loyalty("__a", -2)
+	assert_dict(GameManager.regular_loyalty).is_empty()
+
+
+func test_contract_slots_default_to_none_until_bought() -> void:
+	set_definition(DefinitionLibrary.upgrades, _track("__test_board", "contract_slots", [1.0, 2.0]))
+	assert_int(GameManager.get_contract_slots()).is_equal(0)
+	GameManager.raise_upgrade_level("__test_board")
+	assert_int(GameManager.get_contract_slots()).is_equal(1)
+
+
 # --- save/load round-trip ---
 
 func test_serialize_deserialize_round_trip() -> void:
@@ -242,6 +268,8 @@ func test_serialize_deserialize_round_trip() -> void:
 	GameManager.raise_upgrade_level("__test_patience")
 	GameManager.shop_shelf_state = [{"col": 1, "row": 0, "item_id": "ore"}]
 	GameManager.record_session_played()
+	GameManager.add_loyalty("cust_x", 3)
+	GameManager.active_contracts = [{"id": "con_x", "delivered": {"ore": 2}, "sessions_left": 2}]
 
 	var saved := GameManager.serialize()
 	reset_game_state()

@@ -9,11 +9,12 @@ signal reagent_count_changed(id: String, count: int)
 signal grid_size_changed(cols: int, rows: int)
 
 const DEFAULT_GOLD := 50
-const SAVE_VERSION := 8
+const SAVE_VERSION := 9
 const DEFAULT_DESPAWN_TIME := 12.0
 const DEFAULT_CRATE_COST_MULTIPLIER := 1.0
 const DEFAULT_SHELF_SLOTS := 0
 const DEFAULT_ORDER_PRICE_MULTIPLIER := 1.0
+const DEFAULT_CONTRACT_SLOTS := 0
 
 var debug_mode: bool = false
 var gold: int = DEFAULT_GOLD
@@ -32,6 +33,12 @@ var grid_rows: int = 5
 # sessions_played also gates the ad grace period, so it counts completed sessions only.
 var run_seed: int = 0
 var sessions_played: int = 0
+# Regular's customer id -> loyalty points. Never decreases; only customers
+# with a loyalty track earn points (ShopSession decides).
+var regular_loyalty: Dictionary = {}
+# Accepted contracts, oldest first: {id, delivered: {item_id: count},
+# sessions_left}. An entry is removed when its contract completes or expires.
+var active_contracts: Array = []
 # UI-state flag, not core progression. Optional in the save: is_valid_save()
 # does NOT check it, so older saves lacking the field load with false.
 var seen_intro: bool = false
@@ -100,6 +107,17 @@ func record_session_played() -> void:
 	sessions_played += 1
 
 
+func get_loyalty(customer_id: String) -> int:
+	return int(regular_loyalty.get(customer_id, 0))
+
+
+# Loyalty never goes down, which is what makes each gift one-time.
+func add_loyalty(customer_id: String, points: int) -> void:
+	if points <= 0:
+		return
+	regular_loyalty[customer_id] = get_loyalty(customer_id) + points
+
+
 # Fixed for a given run and session number, so the next session can be
 # previewed in prep. A crash mid-session deals the same customers on replay,
 # unless shop XP (saved mid-session) crossed a level that unlocks an
@@ -130,6 +148,10 @@ func get_shelf_slots() -> int:
 
 func get_order_price_multiplier() -> float:
 	return _purchased_upgrade_value("order_price", DEFAULT_ORDER_PRICE_MULTIPLIER)
+
+
+func get_contract_slots() -> int:
+	return int(_purchased_upgrade_value("contract_slots", DEFAULT_CONTRACT_SLOTS))
 
 
 # How many customers the prep forecast reveals; 0 means every one.
@@ -164,6 +186,8 @@ func serialize() -> Dictionary:
 		"grid_rows": grid_rows,
 		"run_seed": run_seed,
 		"sessions_played": sessions_played,
+		"regular_loyalty": regular_loyalty,
+		"active_contracts": active_contracts,
 		"seen_intro": seen_intro,
 	}
 
@@ -179,7 +203,7 @@ func is_valid_save(data: Dictionary) -> bool:
 	if not _is_number(data.get("shop_xp")): return false
 	if not (data.get("unlocked_blueprints") is Array): return false
 	if not (data.get("reagent_inventory") is Dictionary): return false
-	if not _is_valid_upgrade_levels(data.get("upgrade_levels")): return false
+	if not _is_valid_counts(data.get("upgrade_levels")): return false
 	if not _is_valid_board_state(data.get("shop_board_state")): return false
 	if not _is_valid_board_state(data.get("shop_shelf_state")): return false
 	if not _is_valid_board_state(data.get("dungeon_board_state")): return false
@@ -187,20 +211,47 @@ func is_valid_save(data: Dictionary) -> bool:
 	if not _is_number(data.get("grid_rows")): return false
 	if not _is_number(data.get("run_seed")): return false
 	if not _is_number(data.get("sessions_played")): return false
+	if not _is_valid_counts(data.get("regular_loyalty")): return false
+	if not _is_valid_contracts(data.get("active_contracts")): return false
 	return true
 
 
-# Upgrade id -> level; the level is a number (JSON makes it a float).
-static func _is_valid_upgrade_levels(value: Variant) -> bool:
+# Id -> a whole number >= 0 (upgrade levels, loyalty points, delivered counts).
+static func _is_valid_counts(value: Variant) -> bool:
 	if not value is Dictionary:
 		return false
-	for level: Variant in value.values():
-		if not _is_number(level):
-			return false
-		var level_num: float = level
-		if level_num < 0.0 or level_num != floor(level_num):
+	for count: Variant in value.values():
+		if not _is_whole_at_least(count, 0):
 			return false
 	return true
+
+
+# Entries are {id, delivered: {item_id: count}, sessions_left}. An expired
+# contract is removed, so a saved one has at least 1 session left.
+static func _is_valid_contracts(value: Variant) -> bool:
+	if not value is Array:
+		return false
+	var seen_ids: Dictionary = {}
+	for entry: Variant in value:
+		if not entry is Dictionary or not entry.get("id") is String:
+			return false
+		var contract_id: String = entry["id"]
+		if seen_ids.has(contract_id):
+			return false
+		seen_ids[contract_id] = true
+		if not _is_valid_counts(entry.get("delivered")):
+			return false
+		if not _is_whole_at_least(entry.get("sessions_left"), 1):
+			return false
+	return true
+
+
+# A whole number no lower than `minimum` (JSON makes it a float), never a bool.
+static func _is_whole_at_least(value: Variant, minimum: int) -> bool:
+	if not _is_number(value):
+		return false
+	var number: float = value
+	return number >= minimum and number == floor(number)
 
 
 # Board entries are {col, row, item_id, quality}; item data is rebuilt from the catalog.
@@ -251,7 +302,23 @@ func deserialize(data: Dictionary) -> void:
 	grid_rows = data.get("grid_rows", 5)
 	run_seed = int(data["run_seed"]) if data.has("run_seed") else randi()
 	sessions_played = int(data.get("sessions_played", 0))
+	regular_loyalty = {}
+	var saved_loyalty: Dictionary = data.get("regular_loyalty", {})
+	for customer_id: String in saved_loyalty:
+		regular_loyalty[customer_id] = int(saved_loyalty[customer_id])
+	active_contracts = []
+	for entry: Dictionary in data.get("active_contracts", []):
+		active_contracts.append(_contract_entry(entry))
 	seen_intro = data.get("seen_intro", false)
 	gold_changed.emit(gold)
 	shop_xp_changed.emit(shop_xp)
 	grid_size_changed.emit(grid_cols, grid_rows)
+
+
+# JSON turns counts into floats; the rest of the game expects ints.
+static func _contract_entry(entry: Dictionary) -> Dictionary:
+	var delivered := {}
+	var saved: Dictionary = entry["delivered"]
+	for item_id: String in saved:
+		delivered[item_id] = int(saved[item_id])
+	return {"id": entry["id"], "delivered": delivered, "sessions_left": int(entry["sessions_left"])}

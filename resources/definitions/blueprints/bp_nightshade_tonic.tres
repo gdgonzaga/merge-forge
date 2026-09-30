@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="BlueprintDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/blueprint_definition.gd" id="1_bp"]
+
+[resource]
+script = ExtResource("1_bp")
+id = "bp_nightshade_tonic"
+name = "Nightshade Tonic Blueprint"
+cost = 1200
+min_shop_level = 12

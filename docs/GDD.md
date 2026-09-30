@@ -26,7 +26,9 @@
 - Fixed recipe tree with player choice (2–4 options per merge)
 - Blueprint system gating recipe branches
 - 2 material families in MVP gameplay (Metal, Herb), each with a 4-step merge chain defined on the item definitions. Gem and Wood families have the family key reserved in data (`"gem"`, `"wood"`) but no items are defined yet.
-- 1 reagent in MVP (Fire Essence) creating variant items as merge options for final-stage merges
+- Reagents: Fire Essence (bought in prep) plus Ice, Shadow and Holy Essence (dungeon-only, from Goblin Cave clears), each making a variant item as a merge option
+- Regulars: loyalty tracks on the 10 named customers
+- Contracts: multi-session orders from regulars
 - Shop mode: 10-customer sessions with order fulfillment
 - Shop level: 60 levels from XP that never decreases; every unlock (customer archetype, dungeon, blueprint, crate, reagent) is a `min_shop_level` on its definition
 - Economy: gold, material crates, reagent purchases, shop upgrades
@@ -54,11 +56,10 @@
 
 ### Deferred to Later Versions
 
-- Additional dungeons beyond the first
+- Additional dungeons beyond the first. Shadow and Holy Essence should move to their own dungeons once there are more (Phase 7 ships all three from the Goblin Cave).
 - Gem and Wood material families (family keys reserved: `"gem"`, `"wood"`; no items defined yet)
 - Party Abilities / Active Skills (auto-attack only for MVP)
 - Dungeon Mid-Exit Penalty (MVP wipes all partial progress)
-- Additional reagent types beyond Fire Essence (Ice, Shadow, Holy)
 - Equipment Durability / Repair mechanic — party equipment wears during dungeon raids, player crafts repair items (usable item type: `repair`)
 - Timed events or daily challenges
 - Board themes / cosmetics
@@ -262,17 +263,20 @@ The curve is a power law: XP from level k to k+1 is `round(level_xp_base x k^lev
 | 3 | Customers: Garrick, Maelys. Crate: Metal Crate |
 | 4 | Blueprint: Healing Potion |
 | 5 | Customer: Ysolde |
-| 6 | Dungeon: Goblin Cave. Blueprint: Battle Elixir |
+| 6 | Dungeon: Goblin Cave. Blueprint: Battle Elixir. Reagents: Ice, Shadow and Holy Essence (Goblin Cave drops) |
 | 7 | Blueprint: Bomb |
 | 8 | Customers: Ser Roland, Caelum. Blueprint: Sword |
-| 10 | Blueprint: Iron Shield |
-| 12 | Blueprint: Cluster Bomb. Reagent: Fire Essence |
-| 14 | Customers: Ser Kaelen, Veska. Blueprints: Flame Sword, Phoenix Draught |
+| 10 | Blueprint: Iron Shield. Upgrade: Contract Board. Contracts: Brom's Ingot Run, Mira's Tonic Stock, Hilda's Inn Supplies |
+| 12 | Blueprints: Cluster Bomb, Nightshade Tonic. Reagent: Fire Essence. Contract: Garrick's Caravan Load |
+| 14 | Customers: Ser Kaelen, Veska. Blueprints: Flame Sword, Phoenix Draught. Contracts: Ser Roland's Arms, Caelum's Night Watch |
 | 16 | Blueprint: Fire Bomb |
-| 18 | Customer: Odile (Connoisseur) — Fine metal |
+| 18 | Customer: Odile (Connoisseur) — Fine metal. Blueprint: Frost Blade. Contract: Ysolde's Fine Tonics |
+| 20 | Blueprint: Holy Draught. Contract: Ser Kaelen's Frost Guard |
+| 22 | Contract: Veska's Blessed Stock |
 | 24 | Customer: Borin (Guild Quartermaster) — bulk Fine |
+| 26 | Contract: Maelys's Fine Bulk |
 | 32 | Customer: Lady Maren (Royal Armorer) — Masterwork, rare, `price_multiplier` 1.3 |
-| 17–60 (except 18, 24, 32 above) | Empty until Phases 4–8 of `tmp/shop-improvements/` fill them in |
+| Other levels 17–60 | No new catalog unlocks yet; existing upgrade tracks may still add levels |
 
 ### What Persists Between Sessions
 
@@ -281,6 +285,8 @@ The curve is a power law: XP from level k to k+1 is `round(level_xp_base x k^lev
 - Blueprints unlocked
 - Upgrade levels bought (`upgrade_levels`, upgrade id to level)
 - Reagent inventory (Dictionary[String, int])
+- Loyalty per regular (`regular_loyalty`)
+- Accepted contracts and their progress (`active_contracts`)
 - Board state (items on grid carry over)
 - Display shelf contents (`shop_shelf_state`; shop only)
 - Grid size (if upgraded)
@@ -294,18 +300,18 @@ The curve is a power law: XP from level k to k+1 is `round(level_xp_base x k^lev
 - Does NOT have: Animated background, settings menu, credits, ads
 
 ### Shop Mode (In-Game)
-- **Top:** Customer queue — current customer portrait + 1–3 order cards showing item icons and quantities + reject button. On the left side, the current customer's image is shown, with a "Reject" button at the bottom. On the right side, their 1–3 orders are stacked vertically, each showing item icon, quantity, and gold reward. Tapping an order card fulfills it. **Parked:** Show silhouette of other customers behind the current customer, with random movements (just horizontal movements).
+- **Top:** Customer queue — current customer portrait, loyalty title and points under the name, 1–3 order cards showing item icons and quantities, plus a reject button. On the left side, the current customer's image is shown, with a "Reject" button at the bottom. On the right side, their 1–3 orders are stacked vertically, each showing item icon, quantity, and gold reward. Tapping an order card fulfills it. A Contracts button opens a delivery sheet showing progress, stock and a one-item "Give 1" action. **Parked:** Show silhouette of other customers behind the current customer, with random movements (just horizontal movements).
 - **Center-left:** Merge board (5x5 grid, up to 6x6 with Board Expansion). Under it, once Display Shelf is bought, a one-row display shelf (2, 4 or 6 slots) that stores finished goods: items on it never merge or despawn, the player can drag items between the board and the shelf, and orders are filled from the shelf first. Staging area below the shelf.
 - **Right side:** CratePanel — VBoxContainer with crate buy buttons populated from the level-unlocked crate definitions and a discard trash bin below.
 - **Overlay (CanvasLayer):** HUD — gold, shop level and XP bar (always visible during gameplay)
 - Does NOT have: Timer, health bar, pause button
 
 ### Session Summary
-- Elements: Gold earned counter (animated count-up), XP earned, items sold list, fulfilled count, rejected count, satisfied/disappointed customer portraits, a level-up panel (shown only if a level was crossed), Continue button
+- Elements: Gold earned counter (animated count-up), XP earned, items sold list, fulfilled count, rejected count, satisfied/disappointed customer portraits, notes for loyalty gifts, contract completions and expiries, a level-up panel (shown only if a level was crossed), Continue button
 - Does NOT have: Star rating, share button
 
 ### Prep Phase
-- Elements: TabContainer with tabs — **Forecast** (first, default tab: previews the next session exactly as the shop will deal it — a market modifier card, shown only when a modifier rolled, with its icon, name and description; demand by item family, largest share first; and portraits for the first `forecast_customers` (3) customers), Blueprints (buy blueprints), Upgrades (buy upgrades and reagents). Upgrade cards read "Name (k/N)" (levels bought of the track's N), show the next level's value ("Next: ...") and cost, "Max" once every level is bought, and "Unlocks at level N" while the next level is level-locked; buying an upgrade buys its next level. With Town Crier the forecast reveals that level's customer count (5 or 8), and at the top level every customer plus their orders. Material crates are purchased during shop sessions. Board rearrange deferred to post-MVP. Locked entries are greyed with "Unlocks at level N"; the dungeon button reads "Dungeon (Lv N)" while locked. The forecast refreshes whenever a purchase or level-up could change what's craftable (blueprint bought, reagent count changed, level crossed, upgrade bought).
+- Elements: TabContainer with tabs — **Forecast** (first, default tab: previews the next session exactly as the shop will deal it — a market modifier card, shown only when a modifier rolled, with its icon, name and description; demand by item family, largest share first; and portraits for the first `forecast_customers` (3) customers), **Contracts** (second: next-session offers, slots, acceptance and in-progress orders), Blueprints (buy blueprints), Upgrades (buy upgrades) and Reagents (purchasable reagents plus disabled "Dungeon only" cards naming their drop dungeon). Upgrade cards read "Name (k/N)" (levels bought of the track's N), show the next level's value ("Next: ...") and cost, "Max" once every level is bought, and "Unlocks at level N" while the next level is level-locked; buying an upgrade buys its next level. With Town Crier the forecast reveals that level's customer count (5 or 8), and at the top level every customer plus their orders. Material crates are purchased during shop sessions. Board rearrange deferred to post-MVP. Locked entries are greyed with "Unlocks at level N"; the dungeon button reads "Dungeon (Lv N)" while locked. The forecast refreshes whenever a purchase or level-up could change what's craftable (blueprint bought, reagent count changed, level crossed, upgrade bought).
 - **Overlay (CanvasLayer):** HUD — gold, shop level and XP bar (always visible during gameplay)
 - **Bottom:** Continue button → start next session or enter dungeon. Quit button (with confirmation) → return to Main Menu.
 - Does NOT have: Timer, limited item slots
@@ -328,13 +334,13 @@ The curve is a power law: XP from level k to k+1 is `round(level_xp_base x k^lev
 - Does NOT have: Manual attack button, movement controls, inventory screen
 
 ### Dungeon Cleared Summary Screen
-- Elements: Gold reward, blueprint reward (if any), "XP: +N", a level-up panel (shown only if a level was crossed), Continue button
+- Elements: Gold reward, blueprint reward (if any), reagent drops, "XP: +N", a level-up panel (shown only if a level was crossed), Continue button
 
 ### Dungeon Failed Summary Screen
 - Elements: "Party Wiped" message, "No XP", Continue button
 
 ### Merge Choice Popup
-- Elements: Compact panel with 2–4 buttons, each showing item icon and name. Variant options show the reagent icon badge if a reagent is consumed.
+- Elements: Compact panel with 2–4 buttons, each showing item icon and name. Variant options show the reagent icon badge and "N <reagent> left" stock count; bought reagents also show their price.
 - Behavior: Appears immediately when merge triggers with 2+ options (or base + variants). Combat continues while popup is open (dungeon mode). Player must choose to proceed.
 - Does NOT have: Cancel button, timer
 
@@ -437,6 +443,8 @@ Effects in *italics* are defined but not applied yet: CombatEngine only runs `he
 | healing_potion | Healing Potion | 280 | 3x herbal_tonic (bp_healing_potion) | Heal 90 |
 | battle_elixir | Battle Elixir | 280 | 3x herbal_tonic (bp_battle_elixir) | *Next 3 attacks crit* |
 | phoenix_draught | Phoenix Draught | 480 | 3x herbal_tonic + fire_essence (bp_phoenix_draught) | *Revive a KO'd member at 50% HP* |
+| holy_draught | Holy Draught | 560 | 3x herbal_tonic + holy_essence (bp_holy_draught) | Heal 150 |
+| nightshade_tonic | Nightshade Tonic | 200 | 3x herb_bundle + shadow_essence (bp_nightshade_tonic) | Heal 45 |
 
 **Metal family (buffs):**
 
@@ -448,6 +456,7 @@ Effects in *italics* are defined but not applied yet: CombatEngine only runs `he
 | sword | Sword | 280 | 3x iron_plate (bp_sword) | +4 ATK for 20s |
 | iron_shield | Iron Shield | 280 | 3x iron_plate (bp_iron_shield) | *60 HP absorb shield* |
 | flame_sword | Flame Sword | 480 | 3x iron_plate + fire_essence (bp_flame_sword) | +8 ATK for 20s |
+| frost_blade | Frost Blade | 560 | 3x iron_plate + ice_essence (bp_frost_blade) | +8 ATK for 20s |
 
 **Powder family (damage):**
 
@@ -464,6 +473,9 @@ Effects in *italics* are defined but not applied yet: CombatEngine only runs `he
 | item_id | Name | Price | Notes |
 |---------|------|-------|-------|
 | fire_essence | Fire Essence | 100g | Bought in prep phase. Stored in reagent_inventory. |
+| ice_essence | Ice Essence | Dungeon only | Goblin Cave clear, 50% chance for 1. Stored in reagent_inventory. |
+| shadow_essence | Shadow Essence | Dungeon only | Goblin Cave clear, 50% chance for 1. Stored in reagent_inventory. |
+| holy_essence | Holy Essence | Dungeon only | Goblin Cave clear, 35% chance for 1. Stored in reagent_inventory. |
 
 **Deferred (data-only, not in MVP gameplay):**
 
@@ -486,7 +498,7 @@ Effects in *italics* are defined but not applied yet: CombatEngine only runs `he
 - **Target Android API:** 36, which Google Play requires for new apps and updates from 2026-08-31. The export preset is still at 33 and must be raised before release.
 - **Ad integration:** AdMob interstitials only (see Submodule — Ads). Requires the INTERNET permission (currently off in the export preset) and a Gradle build (already on).
 - **Consent (UMP/TCF):** Yes. Google's UMP consent message runs on launch before any ad request, and there's an in-game "Privacy choices" entry point. Store and account setup is in `docs/ADS-COMPLIANCE.md`.
-- **Save system:** Yes — single JSON file (`user://save_data.json`), auto-save at checkpoints. `SAVE_VERSION` 8: every board entry (shop board, shelf, dungeon board) carries `quality` (0 Normal, 1 Fine, 2 Masterwork); a missing or out-of-range `quality` makes that save CORRUPT. Older saves load as CORRUPT
+- **Save system:** Yes — single JSON file (`user://save_data.json`), auto-save at checkpoints. `SAVE_VERSION` 9 adds `regular_loyalty` and `active_contracts`. This is a breaking schema change; older saves load as CORRUPT.
 - **In-app purchases:** Not for v1.0 (paid ad removal is in `docs/TODO.md`)
 - **Performance targets:** 60fps on mid-range Android devices
 - **Rendering:** 2D, mobile renderer
@@ -740,17 +752,55 @@ For reagent variants (items with entries in reagent_combos.json), see Reagent Va
 
 ---
 
+### Submodule — Regulars & Contracts
+
+**What it does:**
+Named customers build loyalty as their orders are fulfilled. Three one-time gift thresholds add gold, blueprints or reagents. Contracts let players deliver fixed item quantities over several shop sessions for gold and giver loyalty.
+
+**What triggers it:**
+An order fulfilment earns loyalty; a threshold grants its gift. Prep rolls the next session's contract offers and accepts contracts while slots are available. The shop's Contracts sheet takes one item per delivery. Ending a session reduces remaining time on unfinished contracts.
+
+**Inputs:**
+- `CustomerDefinition.loyalty_rewards`, `ContractDefinition` and `ShopRulesDefinition` content
+- Current loyalty, accepted contracts, board and shelf state in GameManager
+- The next `SessionPlan`, including its seeded contract offers
+- The Contract Board upgrade's `contract_slots` effect
+
+**Outputs:**
+- Updated loyalty points, titles, one-time gifts and inventory
+- Accepted contract progress, delivery rewards or expiry
+- Session summary notes for gifts, completions and expiries
+- A mid-session save that includes spent board and shelf items with contract progress
+
+**States / Logic:**
+1. A regular with a loyalty track earns `loyalty_per_order` points on a normal order or `loyalty_per_quality_order` on a Fine or better order; reaching a new threshold grants its gift once. An owned blueprint gift pays its gold cost instead.
+2. Each eligible contract gets a stable seeded exponential-race key; the lowest two keys form the next-session offers. The giver must be unlocked and every required item craftable now or with one currently buyable blueprint. Dungeon-only variants require stock to count as reachable.
+3. Buying Contract Board levels opens one, two and three slots. Prep accepts an offered contract into a free slot and saves it with its full session allowance.
+4. The shop sheet shows each required item's delivered count and available stock. "Give 1" takes one qualifying item from the shelf or board, and "Give N" takes the currently available quantity. When every requirement is met, it grants gold, any allowed reagent reward and giver loyalty, removes the contract and writes a summary note.
+5. At session end, each unfinished contract loses one session. A contract with no sessions left expires and frees its slot; a still-active contract retains its delivered counts.
+
+**Fixed values:**
+- Loyalty thresholds are 5 "Familiar Face", 15 "Regular" and 30 "Old Friend" for each of the ten named regulars. Orders earn 1 point, or 2 for quality orders. Gift contents live in each customer's `.tres` definition.
+- Prep offers 2 contracts per session. Contract Board costs 2000g at level 10 for 1 slot, 5000g at level 20 for 2 slots, and 9000g at level 36 for 3 slots.
+- The ten shipped contracts open from level 10 to 26, allow two or three sessions, and pay 220–1500g plus 3–5 giver loyalty points. Exact requirements and rewards live in `resources/definitions/contracts/`.
+
+**Does NOT:**
+- Punish a rejected customer or allow abandoning an accepted contract
+- Grant dungeon-only reagents or blueprints from repeatable contracts
+- Add a timer to contracts; only completed shop sessions reduce their allowance
+
+---
+
 ### Submodule — Reagent Variants
 
 **What it does:**
-When a merge produces an item that has a reagent combo definition in `reagent_combos.json`, the merge choice popup includes variant options alongside the base result if the player owns both the required blueprint and the corresponding reagent. Selecting a variant consumes the reagent from inventory and produces the variant item.
+When a source item has a `ReagentVariant` definition, the merge choice popup includes variant options alongside its base results if the player owns both the required blueprint and reagent. Selecting a variant consumes the reagent from inventory and produces the variant item.
 
 **What triggers it:**
-A merge completes and the result item has entries in `reagent_combos.json`. The system checks for applicable variants and adds them as additional options.
+A merge completes on a source item with reagent variants. The resolver checks the definitions and adds applicable options.
 
 **Inputs:**
-- The item_id of the merge result (base item)
-- Reagent combo definitions from reagent_combos.json
+- The source `ItemDefinition` and its `reagent_variants`
 - Blueprint ownership from GameManager.unlocked_blueprints
 - Reagent inventory from GameManager.reagent_inventory
 
@@ -764,12 +814,12 @@ A merge completes and the result item has entries in `reagent_combos.json`. The 
 On merge producing a variant-eligible item:
 1. Resolve base merge result(s) as normal
 2. For each base result option:
-   a. Look up combos in reagent_combos.json matching the base item
+   a. Read the source item's `reagent_variants`
    b. For each combo:
       - Check required blueprint is unlocked
       - Check player has >= 1 of the required reagent
       - If both → add variant as additional merge option
-3. Present all options (base + variants) in merge choice popup
+3. Present all options (base + variants) in merge choice popup, with the stock count "N <reagent> left" on each variant and the price for a bought reagent
 4. Player selects one:
    a. If base result → place as normal
    b. If variant → consume 1 reagent, place variant item
@@ -780,16 +830,19 @@ On merge producing a variant-eligible item:
 | Variant | Base + Reagent | Result | Blueprint Required |
 |---------|----------------|--------|-------------------|
 | Flame Sword | iron_plate + fire_essence | flame_sword | bp_flame_sword |
+| Frost Blade | iron_plate + ice_essence | frost_blade | bp_frost_blade |
+| Holy Draught | herbal_tonic + holy_essence | holy_draught | bp_holy_draught |
+| Nightshade Tonic | herb_bundle + shadow_essence | nightshade_tonic | bp_nightshade_tonic |
 | Flame Staff | staff + fire_essence | flame_staff | bp_flame_staff *(deferred — Wood family)* |
 
 **Does NOT:**
-- Apply to items without reagent combo definitions in reagent_combos.json
+- Apply to items without `ReagentVariant` entries
 - Require reagents to be placed on the board
 - Auto-apply reagents — player must actively choose the variant
 - Consume reagents if the base result is chosen
 
 **GDD dependencies:**
-- Reads reagent_combos.json
+- Reads `ItemDefinition.reagent_variants`
 - Reads GameManager.unlocked_blueprints
 - Reads/writes GameManager.reagent_inventory
 - Affects Merge System (adds options to merge choice popup)
@@ -955,6 +1008,7 @@ The player leaving a summary screen for the prep phase: the Session Summary's Co
 | 2026-09-28 | Demand forecast shipped: market modifiers, Forecast tab | Reverses the 2026-06-04 "Demand forecast deferred" entry. The modifier rolls on its own RNG stream (`hash([session_seed, "modifier"])`), before the customers are dealt and independent of the customer RNG (still seeded by `session_seed` alone) — the spec's "roll after dealing" would let a modifier's customer-weight and session-size effects reshuffle who gets dealt; rolling first, on a separate stream, means adding a modifier to the catalog never reshuffles a seed's customers when the rolled modifier has no customer effects. A modifier's `family` field empty means it affects every item (Festival); other modifiers name a family key such as `"herb"`. Crate cost under a modifier is `cost x modifier x discount`, rounded down once and clamped to at least 1g (`max(floor(... + 0.0001), 1)`, the epsilon guarding float error like `30 x 0.7 == 20.999...`). The Forecast tab is the first, default prep tab, since planning is what prep is for; it shows the market modifier (if any), demand by item family, and the first `forecast_customers` (3) customers of the next session exactly as the shop will deal it, refreshing whenever a purchase or level-up could change what's craftable. Five modifiers ship (Herb Shortage L5, Festival L8, Iron Glut L12, Knights' Tournament L18, Caravan Day L25), checked by the economy sim's `_print_modifiers()`: no modifier pushes an item's margin from 1.0 or more down under 1.0. |
 | 2026-09-28 | Leveled upgrade tracks and the display shelf | Upgrades are tracks of levels (`UpgradeDefinition.levels: Array[UpgradeLevel]`), so they keep absorbing gold for the long haul; buying an upgrade buys its next level, and `GameManager.upgrade_levels` replaces `purchased_upgrades` (`SAVE_VERSION` 7, breaking: old saves load as CORRUPT). Three new tracks: Display Shelf, Town Crier and Shop Signage. The shelf is a second `BoardGrid` inside `MergeBoard` with merges off (a spike beat a custom shelf widget), so drag and drop between board and shelf reuses the board's code; the shop only talks to `MergeBoard`. A shrinking shelf never loses items: saved items past its end go to the board, else staging. Town Crier starts at 5, not the spec's 3, because the free forecast already shows 3; a level value of 0 means every customer, and revealing every customer also shows their orders, so no "top level" flag is needed in data. Shop Signage multiplies inside the customer generator, where order gold is computed and rounded once, so the order card, the forecast and the payout agree. The level-up panel doesn't list upgrade levels: it lists catalog entries with a top-level `min_shop_level`, and upgrades gate per level. Layout: with a 6-slot shelf and a 3-order customer the shop screen leaves the merge board 1202 px at 1080x1920, and a 6x7 board (968 px tall) plus the shelf, staging and padding needs 1332 (still over 1202 with the padding cut to nothing), so Board Expansion stops at 6x6 (its 6x7 level was cut). `merge_board.tscn` padding was trimmed and the board area now sizes to its grid; 6x6 with a 6-slot shelf fits at 1080x1920 and 1080x2520 with 128 px cells. Sim: level costs retuned so buying every blueprint and every upgrade level takes about 52 best-case sessions (target 40-60, was about 72), with unlock levels spread from 1 to 55. That pace is gold only: the level curve, not gold, sets when every upgrade can be maxed, since best play reaches level 50 around session 330 and level 55 around session 418; the gates are kept on purpose so something still unlocks through the 50s. |
 | 2026-09-29 | Item quality replaces the merge gold bonus | The free-gold bonus loop (`calculate_bonus_gold`, bonus coins, the merge "+N" float) is gone for good. A board item is `{item_id, definition, quality}` (0 Normal, 1 Fine, 2 Masterwork; `ItemDefinition.MAX_QUALITY`/`QUALITY_NAMES`), made by `RecipeResolver.make_item(def, quality = 0)`; crates and drops still give Normal items. Merge detection ignores quality, so a mixed-quality group still merges as one; `board/quality_rules.gd.resolve()` sets the result to `min(2, floor(mean quality) + 1 if count >= 5)` and refunds the group's lowest-quality items (count % 3 of them) — the upgrade is paid for with the best inputs. Honestly, this doesn't close a farm or tax quality with extra materials: after the first 5-group, the 2 refunded Normal items are just the next pair for the following group, so each further Fine costs the same 3 inputs as a Normal result. "Lowest refunded" only stops a mixed group from minting quality for free; the real cost of quality is held stock and board space while five of an item assemble, plus the planning to get them there. A Fine or Masterwork result pops a star sparkle instead of gold, and a merge that drops quality below the group's best shows a floating "Fine lost" / "Masterwork lost" cue over the result cell (`MergeBoard.show_quality_lost`, `quality_lost` signal). The merge-choice popup names the predicted quality, but only appears for 2+ options and only after the merge is already committed — it is not a warning, and the display shelf is the only place a quality item is safe from an unwanted auto-merge. Skill now pays through premium orders instead of free gold: `OrderTemplate.min_quality` and `ShopRulesDefinition.quality_price_multipliers` price a quality want, and fulfillment (`BoardGrid.count_items_on_board`/`remove_items_by_id`, `MergeBoard.count_sellable`/`take_sellable`, all gaining `min_quality`) takes the lowest *qualifying* quality first, shelf before board within one quality. Three new archetypes ship at levels 18-32 (Odile the Connoisseur, Borin the Guild Quartermaster, Lady Maren the Royal Armorer), reusing existing customer portraits as placeholder art since no new art was commissioned for this phase. `SAVE_VERSION` 8, breaking: every board entry (shop board, shelf, dungeon board) now requires `quality`; old saves load as CORRUPT. Quality has no dungeon effect yet (dungeon drops stay Normal; quality still forms on the dungeon board since the resolver is shared, but a shop Fine potion can't reach the dungeon today) — see the deferred item in `docs/TODO.md`. Checked by `tmp/shop-improvements/sim/economy_sim.gd`, whose pricing didn't originally include the quality premium: once fixed, pace with the shipped archetype levels and weights came out to 28.7 best-case sessions, below the 40-60 target. Retuned by dropping Odile's and Borin's archetype weight from 2 to 1 and lowering `quality_price_multipliers` from `[1.0, 1.6, 2.8]` to `[1.0, 1.2, 1.5]` (levels held at 18/24/32); pace now lands at 40.3 best-case sessions. The spec's x1.6 / x2.8 gives 30.1 sessions and x1.1 / x1.3 gives 43.0; x1.2 / x1.5 is the largest premium that stays in the 40-60 band. |
+| 2026-09-29 | Regulars, contracts and dungeon-only essences | Ten named regulars gain 5/15/30-point loyalty tracks and one-time gifts. Contracts use the Contract Board's 1/2/3 slots and stable seeded offers; delivery and fulfilment save the board and shelf with progress. Repeatable contracts give no blueprint or dungeon-only reagent. Frost Blade, Holy Draught and Nightshade Tonic use Ice, Holy and Shadow Essence; all three drop from the Goblin Cave until future dungeons can separate them. Content uses placeholder sprites for the six new reagent and variant visuals. `SAVE_VERSION` 9 adds loyalty and active contracts, breaking old saves. The economy sim gives 41.1 best-case sessions (target 40–60), contract reward-to-goods ratios 1.33–1.38 (target 1.1–1.6), about 190 contract gold per best-case session, and the first dungeon-only order at level 12 / best-play session 15. |
 
 ---
 

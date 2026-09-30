@@ -160,6 +160,15 @@ func test_reagent_adds_one_and_charges_its_cost() -> void:
 	assert_int(GameManager.reagent_inventory.get("__test_reagent", 0)).is_equal(1)
 
 
+func test_a_reagent_that_is_not_for_sale_cannot_be_bought() -> void:
+	var reagent := ReagentDefinition.new()
+	reagent.id = "__test_reagent"
+	reagent.cost = 0
+	set_definition(DefinitionLibrary.reagents, reagent)
+	assert_bool(_purchases.buy_reagent("__test_reagent")).is_false()
+	assert_int(GameManager.reagent_inventory.get("__test_reagent", 0)).is_equal(0)
+
+
 func _level_rules() -> ShopRulesDefinition:
 	var rules := ShopRulesDefinition.new()
 	rules.id = "default"

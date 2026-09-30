@@ -11,5 +11,6 @@ class_name DungeonDefinition
 @export var encounters: Array[EncounterDefinition] = []
 @export var gold_reward: int = 0
 @export var blueprint_reward: BlueprintDefinition
+@export var reagent_rewards: Array[ReagentReward] = []
 # Shop XP for a clear; a wipe gives none.
 @export var xp_reward: int = 0

@@ -7,6 +7,11 @@
 [ext_resource type="Script" path="res://resources/definitions/customer_definition.gd" id="5_cust"]
 [ext_resource type="Texture2D" path="res://resources/sprites/portraits/customer_04.png" id="6_sprite"]
 
+[ext_resource type="Script" path="res://resources/definitions/loyalty_reward.gd" id="p7_loyalty"]
+[ext_resource type="Resource" path="res://resources/definitions/blueprints/bp_nightshade_tonic.tres" id="p7_gift15"]
+[ext_resource type="Resource" path="res://resources/definitions/reagents/shadow_essence.tres" id="p7_gift30"]
+[ext_resource type="Resource" path="res://resources/definitions/items/nightshade_tonic.tres" id="p7_want"]
+
 [sub_resource type="Resource" id="Resource_tonic"]
 script = ExtResource("1_tpl")
 item = ExtResource("2_tonic")
@@ -21,6 +26,31 @@ item = ExtResource("3_potion")
 script = ExtResource("1_tpl")
 item = ExtResource("4_elixir")
 
+[sub_resource type="Resource" id="Resource_loyalty_5"]
+script = ExtResource("p7_loyalty")
+points = 5
+title = "Familiar Face"
+gold = 150
+
+[sub_resource type="Resource" id="Resource_loyalty_15"]
+script = ExtResource("p7_loyalty")
+points = 15
+title = "Regular"
+blueprint = ExtResource("p7_gift15")
+
+[sub_resource type="Resource" id="Resource_loyalty_30"]
+script = ExtResource("p7_loyalty")
+points = 30
+title = "Old Friend"
+gold = 200
+reagent = ExtResource("p7_gift30")
+reagent_count = 1
+
+[sub_resource type="Resource" id="Resource_phase7_want"]
+script = ExtResource("1_tpl")
+item = ExtResource("p7_want")
+max_quantity = 2
+
 [resource]
 script = ExtResource("5_cust")
 id = "cust_04"
@@ -29,4 +59,5 @@ role = "Alchemist"
 sprite = ExtResource("6_sprite")
 min_shop_level = 5
 max_orders = 3
-wants = Array[ExtResource("1_tpl")]([SubResource("Resource_tonic"), SubResource("Resource_potion"), SubResource("Resource_elixir")])
+wants = Array[ExtResource("1_tpl")]([SubResource("Resource_tonic"), SubResource("Resource_potion"), SubResource("Resource_elixir"), SubResource("Resource_phase7_want")])
+loyalty_rewards = Array[ExtResource("p7_loyalty")]([SubResource("Resource_loyalty_5"), SubResource("Resource_loyalty_15"), SubResource("Resource_loyalty_30")])

@@ -8,6 +8,8 @@ class_name ShopRulesDefinition
 @export var modifier_chance: float = 0.0
 # How many of the next session's customers the prep forecast reveals.
 @export var forecast_customers: int = 3
+# How many contracts prep offers per session.
+@export var contract_offers: int = 2
 
 # Order price multiplier per required quality, indexed by min_quality
 # (Normal, Fine, Masterwork).
@@ -18,6 +20,9 @@ class_name ShopRulesDefinition
 @export var xp_per_gold: float = 0.5
 @export var streak_step: float = 0.1
 @export var streak_cap: float = 0.5
+# A quality order earns the higher loyalty amount for a regular.
+@export var loyalty_per_order: int = 1
+@export var loyalty_per_quality_order: int = 2
 # XP from level k to k+1 is level_xp_base x k^level_xp_exponent. A power law,
 # not geometric: income stops growing once content runs out, and a geometric
 # curve then makes every later level cost a fixed factor more sessions.

@@ -108,6 +108,28 @@ func test_an_order_is_filled_from_the_shelf() -> void:
 	assert_int(shelf.count_items_on_board("__test_item")).is_equal(0)
 
 
+func test_a_fulfil_is_saved_with_the_board_it_emptied() -> void:
+	GameManager.shop_board_state = [{"col": 0, "row": 0, "item_id": "__test_item", "quality": 0}]
+	var session := _start_session()
+	session.try_fulfill_order(0)
+	var saved: Dictionary = SaveManager.load_game_ex()["data"]
+	assert_array(saved["shop_board_state"]).is_empty()
+	assert_int(int(saved["gold"])).is_equal(110)
+
+
+func test_a_crate_purchase_saves_its_gold_and_board_items_together() -> void:
+	var session := _start_session()
+	assert_bool(session.try_buy_crate("__test_crate_l1")).is_true()
+	var saved: Dictionary = SaveManager.load_game_ex()["data"]
+	assert_int(int(saved["gold"])).is_equal(40)
+	var saved_board: Array = saved["shop_board_state"]
+	assert_int(saved_board.size()).is_equal(1)
+	if saved_board.is_empty():
+		return
+	assert_str(saved_board[0]["item_id"]).is_equal("__test_item")
+	assert_int(session.board.get_staging_area().get_child_count()).is_equal(0)
+
+
 func test_the_shelf_is_saved_at_the_end_of_the_session() -> void:
 	set_definition(DefinitionLibrary.shop_rules, _rules(1))
 	_give_shelf(2)

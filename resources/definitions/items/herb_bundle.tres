@@ -7,6 +7,10 @@
 [ext_resource type="Texture2D" path="res://resources/sprites/items/herb_bundle.png" id="3_sprite"]
 [ext_resource type="Script" path="res://resources/definitions/reagent_variant.gd" id="4_emah8"]
 
+[ext_resource type="Resource" path="res://resources/definitions/items/nightshade_tonic.tres" id="p7_result"]
+[ext_resource type="Resource" path="res://resources/definitions/reagents/shadow_essence.tres" id="p7_reagent"]
+[ext_resource type="Resource" path="res://resources/definitions/blueprints/bp_nightshade_tonic.tres" id="p7_blueprint"]
+
 [sub_resource type="Resource" id="Resource_effect"]
 script = ExtResource("1_effect")
 type = "heal"
@@ -15,6 +19,12 @@ value = 10
 [sub_resource type="Resource" id="Resource_hx8cx"]
 script = ExtResource("2_ak3kd")
 result = ExtResource("3_iu4hx")
+
+[sub_resource type="Resource" id="Resource_phase7_variant"]
+script = ExtResource("4_emah8")
+result = ExtResource("p7_result")
+reagent = ExtResource("p7_reagent")
+blueprint = ExtResource("p7_blueprint")
 
 [resource]
 script = ExtResource("2_item")
@@ -27,3 +37,4 @@ dungeon_use_target = "party-individual"
 effect = SubResource("Resource_effect")
 sprite = ExtResource("3_sprite")
 merge_results = Array[ExtResource("2_ak3kd")]([SubResource("Resource_hx8cx")])
+reagent_variants = Array[ExtResource("4_emah8")]([SubResource("Resource_phase7_variant")])

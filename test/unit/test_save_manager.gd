@@ -55,6 +55,74 @@ func test_load_wrong_version_returns_CORRUPT() -> void:
 	assert_int(r["status"]).is_equal(SaveManager.LoadStatus.CORRUPT)
 
 
+func test_load_previous_save_version_returns_CORRUPT() -> void:
+	var old_save := GameManager.serialize()
+	old_save["version"] = 8
+	_write_save_file(JSON.stringify(old_save))
+	assert_int(SaveManager.load_game_ex()["status"]).is_equal(SaveManager.LoadStatus.CORRUPT)
+
+
+func test_loyalty_and_contracts_survive_save_and_load() -> void:
+	GameManager.add_loyalty("__regular", 7)
+	GameManager.active_contracts = [{"id": "__contract", "delivered": {"__ore": 2}, "sessions_left": 3}]
+	SaveManager.save_game()
+	var r: Dictionary = SaveManager.load_game_ex()
+	assert_int(r["status"]).is_equal(SaveManager.LoadStatus.OK)
+	reset_game_state()
+	GameManager.deserialize(r["data"])
+	assert_int(GameManager.get_loyalty("__regular")).is_equal(7)
+	assert_array(GameManager.active_contracts).is_equal([{"id": "__contract", "delivered": {"__ore": 2}, "sessions_left": 3}])
+
+
+func test_load_without_loyalty_or_contracts_returns_CORRUPT() -> void:
+	for field: String in ["regular_loyalty", "active_contracts"]:
+		var bad := GameManager.serialize()
+		bad.erase(field)
+		_write_save_file(JSON.stringify(bad))
+		assert_int(SaveManager.load_game_ex()["status"]).override_failure_message("no %s" % field) \
+			.is_equal(SaveManager.LoadStatus.CORRUPT)
+
+
+func test_load_bad_loyalty_returns_CORRUPT() -> void:
+	for bad_value: Variant in [-1, 1.5, true, "3"]:
+		var bad := GameManager.serialize()
+		bad["regular_loyalty"] = {"__regular": bad_value}
+		_write_save_file(JSON.stringify(bad))
+		assert_int(SaveManager.load_game_ex()["status"]).override_failure_message("loyalty %s" % str(bad_value)) \
+			.is_equal(SaveManager.LoadStatus.CORRUPT)
+
+
+func test_load_bad_contract_entry_returns_CORRUPT() -> void:
+	var bad_values: Array = [
+		{"__contract": 1},
+		["__contract"],
+		[{"delivered": {}, "sessions_left": 2}],
+		[{"id": 5, "delivered": {}, "sessions_left": 2}],
+		[{"id": "__contract", "delivered": [], "sessions_left": 2}],
+		[{"id": "__contract", "delivered": {"__ore": 1.5}, "sessions_left": 2}],
+		[{"id": "__contract", "delivered": {"__ore": -1}, "sessions_left": 2}],
+		[{"id": "__contract", "delivered": {}}],
+		[{"id": "__contract", "delivered": {}, "sessions_left": 0}],
+		[{"id": "__contract", "delivered": {}, "sessions_left": true}],
+	]
+	for bad_value: Variant in bad_values:
+		var bad := GameManager.serialize()
+		bad["active_contracts"] = bad_value
+		_write_save_file(JSON.stringify(bad))
+		assert_int(SaveManager.load_game_ex()["status"]).override_failure_message("contracts %s" % str(bad_value)) \
+			.is_equal(SaveManager.LoadStatus.CORRUPT)
+
+
+func test_load_duplicate_active_contract_ids_returns_CORRUPT() -> void:
+	var bad := GameManager.serialize()
+	bad["active_contracts"] = [
+		{"id": "__contract", "delivered": {}, "sessions_left": 2},
+		{"id": "__contract", "delivered": {"__ore": 1}, "sessions_left": 1},
+	]
+	_write_save_file(JSON.stringify(bad))
+	assert_int(SaveManager.load_game_ex()["status"]).is_equal(SaveManager.LoadStatus.CORRUPT)
+
+
 func test_load_bool_in_numeric_field_returns_CORRUPT() -> void:
 	# GDScript bools are int subtypes; the validator must still reject them
 	# (a saved "gold": true must not pass as a number).

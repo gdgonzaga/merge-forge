@@ -1,0 +1,31 @@
+[gd_resource type="Resource" script_class="ContractDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/contract_definition.gd" id="1_contract"]
+[ext_resource type="Script" path="res://resources/definitions/order_template.gd" id="2_tpl"]
+[ext_resource type="Resource" path="res://resources/definitions/customers/cust_06.tres" id="3_giver"]
+[ext_resource type="Resource" path="res://resources/definitions/items/herb_bundle.tres" id="item_0"]
+[ext_resource type="Resource" path="res://resources/definitions/items/iron_ingot.tres" id="item_1"]
+
+[sub_resource type="Resource" id="Resource_req_0"]
+script = ExtResource("2_tpl")
+item = ExtResource("item_0")
+min_quantity = 6
+max_quantity = 6
+
+[sub_resource type="Resource" id="Resource_req_1"]
+script = ExtResource("2_tpl")
+item = ExtResource("item_1")
+min_quantity = 4
+max_quantity = 4
+
+[resource]
+script = ExtResource("1_contract")
+id = "con_inn_supplies"
+name = "Hilda's Inn Supplies"
+giver = ExtResource("3_giver")
+min_shop_level = 10
+weight = 2
+requirements = Array[ExtResource("2_tpl")]([SubResource("Resource_req_0"), SubResource("Resource_req_1")])
+sessions_allowed = 2
+reward_gold = 270
+loyalty_points = 3

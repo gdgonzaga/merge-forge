@@ -5,7 +5,7 @@ extends TestBase
 
 
 const USE_TARGETS: Array[String] = ["party-individual", "enemy-individual", "enemy-all"]
-const UPGRADE_EFFECTS: Array[String] = ["grid_size", "despawn_time", "crate_discount", "shelf_slots", "forecast_detail", "order_price"]
+const UPGRADE_EFFECTS: Array[String] = ["grid_size", "despawn_time", "crate_discount", "shelf_slots", "forecast_detail", "order_price", "contract_slots"]
 const ATTACK_TYPES: Array[String] = ["melee", "missile"]
 
 
@@ -135,6 +135,20 @@ func test_definition_library_missing_returns_null() -> void:
 	assert_object(DefinitionLibrary.get_enemy("__nonexistent__")).is_null()
 
 
+func test_contracts_are_found_by_id_and_listed_in_id_order() -> void:
+	var second := ContractDefinition.new()
+	second.id = "__test_b"
+	var first := ContractDefinition.new()
+	first.id = "__test_a"
+	set_definition(DefinitionLibrary.contracts, second)
+	set_definition(DefinitionLibrary.contracts, first)
+	assert_bool(DefinitionLibrary.get_contract("__test_b") == second).is_true()
+	assert_object(DefinitionLibrary.get_contract("__missing_contract")).is_null()
+	var contracts := DefinitionLibrary.get_all_contracts()
+	assert_str(contracts[0].id).is_equal("__test_a")
+	assert_str(contracts[1].id).is_equal("__test_b")
+
+
 func _dungeon(id: String, min_shop_level: int) -> DungeonDefinition:
 	var dungeon := DungeonDefinition.new()
 	dungeon.id = id
@@ -236,6 +250,84 @@ func test_unlocks_between_spans_every_skipped_level() -> void:
 
 func test_no_level_gained_unlocks_nothing() -> void:
 	assert_array(DefinitionLibrary.get_unlocks_between(3, 3)).is_empty()
+
+
+func test_contracts_are_well_formed() -> void:
+	for contract in DefinitionLibrary.get_all_contracts():
+		var id := contract.id
+		assert_object(contract.giver).override_failure_message("%s has no giver" % id).is_not_null()
+		assert_bool(contract.requirements.is_empty()).override_failure_message("%s asks for nothing" % id).is_false()
+		assert_int(contract.sessions_allowed).override_failure_message("%s sessions" % id).is_greater(0)
+		assert_int(contract.weight).override_failure_message("%s weight" % id).is_greater(0)
+		assert_int(contract.reward_gold).override_failure_message("%s pays no gold" % id).is_greater(0)
+		var seen := {}
+		for requirement in contract.requirements:
+			assert_object(requirement.item).override_failure_message("%s has an empty requirement" % id).is_not_null()
+			assert_bool(seen.has(requirement.item.id)).override_failure_message("%s asks for %s twice" % [id, requirement.item.id]).is_false()
+			seen[requirement.item.id] = true
+			assert_bool(requirement.min_quantity >= 1 and requirement.min_quantity == requirement.max_quantity) \
+				.override_failure_message("%s needs %s x%d-%d" % [id, requirement.item.id, requirement.min_quantity, requirement.max_quantity]).is_true()
+			assert_bool(requirement.min_quality >= 0 and requirement.min_quality <= ItemDefinition.MAX_QUALITY) \
+				.override_failure_message("%s quality %d" % [id, requirement.min_quality]).is_true()
+		assert_bool((contract.reward_reagent == null) == (contract.reward_reagent_count <= 0)) \
+			.override_failure_message("%s reagent reward without a count, or a count without a reagent" % id).is_true()
+		if contract.reward_reagent != null:
+			assert_int(contract.reward_reagent.cost).override_failure_message("%s gives a dungeon-only reagent" % id).is_greater(0)
+		assert_object(contract.reward_blueprint).override_failure_message("%s gives a blueprint (repeatable)" % id).is_null()
+
+
+func test_loyalty_tracks_rise_and_give_something() -> void:
+	for customer in DefinitionLibrary.get_all_customers():
+		var previous := 0
+		for reward in customer.loyalty_rewards:
+			assert_object(reward).override_failure_message("%s has an empty gift" % customer.id).is_not_null()
+			assert_int(reward.points).override_failure_message("%s thresholds don't rise" % customer.id).is_greater(previous)
+			previous = reward.points
+			assert_str(reward.title).override_failure_message("%s gift %d has no title" % [customer.id, reward.points]).is_not_empty()
+			assert_bool(reward.gold > 0 or reward.blueprint != null or reward.reagent != null) \
+				.override_failure_message("%s gift %d gives nothing" % [customer.id, reward.points]).is_true()
+			assert_bool((reward.reagent == null) == (reward.reagent_count <= 0)) \
+				.override_failure_message("%s gift %d reagent/count mismatch" % [customer.id, reward.points]).is_true()
+
+
+func test_dungeon_reagent_rewards_are_well_formed() -> void:
+	for dungeon in DefinitionLibrary.get_all_dungeons():
+		for reward in dungeon.reagent_rewards:
+			assert_object(reward.reagent).override_failure_message("%s rewards no reagent" % dungeon.id).is_not_null()
+			assert_bool(reward.min_count >= 1 and reward.min_count <= reward.max_count) \
+				.override_failure_message("%s gives %d-%d" % [dungeon.id, reward.min_count, reward.max_count]).is_true()
+			assert_bool(reward.chance > 0.0 and reward.chance <= 1.0) \
+				.override_failure_message("%s chance %s" % [dungeon.id, reward.chance]).is_true()
+
+
+func test_every_dungeon_only_reagent_drops_in_a_dungeon() -> void:
+	var dropped := {}
+	for dungeon in DefinitionLibrary.get_all_dungeons():
+		for reward in dungeon.reagent_rewards:
+			dropped[reward.reagent.id] = true
+	for reagent in DefinitionLibrary.get_all_reagents():
+		if reagent.cost <= 0:
+			assert_bool(dropped.has(reagent.id)).override_failure_message("no dungeon drops %s" % reagent.id).is_true()
+
+
+# A lone option auto-picks, so a dungeon-only variant needs a base result
+# unlocked alongside it or the player would spend the reagent without a choice.
+func test_a_dungeon_only_variant_always_has_a_base_option_beside_it() -> void:
+	for source: ItemDefinition in DefinitionLibrary.get_all_items().values():
+		for variant in source.reagent_variants:
+			if variant.reagent.cost > 0:
+				continue
+			var covered := false
+			for option in source.merge_results:
+				if option.blueprint == null or (variant.blueprint != null and option.blueprint in variant.blueprint.dependencies):
+					covered = true
+			assert_bool(covered).override_failure_message("%s -> %s can be the only option" % [source.id, variant.result.id]).is_true()
+
+
+func test_merge_sources_fit_the_choice_popup() -> void:
+	for source: ItemDefinition in DefinitionLibrary.get_all_items().values():
+		var option_count := source.merge_results.size() + source.reagent_variants.size()
+		assert_int(option_count).override_failure_message("%s has %d merge options" % [source.id, option_count]).is_less_equal(4)
 
 
 func test_every_gated_definition_has_a_name() -> void:

@@ -1,21 +1,20 @@
-[gd_scene load_steps=13 format=3 uid="uid://dungeonrun001"]
+[gd_scene format=3 uid="uid://dungeonrun001"]
 
-[ext_resource type="Script" path="res://dungeon/dungeon_controller.gd" id="1"]
-[ext_resource type="PackedScene" path="res://board/merge_board.tscn" id="2"]
-[ext_resource type="PackedScene" path="res://dungeon/party_member.tscn" id="3"]
-[ext_resource type="Texture2D" path="res://resources/sprites/backgrounds/bg_dungeon_run.png" id="4"]
-[ext_resource type="FontFile" path="res://resources/fonts/RobotoCondensed-VariableFont_wght.ttf" id="5_font"]
-[ext_resource type="Script" path="res://dungeon/dungeon_vfx.gd" id="6"]
-[ext_resource type="Script" path="res://dungeon/combat_lines.gd" id="7"]
-[ext_resource type="Texture2D" path="res://resources/sprites/vfx/line_slash_head.png" id="8_melee_head"]
-[ext_resource type="Texture2D" path="res://resources/sprites/vfx/line_slash_head_diagonal.png" id="9_melee_head_diag"]
-[ext_resource type="Texture2D" path="res://resources/sprites/vfx/line_arrow_head.png" id="10_missile_head"]
-[ext_resource type="Texture2D" path="res://resources/sprites/vfx/line_arrow_head_diagonal.png" id="11_missile_head_diag"]
-[ext_resource type="Texture2D" path="res://resources/sprites/vfx/crit_mark.png" id="12_crit_mark"]
+[ext_resource type="Script" uid="uid://7ml6jo7m4puo" path="res://dungeon/dungeon_controller.gd" id="1"]
+[ext_resource type="PackedScene" uid="uid://sjtl4wi2reqq" path="res://board/merge_board.tscn" id="2"]
+[ext_resource type="PackedScene" uid="uid://v0mmjm7vvs1e" path="res://dungeon/party_member.tscn" id="3"]
+[ext_resource type="Texture2D" uid="uid://deou3tddru4cx" path="res://resources/sprites/backgrounds/bg_dungeon_run.png" id="4"]
+[ext_resource type="FontFile" uid="uid://di5l3rf27vxbh" path="res://resources/fonts/RobotoCondensed-VariableFont_wght.ttf" id="5_font"]
+[ext_resource type="Script" uid="uid://cuq8fbted8drh" path="res://dungeon/dungeon_vfx.gd" id="6"]
+[ext_resource type="Script" uid="uid://chqkusjg6pmtq" path="res://dungeon/combat_lines.gd" id="7"]
+[ext_resource type="Texture2D" uid="uid://bj5h1gi5jiled" path="res://resources/sprites/vfx/line_slash_head.png" id="8_melee_head"]
+[ext_resource type="Texture2D" uid="uid://dmw338mggx878" path="res://resources/sprites/vfx/line_slash_head_diagonal.png" id="9_melee_head_diag"]
+[ext_resource type="Texture2D" uid="uid://cch453ngsgebs" path="res://resources/sprites/vfx/line_arrow_head.png" id="10_missile_head"]
+[ext_resource type="Texture2D" uid="uid://kengg1hglc51" path="res://resources/sprites/vfx/line_arrow_head_diagonal.png" id="11_missile_head_diag"]
 [ext_resource type="StyleBox" path="res://resources/themes/bar_bg.tres" id="13_bar_bg"]
 [ext_resource type="StyleBox" path="res://resources/themes/bar_fill_dungeon.tres" id="14_bar_fill"]
 
-[node name="DungeonRun" type="Control"]
+[node name="DungeonRun" type="Control" unique_id=139317692]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -24,73 +23,72 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1")
 
-[node name="BG" type="TextureRect" parent="."]
-anchors_preset = 15
+[node name="BG" type="TextureRect" parent="." unique_id=42793493]
+layout_mode = 0
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 2
 texture = ExtResource("4")
 stretch_mode = 1
-mouse_filter = 2
 
-[node name="VBox" type="VBoxContainer" parent="."]
-anchors_preset = 15
+[node name="VBox" type="VBoxContainer" parent="." unique_id=1429267309]
+layout_mode = 0
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/separation = 8
 
-[node name="TopBar" type="HBoxContainer" parent="VBox"]
+[node name="TopBar" type="HBoxContainer" parent="VBox" unique_id=17849078]
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="ProgressBar" type="ProgressBar" parent="VBox/TopBar"]
-max_value = 100.0
+[node name="ProgressBar" type="ProgressBar" parent="VBox/TopBar" unique_id=181589899]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_styles/background = ExtResource("13_bar_bg")
 theme_override_styles/fill = ExtResource("14_bar_fill")
 show_percentage = false
 
-[node name="EncounterLabel" type="Label" parent="VBox/TopBar"]
+[node name="EncounterLabel" type="Label" parent="VBox/TopBar" unique_id=17271739]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("5_font")
 theme_override_font_sizes/font_size = 18
 text = "Walking..."
 
-[node name="PartyContainer" type="HBoxContainer" parent="VBox"]
+[node name="PartyContainer" type="HBoxContainer" parent="VBox" unique_id=65889150]
 layout_mode = 2
-alignment = 1
 theme_override_constants/separation = 24
+alignment = 1
 
-[node name="PartyMember1" parent="VBox/PartyContainer" instance=ExtResource("3")]
+[node name="PartyMember1" parent="VBox/PartyContainer" unique_id=2118374530 instance=ExtResource("3")]
 layout_mode = 2
 
-[node name="PartyMember2" parent="VBox/PartyContainer" instance=ExtResource("3")]
+[node name="PartyMember2" parent="VBox/PartyContainer" unique_id=102607896 instance=ExtResource("3")]
 layout_mode = 2
 
-[node name="PartyMember3" parent="VBox/PartyContainer" instance=ExtResource("3")]
+[node name="PartyMember3" parent="VBox/PartyContainer" unique_id=718034302 instance=ExtResource("3")]
 layout_mode = 2
 
-[node name="Battlefield" type="Control" parent="VBox"]
+[node name="Battlefield" type="Control" parent="VBox" unique_id=447897919]
 custom_minimum_size = Vector2(0, 180)
 layout_mode = 2
 mouse_filter = 2
 
-[node name="EnemyContainer" type="HBoxContainer" parent="VBox"]
+[node name="EnemyContainer" type="HBoxContainer" parent="VBox" unique_id=603593451]
 custom_minimum_size = Vector2(0, 140)
 layout_mode = 2
-alignment = 1
 theme_override_constants/separation = 8
+alignment = 1
 
-[node name="Board" parent="VBox" instance=ExtResource("2")]
+[node name="Board" parent="VBox" unique_id=1834582893 instance=ExtResource("2")]
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="AnimOverlay" type="Control" parent="."]
-layout_mode = 3
+[node name="AnimOverlay" type="Control" parent="." unique_id=316228715]
+layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -99,7 +97,7 @@ grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("6")
 
-[node name="CombatLines" type="Control" parent="AnimOverlay"]
+[node name="CombatLines" type="Control" parent="AnimOverlay" unique_id=2042845181]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 15
@@ -113,4 +111,3 @@ melee_head = ExtResource("8_melee_head")
 melee_head_diagonal = ExtResource("9_melee_head_diag")
 missile_head = ExtResource("10_missile_head")
 missile_head_diagonal = ExtResource("11_missile_head_diag")
-crit_mark = ExtResource("12_crit_mark")

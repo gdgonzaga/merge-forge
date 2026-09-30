@@ -13,7 +13,8 @@ class_name UpgradeDefinition
 # forecast_detail: the prep forecast reveals `value` customers; 0 reveals
 # every customer and their orders.
 # order_price: every order pays x `value`.
-@export_enum("grid_size", "despawn_time", "crate_discount", "shelf_slots", "forecast_detail", "order_price") var effect: String = ""
+# contract_slots: the player can hold `value` accepted contracts at once.
+@export_enum("grid_size", "despawn_time", "crate_discount", "shelf_slots", "forecast_detail", "order_price", "contract_slots") var effect: String = ""
 @export var levels: Array[UpgradeLevel] = []
 
 
