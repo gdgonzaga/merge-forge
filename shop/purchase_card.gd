@@ -1,8 +1,8 @@
 extends PanelContainer
 
-@onready var name_label: Label = $HBox/Info/NameLabel
-@onready var desc_label: Label = $HBox/Info/DescLabel
-@onready var buy_btn: Button = $HBox/BuyBtn
+@onready var name_label: Label = %NameLabel
+@onready var desc_label: Label = %DescLabel
+@onready var buy_btn: Button = %BuyBtn
 
 var _pending_setup: Dictionary = {}
 
