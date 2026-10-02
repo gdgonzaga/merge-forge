@@ -244,6 +244,25 @@ func test_order_button_checks_quality_requirement() -> void:
 	assert_bool(card.disabled).is_false()
 
 
+func test_orders_container_reserves_vertical_space_for_three_orders() -> void:
+	var session := _start_session()
+	var orders: Container = session.get_node(ORDERS_CONTAINER_PATH)
+	assert_int(orders.get_child_count()).is_equal(1)
+	var single_order_height := orders.get_combined_minimum_size().y
+	assert_float(single_order_height).is_greater_equal(308.0)
+
+	var order_card_scene: PackedScene = load("res://shop/order_card.tscn")
+	var card2: Control = order_card_scene.instantiate()
+	orders.add_child(card2)
+	assert_int(orders.get_child_count()).is_equal(2)
+	assert_float(orders.get_combined_minimum_size().y).is_equal(single_order_height)
+
+	var card3: Control = order_card_scene.instantiate()
+	orders.add_child(card3)
+	assert_int(orders.get_child_count()).is_equal(3)
+	assert_float(orders.get_combined_minimum_size().y).is_equal(single_order_height)
+
+
 func _start_session() -> Control:
 	var session: Control = auto_free(SHOP_SESSION.instantiate())
 	add_child(session)
