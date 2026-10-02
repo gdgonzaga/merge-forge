@@ -401,12 +401,12 @@ func _display_customer(customer: ShopCustomer) -> void:
 		card.setup(customer.orders[i], i)
 		card.order_tapped.connect(try_fulfill_order)
 
-	_refresh_order_buttons()
+	_refresh_order_buttons(false)
 	_reject_btn.disabled = false
 	_reject_btn.visible = true
 
 
-func _refresh_order_buttons() -> void:
+func _refresh_order_buttons(animate: bool = true) -> void:
 	if current_index >= customers.size() or board == null or not is_instance_valid(board):
 		return
 	var customer := customers[current_index]
@@ -422,7 +422,12 @@ func _refresh_order_buttons() -> void:
 		var have: int = board.count_sellable(order.item.id, order.min_quality)
 		var fulfillable := have >= order.quantity
 		if "disabled" in child:
+			var was_disabled: bool = child.disabled
 			child.disabled = not fulfillable
+			if child.has_method("update_disabled_state"):
+				child.update_disabled_state()
+			if animate and was_disabled and fulfillable and child.has_method("play_glow"):
+				child.play_glow()
 
 
 func _on_board_item_placed(_item: Dictionary, _pos: Vector2i) -> void:

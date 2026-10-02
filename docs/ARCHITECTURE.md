@@ -846,6 +846,12 @@ Customers are dealt from `CustomerDefinition` archetypes (see Content Definition
 |--------|-------------|
 | `order_tapped(order_index: int)` | Player tapped this card. shop_session listens. |
 
+**Functions:**
+
+| Function | Description |
+|----------|-------------|
+| `play_glow() -> void` | Plays a one-shot warm golden pulse on `self_modulate` when the order becomes fulfillable. |
+
 #### SessionSummary
 
 **Extends:** Control

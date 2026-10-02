@@ -12,6 +12,7 @@ var order_index: int = -1
 @onready var _reward_label: Label = $HBox/RewardLabel
 
 var _flash_tween: Tween
+var _glow_tween: Tween
 var _pending_setup: bool = false
 
 
@@ -39,6 +40,25 @@ func _notification(what: int) -> void:
 func _update_disabled_visuals() -> void:
 	if _hbox != null and is_instance_valid(_hbox):
 		_hbox.modulate = Color(0.7, 0.7, 0.7, 0.85) if disabled else Color.WHITE
+	if disabled:
+		if _glow_tween != null:
+			_glow_tween.kill()
+			_glow_tween = null
+		self_modulate = Color.WHITE
+
+
+func update_disabled_state() -> void:
+	_update_disabled_visuals()
+
+
+func play_glow() -> void:
+	if not is_inside_tree():
+		return
+	if _glow_tween != null:
+		_glow_tween.kill()
+	self_modulate = Color(1.35, 1.3, 0.75)
+	_glow_tween = create_tween()
+	_glow_tween.tween_property(self, "self_modulate", Color.WHITE, 0.35).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 
 
 func _apply_data() -> void:

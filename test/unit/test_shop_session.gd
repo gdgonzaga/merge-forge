@@ -193,13 +193,25 @@ func test_placing_required_item_enables_order_button_and_removing_disables_it() 
 	var orders: Container = session.get_node(ORDERS_CONTAINER_PATH)
 	var card: Button = orders.get_child(0)
 	assert_bool(card.disabled).is_true()
+	assert_bool(card.self_modulate == Color.WHITE).is_true()
 
 	var grid: Control = session.board.get_board_grid()
 	grid.place_item(RecipeResolver.make_item(_item), Vector2i(0, 0))
 	assert_bool(card.disabled).is_false()
+	assert_bool(card.self_modulate != Color.WHITE).is_true()
 
 	grid.discard_item(Vector2i(0, 0))
 	assert_bool(card.disabled).is_true()
+	assert_bool(card.self_modulate == Color.WHITE).is_true()
+
+
+func test_initially_fulfillable_order_does_not_glow_on_customer_display() -> void:
+	GameManager.shop_board_state = [{"col": 0, "row": 0, "item_id": "__test_item", "quality": 0}]
+	var session := _start_session()
+	var orders: Container = session.get_node(ORDERS_CONTAINER_PATH)
+	var card: Button = orders.get_child(0)
+	assert_bool(card.disabled).is_false()
+	assert_bool(card.self_modulate == Color.WHITE).is_true()
 
 
 func test_shelf_item_enables_order_button() -> void:

@@ -50,6 +50,22 @@ func test_enabled_order_card_uses_normal_stylebox() -> void:
 	assert_str(style.resource_path).is_equal("res://resources/themes/button_secondary.tres")
 
 
+func test_play_glow_modulates_button() -> void:
+	var item := ItemDefinition.new()
+	item.id = "__test_item"
+	item.sprite = PlaceholderTexture2D.new()
+	var order := OrderDefinition.new()
+	order.item = item
+	order.quantity = 1
+	order.gold_reward = 10
+	order.min_quality = 0
+	var card: Button = auto_free(ORDER_CARD.instantiate())
+	add_child(card)
+	card.setup(order, 0)
+	card.play_glow()
+	assert_bool(card.self_modulate != Color.WHITE).is_true()
+
+
 func _card_stars(min_quality: int) -> Control:
 	var item := ItemDefinition.new()
 	item.id = "__test_item"
