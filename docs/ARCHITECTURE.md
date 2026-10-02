@@ -830,7 +830,7 @@ Customers are dealt from `CustomerDefinition` archetypes (see Content Definition
 
 #### OrderCard
 
-**Extends:** Control
+**Extends:** Button
 **Script:** `shop/order_card.gd`
 **Description:** Displays a single order: item icon, quantity needed, gold reward. Emits signal when tapped.
 

@@ -7,6 +7,7 @@ extends TestBase
 const SHOP_SESSION := preload("res://shop/shop_session.tscn")
 const MAX_FRAMES := 10
 const CRATE_BUTTONS_PATH := "CustomerBox/ActionPanel/CratePanel/CrateButtonsPanel"
+const ORDERS_CONTAINER_PATH := "CustomerBox/ActionPanel/OrderActionsContainer/OrdersContainer"
 
 var _item: ItemDefinition
 
@@ -178,6 +179,57 @@ func test_a_fine_order_takes_the_fine_item_and_keeps_the_masterwork() -> void:
 	assert_int(session.current_index).is_equal(1)
 	assert_int(session.board.count_sellable("__test_item", 2)).is_equal(1)
 	assert_int(session.board.count_sellable("__test_item")).is_equal(1)
+
+
+func test_unfulfillable_order_button_is_disabled() -> void:
+	var session := _start_session()
+	var orders: Container = session.get_node(ORDERS_CONTAINER_PATH)
+	var card: Button = orders.get_child(0)
+	assert_bool(card.disabled).is_true()
+
+
+func test_placing_required_item_enables_order_button_and_removing_disables_it() -> void:
+	var session := _start_session()
+	var orders: Container = session.get_node(ORDERS_CONTAINER_PATH)
+	var card: Button = orders.get_child(0)
+	assert_bool(card.disabled).is_true()
+
+	var grid: Control = session.board.get_board_grid()
+	grid.place_item(RecipeResolver.make_item(_item), Vector2i(0, 0))
+	assert_bool(card.disabled).is_false()
+
+	grid.discard_item(Vector2i(0, 0))
+	assert_bool(card.disabled).is_true()
+
+
+func test_shelf_item_enables_order_button() -> void:
+	_give_shelf(2)
+	var session := _start_session()
+	var orders: Container = session.get_node(ORDERS_CONTAINER_PATH)
+	var card: Button = orders.get_child(0)
+	assert_bool(card.disabled).is_true()
+
+	var shelf: Control = session.board.get_shelf_grid()
+	shelf.place_item(RecipeResolver.make_item(_item), Vector2i(0, 0))
+	assert_bool(card.disabled).is_false()
+
+	shelf.discard_item(Vector2i(0, 0))
+	assert_bool(card.disabled).is_true()
+
+
+func test_order_button_checks_quality_requirement() -> void:
+	set_definition(DefinitionLibrary.customers, _customer(_item, 1))
+	var session := _start_session()
+	var orders: Container = session.get_node(ORDERS_CONTAINER_PATH)
+	var card: Button = orders.get_child(0)
+	assert_bool(card.disabled).is_true()
+
+	var grid: Control = session.board.get_board_grid()
+	grid.place_item(RecipeResolver.make_item(_item, 0), Vector2i(0, 0))
+	assert_bool(card.disabled).is_true()
+
+	grid.place_item(RecipeResolver.make_item(_item, 1), Vector2i(1, 0))
+	assert_bool(card.disabled).is_false()
 
 
 func _start_session() -> Control:

@@ -84,6 +84,17 @@ func _ready() -> void:
 	GameManager.shop_level_changed.connect(_on_shop_level_changed)
 	_reject_btn.pressed.connect(reject_customer)
 	_quit_btn.pressed.connect(_on_quit_pressed)
+
+	var board_grid = _get_board_grid()
+	if board_grid:
+		board_grid.item_placed.connect(_on_board_item_placed)
+		board_grid.item_removed.connect(_on_board_item_removed)
+	var shelf_grid: Control = board.get_shelf_grid()
+	if shelf_grid:
+		shelf_grid.item_placed.connect(_on_board_item_placed)
+		shelf_grid.item_removed.connect(_on_board_item_removed)
+	EventBus.merge_completed.connect(_on_merge_completed)
+
 	# PendingCustomers lays out after _ready, so its Content.size.x is 0 here.
 	# The resized signal fires once layout assigns a real width, and again on
 	# any viewport resize — both reposition the portrait stack. advance_customer
@@ -270,6 +281,7 @@ func deliver_to_contract(contract_id: String, item_id: String, count: int) -> in
 		_complete_contract(progress)
 	_store_contracts()
 	_refresh_contracts_button()
+	_refresh_order_buttons()
 	_save_mid_session()
 	return moved
 
@@ -369,6 +381,7 @@ func try_buy_crate(crate_id: String) -> bool:
 	if board == null or not is_instance_valid(board) or not board.buy_crate(crate_id):
 		return false
 	_save_mid_session()
+	_refresh_order_buttons()
 	return true
 
 
@@ -388,8 +401,40 @@ func _display_customer(customer: ShopCustomer) -> void:
 		card.setup(customer.orders[i], i)
 		card.order_tapped.connect(try_fulfill_order)
 
+	_refresh_order_buttons()
 	_reject_btn.disabled = false
 	_reject_btn.visible = true
+
+
+func _refresh_order_buttons() -> void:
+	if current_index >= customers.size() or board == null or not is_instance_valid(board):
+		return
+	var customer := customers[current_index]
+	for child in _orders_container.get_children():
+		if child.is_queued_for_deletion():
+			continue
+		if not child is Control or not "order_index" in child:
+			continue
+		var idx: int = child.order_index
+		if idx < 0 or idx >= customer.orders.size():
+			continue
+		var order: OrderDefinition = customer.orders[idx]
+		var have: int = board.count_sellable(order.item.id, order.min_quality)
+		var fulfillable := have >= order.quantity
+		if "disabled" in child:
+			child.disabled = not fulfillable
+
+
+func _on_board_item_placed(_item: Dictionary, _pos: Vector2i) -> void:
+	_refresh_order_buttons()
+
+
+func _on_board_item_removed(_pos: Vector2i) -> void:
+	_refresh_order_buttons()
+
+
+func _on_merge_completed(_id: String, _quality: int) -> void:
+	_refresh_order_buttons()
 
 
 func _loyalty_text(customer: CustomerDefinition) -> String:
@@ -404,6 +449,7 @@ func _loyalty_text(customer: CustomerDefinition) -> String:
 
 func _clear_orders() -> void:
 	for child in _orders_container.get_children():
+		_orders_container.remove_child(child)
 		child.queue_free()
 
 

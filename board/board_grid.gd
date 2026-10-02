@@ -157,6 +157,7 @@ func place_or_stage(item: Dictionary) -> bool:
 	if safe_pos.x >= 0:
 		grid[safe_pos.y][safe_pos.x] = item
 		refresh_cell(safe_pos)
+		item_placed.emit(item, safe_pos)
 		return true
 	return false
 
