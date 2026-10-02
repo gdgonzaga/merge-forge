@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="ItemDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/merge_result.gd" id="1_dixg3"]
+[ext_resource type="Resource" path="res://resources/definitions/items/wood_plank.tres" id="2_wqlmu"]
+[ext_resource type="Script" path="res://resources/definitions/reagent_variant.gd" id="3_ttk56"]
+[ext_resource type="Script" path="res://resources/definitions/item_definition.gd" id="4_rnysv"]
+[ext_resource type="Texture2D" path="res://resources/sprites/items/iron_ore.png" id="5_n4477"]
+
+[sub_resource type="Resource" id="Resource_jo8oq"]
+script = ExtResource("1_dixg3")
+result = ExtResource("2_wqlmu")
+
+[resource]
+script = ExtResource("4_rnysv")
+id = "timber_log"
+name = "Timber Log"
+family = "wood"
+gold_value = 5
+sprite = ExtResource("5_n4477")
+merge_results = Array[ExtResource("1_dixg3")]([SubResource("Resource_jo8oq")])

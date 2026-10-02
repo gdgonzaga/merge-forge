@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="ItemDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/effect_definition.gd" id="1_s3ewp"]
+[ext_resource type="Script" path="res://resources/definitions/merge_result.gd" id="2_u7mbk"]
+[ext_resource type="Script" path="res://resources/definitions/reagent_variant.gd" id="3_1kcpj"]
+[ext_resource type="Script" path="res://resources/definitions/item_definition.gd" id="4_nfir0"]
+[ext_resource type="Texture2D" path="res://resources/sprites/items/phoenix_draught.png" id="5_m8nne"]
+
+[sub_resource type="Resource" id="Resource_4sux7"]
+script = ExtResource("1_s3ewp")
+type = "revive"
+value = 50
+
+[resource]
+script = ExtResource("4_nfir0")
+id = "phoenix_diadem"
+name = "Phoenix Diadem"
+family = "gem"
+gold_value = 480
+dungeon_usable = true
+dungeon_use_target = "party-individual"
+effect = SubResource("Resource_4sux7")
+sprite = ExtResource("5_m8nne")

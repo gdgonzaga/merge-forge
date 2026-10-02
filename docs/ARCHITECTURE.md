@@ -1,6 +1,6 @@
 # Architecture — MergeForge
 
-Last updated: 2026-06-11
+Last updated: 2026-10-02
 
 ---
 
@@ -19,6 +19,7 @@ res://
     ├── audio/
     │   ├── music/
     │   └── sfx/
+    ├── videos/
     └── fonts/
 ```
 
@@ -28,25 +29,27 @@ res://
 
 - `Main` (`main.tscn`) — root scene, manages scene transitions by swapping child
   - `CanvasLayer` → `HUD` (`hud.tscn`) — gold display, shop level and XP bar (always visible in-game)
+  - `SplashLayer` (`CanvasLayer`, layer 2) → `SplashScreen` (`splash_screen.tscn`) — full-screen startup video above the HUD and main menu; freed when playback ends or its fallback timer expires
   - `SceneContainer` (`Node`) — child swapped by Main on transition
     - `MainMenu` (`main_menu.tscn`)
     - `ShopSession` (`shop_session.tscn`) → instances `MergeBoard` (`merge_board.tscn`) (shop board; `MergeBoard/VBox/ShelfArea/ShelfGrid` is the display shelf, a second `board_grid.gd` with merges off, hidden without slots)
     - `SessionSummary` (`session_summary.tscn`)
-    - `PrepPhase` (`prep_phase.tscn`) → TabContainer: Forecast / Contracts / Blueprints / Upgrades / Reagents (Forecast holds `ForecastPanel`; Contracts holds `ContractsPanel`)
+    - `PrepPhase` (`prep_phase.tscn`) → TabContainer: Forecast / Contracts / Blueprints / Upgrades / Reagents (Forecast holds `ForecastPanel`; Contracts holds `ContractsPanel`); a Guild button opens the Guild Hall
+    - `CharterScreen` (`charter_screen.tscn`) — the Guild Hall → TabContainer: Charter / Codex (Codex holds `CodexPanel`, which holds a `CodexFamily` per family, each holding a `CodexEntry` per item)
     - `DungeonRun` (`dungeon_run.tscn`) → instances `MergeBoard` (`merge_board.tscn`) (dungeon board, separate state)
     - `DungeonSummary` (`dungeon_summary.tscn`)
 
-Scene transitions are driven by `main.gd` listening to EventBus signals. Main frees the old scene, instances the new one, and adds it as child of `SceneContainer`.
+Scene transitions are driven by `main.gd` listening to EventBus signals. Main frees the old scene, instances the new one, and adds it as child of `SceneContainer`. On startup, Main instances MainMenu behind SplashScreen and removes SplashLayer when SplashScreen emits its local `finished` signal.
 
 ## Autoloads / Singletons
 
 | Name              | Script                  | Responsibility                                                                                                   |
 | ----------------- | ----------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| GameManager       | `game_manager.gd`       | Persistent state: gold, shop XP, blueprints, reagent inventory, upgrade levels, shop board and shelf state, grid size |
+| GameManager       | `game_manager.gd`       | Persistent state: gold, shop XP, blueprints, reagent inventory, upgrade levels, shop board and shelf state, grid size, the current town, Guild Charter progress (`charters`, `charter_points`), perk levels, the codex and its credits. `found_charter(town_id, picks)` is the one entry point for founding a charter. |
 | EventBus          | `event_bus.gd`          | Cross-scene signal relay (see registry below)                                                                    |
 | DefinitionLibrary | `definition_library.gd` | Loads and indexes every content definition (see Content Definitions), one catalog per folder under `resources/definitions/`. Lists folders with `ResourceLoader.list_directory` (works in exports, where `.tres` files are remapped). Every definition needs a unique `id`; an empty catalog is a hard error, since there is no fallback content. |
-| RecipeResolver    | `recipe_resolver.gd`    | Rules over the definitions, holding no content itself: merge options filtered by blueprint ownership and reagent inventory, blueprint dependency checks, weighted pool rolls, and the dictionary a board cell holds (`make_item`). |
-| SessionPlanner    | `session_planner.gd`    | `plan_next_session() -> SessionPlan`, the one place the next shop session is dealt: a pure function of GameManager's state, via `customer_generator.gd`. Prep (`core/`) and the shop (`shop/`) both call it, since neither subsystem folder may preload the other. |
+| RecipeResolver    | `recipe_resolver.gd`    | Rules over the definitions, holding no content itself: merge options filtered by blueprint ownership and reagent inventory, blueprint dependency checks, weighted pool rolls, the dictionary a board cell holds (`make_item`), and `get_codex_items()` (every item any town's crates can reach via a merge or reagent variant, for the Guild Hall's codex). |
+| SessionPlanner    | `session_planner.gd`    | `plan_next_session() -> SessionPlan`, the one place the next shop session is dealt: a pure function of GameManager's state (dealt from `GameManager.get_current_town()`'s customers, crates and modifiers), via `customer_generator.gd`. Prep (`core/`) and the shop (`shop/`) both call it, since neither subsystem folder may preload the other. |
 | SaveManager       | `save_manager.gd`       | Auto-save/load to single JSON file at checkpoints                                                                |
 | AudioManager      | `audio_manager.gd`      | Music playback with crossfade, SFX one-shots                                                                     |
 
@@ -56,19 +59,22 @@ No autoload uses `class_name` — globally accessible by registration name only 
 
 | Signal | Emitted by | Listeners | Purpose |
 |--------|-----------|-----------|---------|
-| `merge_completed(result_id: String, result_quality: int)` | `merge_resolver.gd` | `audio_manager.gd` | A merge produced a result item, at `result_quality` (0 Normal, 1 Fine, 2 Masterwork) |
+| `merge_completed(result_id: String, result_quality: int)` | `merge_resolver.gd` | `audio_manager.gd`, `game_manager.gd` (`record_crafted`, the codex) | A merge produced a result item, at `result_quality` (0 Normal, 1 Fine, 2 Masterwork) |
 | `customer_fulfilled(order_id: String)` | `shop_session.gd` | `save_manager.gd` | Order delivered to customer |
 | `customer_rejected(customer_id: String)` | `shop_session.gd` | `save_manager.gd` | Customer was skipped |
 | `session_ended(summary: Dictionary)` | `shop_session.gd` | `main.gd` | 10th customer done, transition to summary. Summary: `{gold_earned: int, items_sold: int, fulfilled: int, rejected: int, portraits: Array, xp_earned: int, level_before: int, level_after: int}` |
 | `session_summary_dismissed()` | `session_summary.gd` | `main.gd` | Player taps Continue, go to prep |
 | `prep_start_session()` | `prep_phase.gd` | `main.gd` | Player starts next shop session |
 | `prep_enter_dungeon(dungeon_id: String)` | `prep_phase.gd` | `main.gd` | Player enters that dungeon (if unlocked) |
-| `dungeon_cleared(rewards: Dictionary)` | `dungeon_controller.gd` | `main.gd`, `save_manager.gd` | Dungeon completed. Rewards: `{cleared: true, gold_reward: int, blueprint_reward: String or null, xp_gained: int, reagent_rewards: Dictionary, level_before: int, level_after: int}`; reagent rewards map id to count. |
+| `dungeon_cleared(rewards: Dictionary)` | `dungeon_controller.gd` | `main.gd`, `save_manager.gd` | Dungeon completed. Rewards: `{cleared: true, gold_reward: int, blueprint_reward: String or null, xp_gained: int, reagent_rewards: Dictionary, level_before: int, level_after: int}`; reagent rewards map id to count. `xp_gained` is `GameManager.add_shop_xp()`'s return value — the XP actually added, after the Guild Training perk's multiplier. |
 | `dungeon_failed(summary: Dictionary)` | `dungeon_controller.gd` | `main.gd`, `save_manager.gd` | Dungeon failed. Summary: `{cleared: false, gold_reward: 0, blueprint_reward: null, xp_gained: 0, reagent_rewards: {}, level_before: int, level_after: int}` |
 | `dungeon_summary_dismissed()` | `dungeon_summary.gd` | `main.gd` | Player taps Continue, return to prep |
 | `new_game_started()` | `main_menu.gd` | `main.gd` | Player starts new game |
 | `continue_game()` | `main_menu.gd` | `main.gd` | Player loads save |
 | `prep_quit_to_menu()` | `prep_phase.gd` | `main.gd` | Player quits to main menu from prep phase |
+| `prep_open_charter()` | `prep_phase.gd` | `main.gd` | Player taps the Guild button, go to the Guild Hall |
+| `charter_closed()` | `charter_screen.gd` | `main.gd` | Back button or Android back, return to prep |
+| `charter_founded(town_id: String)` | `charter_screen.gd` | `main.gd` | Charter confirmed and founded; not an ad break (README principle 6), routes straight to the new town's prep |
 | `save_requested()` | multiple | `save_manager.gd` | Trigger auto-save |
 
 ### State-Change Signals (on GameManager)
@@ -108,6 +114,7 @@ These are emitted directly on GameManager. Connect via `GameManager.gold_changed
 - Save data uses atomic writes: write to `user://save_data.tmp`, then `DirAccess.remove_absolute()` + `DirAccess.rename_absolute()` to `user://save_data.json`
 - Placeholder art: colored rectangles with text labels. No final sprites until gameplay is complete.
 - No `class_name` on autoload scripts — access by registration name only
+- **Testing:** `TestBase` makes an empty fixture town `__test_town` current in every test; `set_definition()` adds fixtures from scoped catalogs to it. Erase a fixture from `test_town` to test something outside the town.
 
 ## Known Tech Debt
 
@@ -167,6 +174,8 @@ The GDD lists effect types (heal, buff_attack). Party stats are confirmed (see t
 |------|------|----------------|
 | `core/main.tscn` | Scene | Root scene. Manages scene transitions by swapping children of SceneContainer. Owns the CanvasLayer for HUD. |
 | `core/main.gd` | Script | Listens to EventBus transition signals, frees old scene, instances new scene, manages music switches. Does NOT own game logic. |
+| `core/splash_screen.tscn` | Scene | Full-screen portrait video with a fallback timer above the normal screen container and HUD. |
+| `core/splash_screen.gd` | Script | Starts the startup video, emits `finished` on playback end, timeout, or Android back. |
 | `core/hud.tscn` | Scene | Persistent overlay: gold label, level label, XP progress bar. Child of Main's CanvasLayer. |
 | `core/hud.gd` | Script | Connects to GameManager state-change signals, updates gold, level and XP bar display. Does NOT own game state. |
 | `core/main_menu.tscn` | Scene | Main menu screen with New Game and Continue buttons. |
@@ -181,7 +190,7 @@ The GDD lists effect types (heal, buff_attack). Party stats are confirmed (see t
 
 ### Flow Trace: Scene Transition
 
-**Trigger:** Any EventBus scene-transition signal (session_ended, session_summary_dismissed, prep_start_session, prep_enter_dungeon, dungeon_cleared, dungeon_failed, dungeon_summary_dismissed, prep_quit_to_menu, new_game_started, continue_game).
+**Trigger:** Any EventBus scene-transition signal (session_ended, session_summary_dismissed, prep_start_session, prep_enter_dungeon, dungeon_cleared, dungeon_failed, dungeon_summary_dismissed, prep_quit_to_menu, prep_open_charter, charter_closed, charter_founded, new_game_started, continue_game). PrepPhase and CharterScreen (the Guild Hall) transition both ways: `prep_open_charter` opens it, `charter_closed` and `charter_founded` both return to PrepPhase (a founded charter routes straight back, no ad break).
 
 1. `main.gd` receives EventBus signal
 2. Determines target scene from signal type (mapping stored in a Dictionary)
@@ -221,7 +230,7 @@ The GDD lists effect types (heal, buff_attack). Party stats are confirmed (see t
 **Script:** `core/main.gd`
 **Description:** Root scene controller. Manages scene transitions by listening to EventBus signals and swapping children of SceneContainer. Owns the HUD via CanvasLayer. Handles new game initialization and save loading.
 
-**Lifecycle:** `_ready()` instances MainMenu as first child of SceneContainer. Connects to all EventBus transition signals.
+**Lifecycle:** `_ready()` instances MainMenu as first child of SceneContainer, connects to SplashScreen's local `finished` signal, and connects to all EventBus transition signals. SplashScreen runs in a separate CanvasLayer above the HUD and is freed after playback.
 
 **Properties:**
 
@@ -229,7 +238,7 @@ The GDD lists effect types (heal, buff_attack). Party stats are confirmed (see t
 |----------|------|-------------|
 | `scene_container: Node` | [onready] | Node whose child gets swapped on transitions |
 | `hud: Control` | [onready] | HUD instance on CanvasLayer |
-| `scene_map: Dictionary` | Dictionary | Maps EventBus signal name → scene resource path. Entries: `session_ended → session_summary.tscn`, `session_summary_dismissed → prep_phase.tscn`, `prep_start_session → shop_session.tscn`, `prep_enter_dungeon → dungeon_run.tscn`, `dungeon_cleared → dungeon_summary.tscn`, `dungeon_failed → dungeon_summary.tscn`, `dungeon_summary_dismissed → prep_phase.tscn`, `prep_quit_to_menu → main_menu.tscn`, `new_game_started → prep_phase.tscn`, `continue_game → prep_phase.tscn` |
+| `scene_map: Dictionary` | Dictionary | Maps EventBus signal name → scene resource path. Entries: `session_ended → session_summary.tscn`, `session_summary_dismissed → prep_phase.tscn`, `prep_start_session → shop_session.tscn`, `prep_enter_dungeon → dungeon_run.tscn`, `dungeon_cleared → dungeon_summary.tscn`, `dungeon_failed → dungeon_summary.tscn`, `dungeon_summary_dismissed → prep_phase.tscn`, `prep_quit_to_menu → main_menu.tscn`, `prep_open_charter → charter_screen.tscn`, `charter_closed → prep_phase.tscn`, `charter_founded → prep_phase.tscn`, `new_game_started → prep_phase.tscn`, `continue_game → prep_phase.tscn` |
 | `pending_summary: Dictionary` | Dictionary | Data passed to SessionSummary across scene transition |
 | `pending_dungeon_summary: Dictionary` | Dictionary | Data passed to DungeonSummary across scene transition |
 
@@ -605,9 +614,12 @@ Each catalog is a folder of `.tres` files under `resources/definitions/`; the fi
 | `upgrades/` | `UpgradeDefinition` | A leveled track: `id`, `name`, `description`, `effect` (`grid_size`, `despawn_time`, `crate_discount`, `shelf_slots`, `forecast_detail`, `order_price` or `contract_slots`), `levels: Array[UpgradeLevel]`. `max_level()` is `levels.size()`; `next_level(level)` is the level bought after `level`, or null at the max. Buying an upgrade buys its next level. |
 | `customers/` | `CustomerDefinition` | A customer *archetype*, not a fixed customer: `id`, `name`, `role`, `sprite` (portrait), `min_shop_level`, `weight` (a real frequency weight: how often this archetype is dealt relative to the other eligible archetypes — see Shop Session), `min_orders`, `max_orders`, `price_multiplier` (scales every rolled order's price), `wants: Array[OrderTemplate]`, `loyalty_rewards: Array[LoyaltyReward]` |
 | `contracts/` | `ContractDefinition` | A multi-session order from a regular: giver, item requirements, session limit and rewards. Loaded by `DefinitionLibrary.get_catalogs()` with the other catalogs. |
-| `shop_rules/` | `ShopRulesDefinition` | One definition, id `"default"`: `id`, `session_size`, `modifier_chance`, `forecast_customers`, `contract_offers`, `xp_per_gold`, `streak_step`, `streak_cap`, `level_xp_base`, `level_xp_exponent`, `max_level` |
+| `shop_rules/` | `ShopRulesDefinition` | One definition, id `"default"`: `id`, `starting_town: TownDefinition`, `session_size`, `modifier_chance`, `forecast_customers`, `contract_offers`, `max_shelf_slots`, `quality_price_multipliers`, `xp_per_gold`, `streak_step`, `streak_cap`, `loyalty_per_order`, `loyalty_per_quality_order`, `level_xp_base`, `level_xp_exponent`, `max_level`, `charter_level`, `charter_base_points`, `charter_points_per_level`, `codex_family_points`. `charter_points(level, new_stars, new_families)` is the one formula for what founding a charter earns. |
 | `dungeons/` | `DungeonDefinition` | See the Dungeon Run subsystem. |
 | `modifiers/` | `SessionModifierDefinition` | A market event a shop session may roll, at most one per session (`ShopRulesDefinition.modifier_chance`): `id`, `name`, `description`, `sprite`, `min_shop_level`, `weight`, `boosted_customers: Array[CustomerDefinition]`, `customer_weight_multiplier`, `family`, `family_price_multiplier`, `affected_crates: Array[CrateDefinition]`, `crate_cost_multiplier`, `session_size_delta` |
+| `towns/` | `TownDefinition` | The top content tier: nothing references a town except `ShopRulesDefinition.starting_town`. `id`, `name`, `description`, `background: Texture2D`, `charters_required: int` (charters founded, counting the one being founded, before this town is open — 0 for the starting town), `price_multiplier: float` (multiplies with Shop Signage into order price), and the town's own arrays for each entry in `TownDefinition.SCOPED_CATALOGS`: `customers`, `crates`, `modifiers`, `contracts`, `dungeons`, `blueprints`. `content(catalog: String) -> Array` returns the matching array by folder name, empty for anything unscoped. Items, reagents, upgrades, perks, party members, enemies and the shop rules are shared by every town instead of being on `TownDefinition`. |
+| `perks/` | `PerkDefinition` | A leveled track like `UpgradeDefinition`, bought with charter points instead of gold: `id`, `name`, `description`, `effect` (`starting_gold`, `xp_multiplier`, `crate_discount`, `starting_blueprint`, `shelf_bonus` or `loyalty_multiplier`), `levels: Array[PerkLevel]`. `max_level()` is `levels.size()`; `next_level(level)` is the level bought after `level`, or null at the max. |
+| (inline) | `PerkLevel` | One level of a perk track: `cost_points` (charter points), `value` (the absolute value at this level, not a step). |
 | (inline) | `EffectDefinition` | `type`, `value`, `duration` (ticks, 0 = instant). The `value` meaning per type is in `effect_definition.gd`. |
 | (inline) | `MergeResult` | `result: ItemDefinition`, `blueprint: BlueprintDefinition` (null = always available) |
 | (inline) | `ReagentVariant` | `result: ItemDefinition`, `reagent: ReagentDefinition`, `blueprint` (null = always available) |
@@ -674,15 +686,19 @@ RecipeResolver has no signals — it is queried synchronously by MergeResolver, 
 | Function | Description |
 |----------|-------------|
 | `get_catalogs() -> Dictionary` | Folder name to catalog, for code that walks every catalog (the integrity tests). |
-| `get_item(id)`, `get_party_member(id)`, `get_enemy(id)`, `get_reagent(id)`, `get_blueprint(id)`, `get_crate(id)`, `get_upgrade(id)`, `get_dungeon(id)`, `get_modifier(id)` | The definition, or null. |
+| `get_item(id)`, `get_party_member(id)`, `get_enemy(id)`, `get_reagent(id)`, `get_blueprint(id)`, `get_crate(id)`, `get_upgrade(id)`, `get_dungeon(id)`, `get_modifier(id)`, `get_contract(id)`, `get_town(id)`, `get_perk(id)` | The definition, or null. |
 | `get_all_items() -> Dictionary`, `get_all_enemies() -> Dictionary` | The catalogs themselves (read-only). |
 | `get_all_party_members()` | Ordered by `slot_order`: index 0 is the front member. |
 | `get_all_blueprints()`, `get_all_crates()`, `get_all_upgrades()`, `get_all_reagents()` | Typed arrays, cheapest first (ties by id). |
-| `get_all_customers() -> Array[CustomerDefinition]` | Sorted by id: the archetype pool `autoloads/customer_generator.gd` deals a session from. Not a fixed order — the generator decides who's dealt. |
-| `get_shop_rules() -> ShopRulesDefinition` | The one `shop_rules` definition, id `"default"` (`session_size`, `modifier_chance`, `forecast_customers`, `contract_offers`, `quality_price_multipliers` (`default.tres` ships `[1.0, 1.2, 1.5]`, indexed by `min_quality`), `xp_per_gold`, `streak_step`, `streak_cap`, `level_xp_base`, `level_xp_exponent`, `max_level`). |
-| `get_all_dungeons()` | Ordered by `min_shop_level` (unlock order), ties by id. PrepPhase's Enter Dungeon button targets the first. |
+| `get_all_customers() -> Array[CustomerDefinition]` | Sorted by id: the whole archetype pool across every town (the integrity tests). A session deals only from `GameManager.get_current_town()`'s own `customers` array via `get_all_towns()`/`get_town()`. |
+| `get_shop_rules() -> ShopRulesDefinition` | The one `shop_rules` definition, id `"default"` (`session_size`, `modifier_chance`, `forecast_customers`, `contract_offers`, `max_shelf_slots`, `quality_price_multipliers` (`default.tres` ships `[1.0, 1.2, 1.5]`, indexed by `min_quality`), `xp_per_gold`, `streak_step`, `streak_cap`, `level_xp_base`, `level_xp_exponent`, `max_level`, `charter_level`, `charter_base_points`, `charter_points_per_level`, `codex_family_points`). |
+| `get_all_dungeons()` | Every dungeon across every town, ordered by `min_shop_level` (unlock order), ties by id — for the integrity tests. PrepPhase's Enter Dungeon button instead targets `get_town_dungeons(town)`'s first, or hides itself when that's empty. |
 | `get_all_modifiers() -> Array[SessionModifierDefinition]` | Sorted by id, so a seeded modifier roll can't depend on catalog load order. |
-| `get_unlocks_between(old_level: int, new_level: int) -> Array[Resource]` | Every definition across every catalog whose `min_shop_level` is above `old_level` and at or below `new_level` (exclusive below, inclusive above). Sorted by level, then folder, then id. Used by `LevelUpPanel` to list what a level-up opened. |
+| `get_all_towns() -> Array[TownDefinition]` | Ordered by `charters_required` (charter order), ties by id — so the Guild Hall's town list reads in open order. |
+| `get_all_perks() -> Array[PerkDefinition]` | Sorted by id, so the Guild Hall's perk list is stable. |
+| `get_town_crates(town)`, `get_town_blueprints(town)` | The town's own array, cheapest first (ties by id) — same ordering as `get_all_crates()`/`get_all_blueprints()`, scoped to one town. |
+| `get_town_dungeons(town)` | The town's own dungeons, in unlock order; empty for a town with none. |
+| `get_unlocks_between(old_level: int, new_level: int, town: TownDefinition) -> Array[Resource]` | Every definition whose `min_shop_level` is above `old_level` and at or below `new_level` (exclusive below, inclusive above): scoped catalogs (`TownDefinition.SCOPED_CATALOGS`) read from `town`, shared catalogs (items, reagents, upgrades, ...) read whole. Sorted by level, then folder, then id. Used by `LevelUpPanel` to list what a level-up opened, town-scoped so it never names another town's customer or blueprint. |
 
 #### RecipeResolver
 
@@ -1336,7 +1352,7 @@ Reagents with a positive cost are bought in the prep phase. A reagent with `cost
 
 **Extends:** Node
 **Script:** `autoloads/game_manager.gd`
-**Description:** Singleton data store for all persistent game state. No game logic — getters, setters, and change signals only. `SAVE_VERSION` is 9: loyalty points and active contract entries are now required; older saves are rejected as CORRUPT. Board entries retain the `quality` field introduced in version 8.
+**Description:** Singleton data store for all persistent game state. No game logic — getters, setters, and change signals only. `SAVE_VERSION` is 10: the current town, Guild Charter progress, perk levels and the codex are now required; older saves are rejected as CORRUPT. Board entries retain the `quality` field introduced in version 8. `CHARTER_KEPT_FIELDS` names the fields a Guild Charter keeps (`sessions_played`, `seen_intro`, `charters`, `charter_points`, `perk_levels`, `codex`, `codex_stars_credited`, `codex_families_credited`); `found_charter()` resets everything else through `deserialize({})`'s fresh-game defaults, so a save field added later resets automatically unless it's added to this list too.
 
 **Properties:**
 
@@ -1352,10 +1368,18 @@ Reagents with a positive cost are bought in the prep phase. A reagent with `cost
 | `dungeon_board_state: Array` | Array | Dungeon board, same shape. Quality forms here too (the resolver is shared) but has no dungeon effect yet; drops are always Normal. `quality` added `SAVE_VERSION` 8. |
 | `grid_cols: int` | int | Board width (5 default; Board Expansion adds its levels' `grid_cols`) |
 | `grid_rows: int` | int | Board height (5 default; Board Expansion adds its levels' `grid_rows`) |
-| `run_seed: int` | int | Rolled once per new game; combined with `sessions_played` to seed each shop session. `SAVE_VERSION` 5. |
-| `sessions_played: int` | int | Completed shop-session count. Incremented by `record_session_played()` at `end_session()`, saved right then. Also the ad grace-period counter (Submodule — Ads). `SAVE_VERSION` 5. |
-| `regular_loyalty: Dictionary` | Dictionary | Customer id → nonnegative whole-number points; never decreases. Required in `SAVE_VERSION` 9. |
-| `active_contracts: Array` | Array | Oldest first; `{id, delivered: {item_id: count}, sessions_left}`. Each id is unique, delivered counts are nonnegative whole numbers, and sessions left is at least 1. Required in `SAVE_VERSION` 9. |
+| `run_seed: int` | int | Rolled once per new game, and once more on every charter (never the old value, so re-founding the same town can't replay it); combined with `sessions_played` to seed each shop session. `SAVE_VERSION` 5. |
+| `sessions_played: int` | int | Completed shop-session count. Incremented by `record_session_played()` at `end_session()`, saved right then. Also the ad grace-period counter (Submodule — Ads); kept across a charter, since the grace period is per new game, not per charter. `SAVE_VERSION` 5. |
+| `regular_loyalty: Dictionary` | Dictionary | Customer id → nonnegative whole-number points; never decreases. Required in `SAVE_VERSION` 9. Reset on a charter. |
+| `active_contracts: Array` | Array | Oldest first; `{id, delivered: {item_id: count}, sessions_left}`. Each id is unique, delivered counts are nonnegative whole numbers, and sessions left is at least 1. Required in `SAVE_VERSION` 9. Reset on a charter. |
+| `seen_intro: bool` | bool | UI-state flag; not checked by `is_valid_save()`, so an older save lacking it loads with `false`. Kept across a charter, so founding never replays the intro. |
+| `current_town: String` | String | The id of the town this run's shop is in. `SAVE_VERSION` 10; `is_valid_save()` requires it to name a town that still ships. Reset on a charter to the town just founded. |
+| `charters: int` | int | Charters founded so far. `SAVE_VERSION` 10. Kept across a charter (it's the thing a charter increments). |
+| `charter_points: int` | int | Unspent Guild perk points. `SAVE_VERSION` 10. Kept across a charter: `found_charter()` adds what this charter earns and spends what its picks cost, leaving the remainder. |
+| `perk_levels: Dictionary` | Dictionary | Perk id → level bought (absent = 0). `SAVE_VERSION` 10. Kept across a charter — perks are permanent. |
+| `codex: Dictionary` | Dictionary | Item id → the best quality (0-2) a merge has ever made it at; only ever rises. `SAVE_VERSION` 10. Kept across a charter — the codex is permanent. |
+| `codex_stars_credited: int` | int | Codex stars (`get_codex_stars()`) already paid out by a charter. `SAVE_VERSION` 10. Kept across a charter. |
+| `codex_families_credited: Array[String]` | Array | Families whose `codex_family_points` payout has already been paid, once ever. `SAVE_VERSION` 10. Kept across a charter. |
 
 **Signals:**
 
@@ -1393,8 +1417,22 @@ Reagents with a positive cost are bought in the prep phase. A reagent with `cost
 | `get_forecast_customers() -> int` | Bought level's `value` of the `forecast_detail` track (Town Crier), else `ShopRulesDefinition.forecast_customers`. 0 means every customer, plus their orders. |
 | `record_session_played()` | Increments `sessions_played`. Called once, at the end of a shop session. |
 | `get_session_seed() -> int` | `hash([run_seed, sessions_played])`. Fixed for a given run and session number: previewable in prep. A crash mid-session replays the same customers unless the shop level crossed an archetype's `min_shop_level` mid-session. |
+| `get_current_town() -> TownDefinition` | `DefinitionLibrary.get_town(current_town)`. |
+| `can_found_charter() -> bool` | `get_shop_level() >= ShopRulesDefinition.charter_level`. |
+| `is_town_open(town: TownDefinition) -> bool` | `town.charters_required <= charters + 1` — `charters_required` counts the charter being founded. Not saved; always derived. |
+| `record_crafted(item_id: String, quality: int)` | Connected to `EventBus.merge_completed` in `_ready()`. Ignores an item id `RecipeResolver.get_codex_items()` doesn't list (dungeon-drop-only items, e.g. the powder family); otherwise raises `codex[item_id]` if `quality` is higher than what's stored. |
+| `get_codex_stars() -> int` | Sum of `quality + 1` over every codex entry (Normal 1, Fine 2, Masterwork 3). Counts whatever `codex` holds, whether recorded by `record_crafted()` or set directly (as a test fixture does). |
+| `get_completed_codex_families() -> Array[String]` | Families where every item `RecipeResolver.get_codex_items()` lists for that family is in the codex. Sorted. |
+| `get_new_codex_stars() -> int` | `get_codex_stars() - codex_stars_credited`, floored at 0 — what founding now would add. |
+| `get_new_codex_families() -> Array[String]` | `get_completed_codex_families()` minus `codex_families_credited` — families that would pay out on founding now. |
+| `get_charter_points_earned() -> int` | `ShopRulesDefinition.charter_points(get_shop_level(), get_new_codex_stars(), get_new_codex_families().size())` — what founding now would add to `charter_points`; 0 below `charter_level`. |
+| `get_perk_level(perk_id: String) -> int` | Level bought (0 if none). |
+| `perk_purchase_cost(picks: Array[String]) -> int` | Charter points to buy `picks` in order, one perk level per entry, on top of levels owned. -1 for an unknown perk or a pick past its max level. |
+| `found_charter(town_id: String, picks: Array[String] = []) -> bool` | Refused (no state changed) below `charter_level`, for a town that isn't open, or when `picks` cost more than `charter_points + get_charter_points_earned()`. Otherwise: banks the charter's points, resets every field except `CHARTER_KEPT_FIELDS` via `deserialize({})`, sets `current_town`, `charters += 1`, spends `picks`, rolls a `run_seed` that differs from the old one, then applies the town's starting perks (Guild Stipend's gold, Inherited Plans' cheapest blueprints). The caller (`charter_screen.gd`) saves and emits `EventBus.charter_founded`. |
+| `get_xp_multiplier() -> float`, `get_loyalty_multiplier() -> float` | The owned level's `value` of the `xp_multiplier` / `loyalty_multiplier` perk, else 1.0. Applied inside `add_shop_xp()` / `add_loyalty()`. |
 | `serialize() -> Dictionary` | Returns all persistent state as a Dictionary for SaveManager. |
-| `deserialize(data: Dictionary)` | Restores all state from save data. |
+| `deserialize(data: Dictionary)` | Restores all state from save data; `deserialize({})` is the single source of fresh-game defaults, used by New Game, `found_charter()` and `TestBase`. |
+| `is_valid_save(data: Dictionary) -> bool` | Atomic save-schema check: every field present and well-typed, `current_town` naming a town that still ships, `codex` values in range, `codex_families_credited` a String array. Any one bad field fails the whole save (CORRUPT). |
 
 ---
 

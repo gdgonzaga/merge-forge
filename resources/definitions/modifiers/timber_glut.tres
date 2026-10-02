@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="SessionModifierDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/crate_definition.gd" id="1_hjvhb"]
+[ext_resource type="Resource" path="res://resources/definitions/crates/themed_wood.tres" id="2_wvy38"]
+[ext_resource type="Script" path="res://resources/definitions/customer_definition.gd" id="3_qvvnj"]
+[ext_resource type="Script" path="res://resources/definitions/session_modifier_definition.gd" id="4_n0lk0"]
+[ext_resource type="Texture2D" path="res://resources/sprites/modifiers/iron_glut.png" id="5_p7ci1"]
+
+[resource]
+script = ExtResource("4_n0lk0")
+id = "timber_glut"
+name = "Timber Glut"
+description = "Too much timber on the market: timber crates are cheap, and wood goods sell for less."
+sprite = ExtResource("5_p7ci1")
+min_shop_level = 12
+family = "wood"
+family_price_multiplier = 0.85
+affected_crates = Array[ExtResource("1_hjvhb")]([ExtResource("2_wvy38")])
+crate_cost_multiplier = 0.7

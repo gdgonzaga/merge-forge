@@ -1,30 +1,15 @@
-[gd_resource type="Resource" script_class="CustomerDefinition" format=3]
+[gd_resource type="Resource" script_class="CustomerDefinition" format=3 uid="uid://b7xgfqyra57tb"]
 
-[ext_resource type="Script" path="res://resources/definitions/order_template.gd" id="1_tpl"]
-[ext_resource type="Resource" path="res://resources/definitions/items/herbal_tonic.tres" id="2_tonic"]
-[ext_resource type="Resource" path="res://resources/definitions/items/healing_potion.tres" id="3_potion"]
-[ext_resource type="Resource" path="res://resources/definitions/items/battle_elixir.tres" id="4_elixir"]
-[ext_resource type="Script" path="res://resources/definitions/customer_definition.gd" id="5_cust"]
-[ext_resource type="Texture2D" path="res://resources/sprites/portraits/customer_04.png" id="6_sprite"]
-
-[ext_resource type="Script" path="res://resources/definitions/loyalty_reward.gd" id="p7_loyalty"]
+[ext_resource type="Script" uid="uid://lt1tn27q1lbl" path="res://resources/definitions/order_template.gd" id="1_tpl"]
+[ext_resource type="Resource" uid="uid://bkyhcay7c3k8h" path="res://resources/definitions/items/herbal_tonic.tres" id="2_tonic"]
+[ext_resource type="Resource" uid="uid://buo3iqb3138dm" path="res://resources/definitions/items/healing_potion.tres" id="3_potion"]
+[ext_resource type="Resource" uid="uid://dq87w52p4d0w0" path="res://resources/definitions/items/battle_elixir.tres" id="4_elixir"]
+[ext_resource type="Script" uid="uid://blookduysbunx" path="res://resources/definitions/customer_definition.gd" id="5_cust"]
+[ext_resource type="Texture2D" uid="uid://d2xwimq7bdtv3" path="res://resources/sprites/portraits/customer_04.png" id="6_sprite"]
 [ext_resource type="Resource" path="res://resources/definitions/blueprints/bp_nightshade_tonic.tres" id="p7_gift15"]
 [ext_resource type="Resource" path="res://resources/definitions/reagents/shadow_essence.tres" id="p7_gift30"]
-[ext_resource type="Resource" path="res://resources/definitions/items/nightshade_tonic.tres" id="p7_want"]
-
-[sub_resource type="Resource" id="Resource_tonic"]
-script = ExtResource("1_tpl")
-item = ExtResource("2_tonic")
-weight = 3
-max_quantity = 2
-
-[sub_resource type="Resource" id="Resource_potion"]
-script = ExtResource("1_tpl")
-item = ExtResource("3_potion")
-
-[sub_resource type="Resource" id="Resource_elixir"]
-script = ExtResource("1_tpl")
-item = ExtResource("4_elixir")
+[ext_resource type="Script" uid="uid://dvuio2uw6rbji" path="res://resources/definitions/loyalty_reward.gd" id="p7_loyalty"]
+[ext_resource type="Resource" uid="uid://b8opnr83csspn" path="res://resources/definitions/items/nightshade_tonic.tres" id="p7_want"]
 
 [sub_resource type="Resource" id="Resource_loyalty_5"]
 script = ExtResource("p7_loyalty")
@@ -45,6 +30,20 @@ title = "Old Friend"
 gold = 200
 reagent = ExtResource("p7_gift30")
 reagent_count = 1
+
+[sub_resource type="Resource" id="Resource_tonic"]
+script = ExtResource("1_tpl")
+item = ExtResource("2_tonic")
+weight = 3
+max_quantity = 2
+
+[sub_resource type="Resource" id="Resource_potion"]
+script = ExtResource("1_tpl")
+item = ExtResource("3_potion")
+
+[sub_resource type="Resource" id="Resource_elixir"]
+script = ExtResource("1_tpl")
+item = ExtResource("4_elixir")
 
 [sub_resource type="Resource" id="Resource_phase7_want"]
 script = ExtResource("1_tpl")

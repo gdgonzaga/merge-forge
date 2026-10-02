@@ -22,3 +22,16 @@ func test_panel_names_the_new_level_and_its_unlocks() -> void:
 	assert_bool(panel.visible).is_true()
 	assert_str(panel.get_node("%LevelBanner").text).is_equal("Level 9000!")
 	assert_str(panel.get_node("%UnlockList").text).contains("Test Blueprint")
+
+
+func test_an_unlock_outside_the_town_is_not_named() -> void:
+	var away := BlueprintDefinition.new()
+	away.id = "__test_away_bp"
+	away.name = "Away Blueprint"
+	away.min_shop_level = 9000
+	set_definition(DefinitionLibrary.blueprints, away)
+	test_town.blueprints.erase(away)
+	var panel: VBoxContainer = auto_free(PANEL.instantiate())
+	add_child(panel)
+	panel.setup(8999, 9000)
+	assert_str(panel.get_node("%UnlockList").text).not_contains("Away Blueprint")

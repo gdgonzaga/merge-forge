@@ -11,6 +11,8 @@ func buy_blueprint(bp_id: String) -> bool:
 	var blueprint := DefinitionLibrary.get_blueprint(bp_id)
 	if blueprint == null or blueprint.cost <= 0:
 		return false
+	if not blueprint in GameManager.get_current_town().blueprints:
+		return false
 	if not GameManager.meets_level(blueprint.min_shop_level):
 		return false
 	if not RecipeResolver.are_dependencies_met(blueprint):

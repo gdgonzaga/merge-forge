@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="BlueprintDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/blueprint_definition.gd" id="1_qkym8"]
+
+[resource]
+script = ExtResource("1_qkym8")
+id = "bp_oak_stave"
+name = "Oak Stave Blueprint"
+cost = 150
+min_shop_level = 2

@@ -1,0 +1,62 @@
+[gd_resource type="Resource" script_class="CustomerDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/loyalty_reward.gd" id="1_r56hm"]
+[ext_resource type="Resource" path="res://resources/definitions/blueprints/bp_frost_wand.tres" id="2_c0g2h"]
+[ext_resource type="Resource" path="res://resources/definitions/reagents/ice_essence.tres" id="3_rx015"]
+[ext_resource type="Script" path="res://resources/definitions/customer_definition.gd" id="4_8jcfs"]
+[ext_resource type="Texture2D" path="res://resources/sprites/portraits/customer_09.png" id="5_3io4e"]
+[ext_resource type="Script" path="res://resources/definitions/order_template.gd" id="6_p1we4"]
+[ext_resource type="Resource" path="res://resources/definitions/items/longbow.tres" id="7_r4pur"]
+[ext_resource type="Resource" path="res://resources/definitions/items/warding_staff.tres" id="8_vk1sg"]
+[ext_resource type="Resource" path="res://resources/definitions/items/ember_wand.tres" id="9_etkp3"]
+[ext_resource type="Resource" path="res://resources/definitions/items/frost_wand.tres" id="10_d6sld"]
+
+[sub_resource type="Resource" id="Resource_clh31"]
+script = ExtResource("1_r56hm")
+points = 5
+title = "Familiar Face"
+gold = 250
+
+[sub_resource type="Resource" id="Resource_pt5tu"]
+script = ExtResource("1_r56hm")
+points = 15
+title = "Regular"
+blueprint = ExtResource("2_c0g2h")
+
+[sub_resource type="Resource" id="Resource_65mii"]
+script = ExtResource("1_r56hm")
+points = 30
+title = "Old Friend"
+gold = 200
+reagent = ExtResource("3_rx015")
+reagent_count = 1
+
+[sub_resource type="Resource" id="Resource_8mt0t"]
+script = ExtResource("6_p1we4")
+item = ExtResource("7_r4pur")
+weight = 2
+max_quantity = 2
+
+[sub_resource type="Resource" id="Resource_jx706"]
+script = ExtResource("6_p1we4")
+item = ExtResource("8_vk1sg")
+weight = 2
+
+[sub_resource type="Resource" id="Resource_ob42b"]
+script = ExtResource("6_p1we4")
+item = ExtResource("9_etkp3")
+
+[sub_resource type="Resource" id="Resource_l4rgw"]
+script = ExtResource("6_p1we4")
+item = ExtResource("10_d6sld")
+
+[resource]
+script = ExtResource("4_8jcfs")
+id = "gh_09"
+name = "Warden Yew"
+role = "Ranger-Captain"
+sprite = ExtResource("5_3io4e")
+min_shop_level = 14
+max_orders = 3
+wants = Array[ExtResource("6_p1we4")]([SubResource("Resource_8mt0t"), SubResource("Resource_jx706"), SubResource("Resource_ob42b"), SubResource("Resource_l4rgw")])
+loyalty_rewards = Array[ExtResource("1_r56hm")]([SubResource("Resource_clh31"), SubResource("Resource_pt5tu"), SubResource("Resource_65mii")])

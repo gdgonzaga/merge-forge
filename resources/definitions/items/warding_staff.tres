@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="ItemDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/effect_definition.gd" id="1_xnkog"]
+[ext_resource type="Script" path="res://resources/definitions/merge_result.gd" id="2_vl7l5"]
+[ext_resource type="Script" path="res://resources/definitions/reagent_variant.gd" id="3_qi325"]
+[ext_resource type="Script" path="res://resources/definitions/item_definition.gd" id="4_d3c1b"]
+[ext_resource type="Texture2D" path="res://resources/sprites/items/iron_shield.png" id="5_pbmbe"]
+
+[sub_resource type="Resource" id="Resource_qmv7y"]
+script = ExtResource("1_xnkog")
+type = "absorb"
+value = 60
+
+[resource]
+script = ExtResource("4_d3c1b")
+id = "warding_staff"
+name = "Warding Staff"
+family = "wood"
+gold_value = 280
+dungeon_usable = true
+dungeon_use_target = "party-individual"
+effect = SubResource("Resource_qmv7y")
+sprite = ExtResource("5_pbmbe")

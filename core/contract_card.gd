@@ -59,7 +59,8 @@ func _reward_parts(contract: ContractDefinition) -> PackedStringArray:
 	if contract.reward_reagent != null and contract.reward_reagent_count > 0:
 		parts.append("%d %s" % [contract.reward_reagent_count, contract.reward_reagent.name])
 	if contract.loyalty_points > 0:
-		parts.append("+%d loyalty" % contract.loyalty_points)
+		var gained := roundi(contract.loyalty_points * GameManager.get_loyalty_multiplier())
+		parts.append("+%d loyalty" % gained)
 	return parts
 
 

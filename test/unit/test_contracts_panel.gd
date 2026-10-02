@@ -41,6 +41,21 @@ func test_an_offer_lists_what_it_needs_and_pays() -> void:
 	assert_str(card.get_node("%SessionsLabel").text).is_equal("3 sessions to deliver")
 
 
+func test_an_offers_reward_shows_loyalty_after_the_good_name_perk() -> void:
+	var perk := PerkDefinition.new()
+	perk.id = "__test_loyalty_perk"
+	perk.effect = "loyalty_multiplier"
+	var level := PerkLevel.new()
+	level.cost_points = 3
+	level.value = 1.5
+	perk.levels = [level]
+	set_definition(DefinitionLibrary.perks, perk)
+	GameManager.perk_levels[perk.id] = 1
+	var card := _card_titled(_panel([_contract]), "Test Contract")
+	# loyalty_points is 2; roundi(2 * 1.5) == 3, matching add_loyalty()'s rounding.
+	assert_str(card.get_node("%RewardLabel").text).is_equal("Reward: 150 gold, +3 loyalty")
+
+
 func test_without_slots_an_offer_names_the_upgrade_it_needs() -> void:
 	var panel := _panel([_contract])
 	var button: Button = _card_titled(panel, "Test Contract").get_node("%AcceptBtn")

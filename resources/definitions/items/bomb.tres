@@ -1,15 +1,15 @@
-[gd_resource type="Resource" script_class="ItemDefinition" format=3]
+[gd_resource type="Resource" script_class="ItemDefinition" format=3 uid="uid://rw2lfqgko75q"]
 
-[ext_resource type="Script" path="res://resources/definitions/effect_definition.gd" id="1_effect"]
-[ext_resource type="Script" path="res://resources/definitions/item_definition.gd" id="2_item"]
-[ext_resource type="Script" path="res://resources/definitions/merge_result.gd" id="2_rjgty"]
+[ext_resource type="Script" uid="uid://xn6sinp83boe" path="res://resources/definitions/effect_definition.gd" id="1_effect"]
+[ext_resource type="Script" uid="uid://8qdrbetfqfv3" path="res://resources/definitions/item_definition.gd" id="2_item"]
+[ext_resource type="Script" uid="uid://c3ll0lgyqpgap" path="res://resources/definitions/merge_result.gd" id="2_rjgty"]
 [ext_resource type="Resource" path="res://resources/definitions/blueprints/bp_cluster_bomb.tres" id="3_ghoy7"]
-[ext_resource type="Texture2D" path="res://resources/sprites/items/bomb.png" id="3_sprite"]
-[ext_resource type="Resource" path="res://resources/definitions/items/cluster_bomb.tres" id="4_mvr4o"]
-[ext_resource type="Script" path="res://resources/definitions/reagent_variant.gd" id="5_d6yjp"]
+[ext_resource type="Texture2D" uid="uid://dw3sea3edxk1a" path="res://resources/sprites/items/bomb.png" id="3_sprite"]
+[ext_resource type="Resource" uid="uid://cws2drkd0ixnx" path="res://resources/definitions/items/cluster_bomb.tres" id="4_mvr4o"]
+[ext_resource type="Script" uid="uid://bwjarlm68nkgp" path="res://resources/definitions/reagent_variant.gd" id="5_d6yjp"]
 [ext_resource type="Resource" path="res://resources/definitions/blueprints/bp_fire_bomb.tres" id="6_l2knf"]
 [ext_resource type="Resource" path="res://resources/definitions/reagents/fire_essence.tres" id="7_u0nco"]
-[ext_resource type="Resource" path="res://resources/definitions/items/fire_bomb.tres" id="8_p2wax"]
+[ext_resource type="Resource" uid="uid://dxlps4pihsfek" path="res://resources/definitions/items/fire_bomb.tres" id="8_p2wax"]
 
 [sub_resource type="Resource" id="Resource_effect"]
 script = ExtResource("1_effect")

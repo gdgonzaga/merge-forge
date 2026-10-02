@@ -1,0 +1,36 @@
+[gd_resource type="Resource" script_class="CustomerDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/loyalty_reward.gd" id="1_ilbxe"]
+[ext_resource type="Script" path="res://resources/definitions/customer_definition.gd" id="2_16s8x"]
+[ext_resource type="Texture2D" path="res://resources/sprites/portraits/customer_05.png" id="3_6iubf"]
+[ext_resource type="Script" path="res://resources/definitions/order_template.gd" id="4_cjix2"]
+[ext_resource type="Resource" path="res://resources/definitions/items/polished_gem.tres" id="5_3afdh"]
+[ext_resource type="Resource" path="res://resources/definitions/items/mending_ring.tres" id="6_ysloj"]
+[ext_resource type="Resource" path="res://resources/definitions/items/keen_amulet.tres" id="7_60vhl"]
+
+[sub_resource type="Resource" id="Resource_6bfh8"]
+script = ExtResource("4_cjix2")
+item = ExtResource("5_3afdh")
+weight = 2
+min_quality = 2
+
+[sub_resource type="Resource" id="Resource_dvdm8"]
+script = ExtResource("4_cjix2")
+item = ExtResource("6_ysloj")
+min_quality = 2
+
+[sub_resource type="Resource" id="Resource_e7efy"]
+script = ExtResource("4_cjix2")
+item = ExtResource("7_60vhl")
+min_quality = 2
+
+[resource]
+script = ExtResource("2_16s8x")
+id = "st_13"
+name = "Countess Ilvane"
+role = "Court Jeweler"
+sprite = ExtResource("3_6iubf")
+min_shop_level = 32
+max_orders = 2
+price_multiplier = 1.3
+wants = Array[ExtResource("4_cjix2")]([SubResource("Resource_6bfh8"), SubResource("Resource_dvdm8"), SubResource("Resource_e7efy")])

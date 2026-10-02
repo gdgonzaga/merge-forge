@@ -1,16 +1,15 @@
-[gd_resource type="Resource" script_class="DungeonDefinition" format=3]
+[gd_resource type="Resource" script_class="DungeonDefinition" format=3 uid="uid://ccllo381ck21k"]
 
-[ext_resource type="Script" path="res://resources/definitions/encounter_definition.gd" id="1_5lyl5"]
-[ext_resource type="Script" path="res://resources/definitions/enemy_spawn.gd" id="2_at71i"]
-[ext_resource type="Resource" path="res://resources/definitions/enemies/slime.tres" id="3_vahml"]
-[ext_resource type="Resource" path="res://resources/definitions/enemies/goblin_archer.tres" id="4_3posp"]
-[ext_resource type="Resource" path="res://resources/definitions/enemies/goblin.tres" id="5_bhjox"]
-[ext_resource type="Script" path="res://resources/definitions/dungeon_definition.gd" id="6_3xp5g"]
-
-[ext_resource type="Script" path="res://resources/definitions/reagent_reward.gd" id="p7_reward"]
-[ext_resource type="Resource" path="res://resources/definitions/reagents/ice_essence.tres" id="p7_ice_essence"]
-[ext_resource type="Resource" path="res://resources/definitions/reagents/shadow_essence.tres" id="p7_shadow_essence"]
+[ext_resource type="Script" uid="uid://dc031sa0v08k5" path="res://resources/definitions/encounter_definition.gd" id="1_5lyl5"]
+[ext_resource type="Script" uid="uid://b2crh3olowfla" path="res://resources/definitions/enemy_spawn.gd" id="2_at71i"]
+[ext_resource type="Resource" uid="uid://dqs2rsb8v3555" path="res://resources/definitions/enemies/slime.tres" id="3_vahml"]
+[ext_resource type="Resource" uid="uid://bpindfdduvpt3" path="res://resources/definitions/enemies/goblin_archer.tres" id="4_3posp"]
+[ext_resource type="Resource" uid="uid://bb877abnk5mq8" path="res://resources/definitions/enemies/goblin.tres" id="5_bhjox"]
+[ext_resource type="Script" uid="uid://syrdyrsakjg8" path="res://resources/definitions/dungeon_definition.gd" id="6_3xp5g"]
 [ext_resource type="Resource" path="res://resources/definitions/reagents/holy_essence.tres" id="p7_holy_essence"]
+[ext_resource type="Resource" path="res://resources/definitions/reagents/ice_essence.tres" id="p7_ice_essence"]
+[ext_resource type="Script" uid="uid://cik7yxqk5u5yb" path="res://resources/definitions/reagent_reward.gd" id="p7_reward"]
+[ext_resource type="Resource" path="res://resources/definitions/reagents/shadow_essence.tres" id="p7_shadow_essence"]
 
 [sub_resource type="Resource" id="Resource_blhq5"]
 script = ExtResource("2_at71i")
@@ -66,5 +65,5 @@ walk_speed = 0.075
 encounter_points = Array[float]([0.2, 0.5, 0.8])
 encounters = Array[ExtResource("1_5lyl5")]([SubResource("Resource_supk0"), SubResource("Resource_0nrh2"), SubResource("Resource_kryoi")])
 gold_reward = 120
-xp_reward = 60
 reagent_rewards = Array[ExtResource("p7_reward")]([SubResource("Resource_reward_ice_essence"), SubResource("Resource_reward_shadow_essence"), SubResource("Resource_reward_holy_essence")])
+xp_reward = 60

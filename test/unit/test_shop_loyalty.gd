@@ -7,7 +7,6 @@ var _item: ItemDefinition
 
 func before_test() -> void:
 	super.before_test()
-	_push_shipped_shop_content_away()
 	set_definition(DefinitionLibrary.shop_rules, _rules(4))
 	_item = ItemDefinition.new()
 	_item.id = "__test_item"
@@ -69,6 +68,26 @@ func test_the_loyalty_line_shows_progress_then_the_title() -> void:
 	assert_str(label.text).is_equal("Old Friend · Loyalty max")
 
 
+# The gift check must read the loyalty after the perk multiplies it.
+func test_a_loyalty_perk_reaches_gifts_sooner() -> void:
+	var perk := PerkDefinition.new()
+	perk.id = "__test_good_name"
+	perk.effect = "loyalty_multiplier"
+	var level := PerkLevel.new()
+	level.cost_points = 1
+	level.value = 2.0
+	perk.levels = [level]
+	set_definition(DefinitionLibrary.perks, perk)
+	GameManager.perk_levels["__test_good_name"] = 1
+	set_definition(DefinitionLibrary.customers, _customer(0, [_gift(2, "Friend", 40)]))
+	var session := _start_session()
+	var gold_before := GameManager.gold
+	await _fulfil_next(session, 0)
+	# One normal order: 1 point x 2.0 reaches the gift at 2. Order 60 + gift 40.
+	assert_int(GameManager.get_loyalty("__test_customer")).is_equal(2)
+	assert_int(GameManager.gold - gold_before).is_equal(100)
+
+
 func _start_session() -> Control:
 	var session: Control = auto_free(SHOP_SESSION.instantiate())
 	add_child(session)
@@ -101,14 +120,6 @@ func _gift(points: int, title: String, gold: int) -> LoyaltyReward:
 	gift.title = title
 	gift.gold = gold
 	return gift
-
-
-func _push_shipped_shop_content_away() -> void:
-	for catalog: Dictionary in [DefinitionLibrary.customers, DefinitionLibrary.crates]:
-		for definition: Resource in catalog.values().duplicate():
-			var moved: Resource = definition.duplicate()
-			moved.min_shop_level = 9999
-			set_definition(catalog, moved)
 
 
 func _rules(session_size: int) -> ShopRulesDefinition:

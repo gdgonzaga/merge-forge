@@ -1,28 +1,13 @@
-[gd_resource type="Resource" script_class="CustomerDefinition" format=3]
+[gd_resource type="Resource" script_class="CustomerDefinition" format=3 uid="uid://ciwvg63q4aaay"]
 
-[ext_resource type="Script" path="res://resources/definitions/order_template.gd" id="1_tpl"]
-[ext_resource type="Resource" path="res://resources/definitions/items/herb_bundle.tres" id="2_bundle"]
-[ext_resource type="Resource" path="res://resources/definitions/items/iron_ingot.tres" id="3_ingot"]
-[ext_resource type="Script" path="res://resources/definitions/customer_definition.gd" id="4_cust"]
-[ext_resource type="Texture2D" path="res://resources/sprites/portraits/customer_06.png" id="5_sprite"]
-
-[ext_resource type="Script" path="res://resources/definitions/loyalty_reward.gd" id="p7_loyalty"]
+[ext_resource type="Script" uid="uid://lt1tn27q1lbl" path="res://resources/definitions/order_template.gd" id="1_tpl"]
+[ext_resource type="Resource" uid="uid://c7jf1g7xg0a5d" path="res://resources/definitions/items/herb_bundle.tres" id="2_bundle"]
+[ext_resource type="Resource" uid="uid://do5v12gikixbd" path="res://resources/definitions/items/iron_ingot.tres" id="3_ingot"]
+[ext_resource type="Script" uid="uid://blookduysbunx" path="res://resources/definitions/customer_definition.gd" id="4_cust"]
+[ext_resource type="Texture2D" uid="uid://c7y88pif4thi0" path="res://resources/sprites/portraits/customer_06.png" id="5_sprite"]
 [ext_resource type="Resource" path="res://resources/definitions/reagents/fire_essence.tres" id="p7_gift15"]
 [ext_resource type="Resource" path="res://resources/definitions/reagents/shadow_essence.tres" id="p7_gift30"]
-
-[sub_resource type="Resource" id="Resource_bundle"]
-script = ExtResource("1_tpl")
-item = ExtResource("2_bundle")
-weight = 2
-min_quantity = 2
-max_quantity = 3
-
-[sub_resource type="Resource" id="Resource_ingot"]
-script = ExtResource("1_tpl")
-item = ExtResource("3_ingot")
-weight = 2
-min_quantity = 2
-max_quantity = 3
+[ext_resource type="Script" uid="uid://dvuio2uw6rbji" path="res://resources/definitions/loyalty_reward.gd" id="p7_loyalty"]
 
 [sub_resource type="Resource" id="Resource_loyalty_5"]
 script = ExtResource("p7_loyalty")
@@ -44,6 +29,20 @@ title = "Old Friend"
 gold = 200
 reagent = ExtResource("p7_gift30")
 reagent_count = 1
+
+[sub_resource type="Resource" id="Resource_bundle"]
+script = ExtResource("1_tpl")
+item = ExtResource("2_bundle")
+weight = 2
+min_quantity = 2
+max_quantity = 3
+
+[sub_resource type="Resource" id="Resource_ingot"]
+script = ExtResource("1_tpl")
+item = ExtResource("3_ingot")
+weight = 2
+min_quantity = 2
+max_quantity = 3
 
 [resource]
 script = ExtResource("4_cust")

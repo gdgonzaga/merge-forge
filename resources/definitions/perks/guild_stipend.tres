@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="PerkDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/perk_definition.gd" id="1_perk"]
+[ext_resource type="Script" path="res://resources/definitions/perk_level.gd" id="2_level"]
+
+[sub_resource type="Resource" id="Level_1"]
+script = ExtResource("2_level")
+cost_points = 3
+value = 400.0
+
+[sub_resource type="Resource" id="Level_2"]
+script = ExtResource("2_level")
+cost_points = 6
+value = 1000.0
+
+[sub_resource type="Resource" id="Level_3"]
+script = ExtResource("2_level")
+cost_points = 10
+value = 2500.0
+
+[resource]
+script = ExtResource("1_perk")
+id = "guild_stipend"
+name = "Guild Stipend"
+description = "The Guild funds each new branch."
+effect = "starting_gold"
+levels = Array[ExtResource("2_level")]([SubResource("Level_1"), SubResource("Level_2"), SubResource("Level_3")])

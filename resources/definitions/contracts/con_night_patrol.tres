@@ -1,0 +1,30 @@
+[gd_resource type="Resource" script_class="ContractDefinition" format=3]
+
+[ext_resource type="Resource" path="res://resources/definitions/customers/gh_07.tres" id="1_ghhi4"]
+[ext_resource type="Script" path="res://resources/definitions/order_template.gd" id="2_38cr8"]
+[ext_resource type="Resource" path="res://resources/definitions/items/nightshade_tonic.tres" id="3_l6rur"]
+[ext_resource type="Resource" path="res://resources/definitions/items/herbal_tonic.tres" id="4_xuya8"]
+[ext_resource type="Script" path="res://resources/definitions/contract_definition.gd" id="5_62763"]
+
+[sub_resource type="Resource" id="Resource_c3kex"]
+script = ExtResource("2_38cr8")
+item = ExtResource("3_l6rur")
+min_quantity = 2
+max_quantity = 2
+
+[sub_resource type="Resource" id="Resource_2mc1d"]
+script = ExtResource("2_38cr8")
+item = ExtResource("4_xuya8")
+min_quantity = 2
+max_quantity = 2
+
+[resource]
+script = ExtResource("5_62763")
+id = "con_night_patrol"
+name = "Briar's Night Patrol"
+giver = ExtResource("1_ghhi4")
+min_shop_level = 14
+requirements = Array[ExtResource("2_38cr8")]([SubResource("Resource_c3kex"), SubResource("Resource_2mc1d")])
+sessions_allowed = 3
+reward_gold = 740
+loyalty_points = 4

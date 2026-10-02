@@ -1,0 +1,28 @@
+[gd_resource type="Resource" script_class="ContractDefinition" format=3]
+
+[ext_resource type="Resource" path="res://resources/definitions/customers/gh_10.tres" id="1_04rlw"]
+[ext_resource type="Script" path="res://resources/definitions/order_template.gd" id="2_2tvjx"]
+[ext_resource type="Resource" path="res://resources/definitions/items/holy_draught.tres" id="3_774ol"]
+[ext_resource type="Resource" path="res://resources/definitions/items/healing_potion.tres" id="4_ou10g"]
+[ext_resource type="Script" path="res://resources/definitions/contract_definition.gd" id="5_fwety"]
+
+[sub_resource type="Resource" id="Resource_in0gc"]
+script = ExtResource("2_2tvjx")
+item = ExtResource("3_774ol")
+
+[sub_resource type="Resource" id="Resource_xlt4v"]
+script = ExtResource("2_2tvjx")
+item = ExtResource("4_ou10g")
+min_quantity = 2
+max_quantity = 2
+
+[resource]
+script = ExtResource("5_fwety")
+id = "con_grove_blessing"
+name = "Elowen's Grove Blessing"
+giver = ExtResource("1_04rlw")
+min_shop_level = 22
+requirements = Array[ExtResource("2_2tvjx")]([SubResource("Resource_in0gc"), SubResource("Resource_xlt4v")])
+sessions_allowed = 3
+reward_gold = 1500
+loyalty_points = 5

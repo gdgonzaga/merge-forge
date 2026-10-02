@@ -1,0 +1,156 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://core/charter_screen.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://resources/sprites/backgrounds/bg_prep_phase.png" id="2_bg"]
+[ext_resource type="PackedScene" path="res://core/codex_panel.tscn" id="3_codex"]
+[ext_resource type="StyleBox" path="res://resources/themes/button_primary.tres" id="4_primary"]
+[ext_resource type="StyleBox" path="res://resources/themes/button_primary_pressed.tres" id="5_primary_pressed"]
+[ext_resource type="StyleBox" path="res://resources/themes/button_primary_disabled.tres" id="6_primary_disabled"]
+[ext_resource type="StyleBox" path="res://resources/themes/button_secondary.tres" id="7_secondary"]
+[ext_resource type="StyleBox" path="res://resources/themes/button_secondary_pressed.tres" id="8_secondary_pressed"]
+[ext_resource type="StyleBox" path="res://resources/themes/button_secondary_disabled.tres" id="9_secondary_disabled"]
+
+[node name="CharterScreen" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_script")
+
+[node name="BG" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("2_bg")
+stretch_mode = 1
+
+[node name="VBox" type="VBoxContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 24
+
+[node name="Title" type="Label" parent="VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 48
+text = "Guild Hall"
+horizontal_alignment = 1
+
+[node name="Tabs" type="TabContainer" parent="VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+current_tab = 0
+
+[node name="Charter" type="ScrollContainer" parent="VBox/Tabs"]
+layout_mode = 2
+horizontal_scroll_mode = 0
+metadata/_tab_index = 0
+
+[node name="CharterContent" type="VBoxContainer" parent="VBox/Tabs/Charter"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 24
+
+[node name="StatusLabel" type="Label" parent="VBox/Tabs/Charter/CharterContent"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 40
+autowrap_mode = 3
+
+[node name="PointsLabel" type="Label" parent="VBox/Tabs/Charter/CharterContent"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 40
+autowrap_mode = 3
+
+[node name="BreakdownLabel" type="Label" parent="VBox/Tabs/Charter/CharterContent"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+autowrap_mode = 3
+
+[node name="TownsTitle" type="Label" parent="VBox/Tabs/Charter/CharterContent"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 40
+text = "Choose a town"
+
+[node name="Towns" type="VBoxContainer" parent="VBox/Tabs/Charter/CharterContent"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 24
+
+[node name="TownDescLabel" type="Label" parent="VBox/Tabs/Charter/CharterContent"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+autowrap_mode = 3
+
+[node name="PerksTitle" type="Label" parent="VBox/Tabs/Charter/CharterContent"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 40
+text = "Perks"
+
+[node name="Perks" type="VBoxContainer" parent="VBox/Tabs/Charter/CharterContent"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 24
+
+[node name="ClearPicksBtn" type="Button" parent="VBox/Tabs/Charter/CharterContent"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(320, 120)
+layout_mode = 2
+size_flags_horizontal = 0
+theme_override_font_sizes/font_size = 32
+theme_override_styles/normal = ExtResource("7_secondary")
+theme_override_styles/pressed = ExtResource("8_secondary_pressed")
+theme_override_styles/hover = ExtResource("7_secondary")
+theme_override_styles/disabled = ExtResource("9_secondary_disabled")
+text = "Clear picks"
+
+[node name="Codex" type="ScrollContainer" parent="VBox/Tabs"]
+visible = false
+layout_mode = 2
+horizontal_scroll_mode = 0
+metadata/_tab_index = 1
+
+[node name="CodexPanel" parent="VBox/Tabs/Codex" instance=ExtResource("3_codex")]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="BtnBox" type="HBoxContainer" parent="VBox"]
+layout_mode = 2
+theme_override_constants/separation = 24
+alignment = 1
+
+[node name="BackBtn" type="Button" parent="VBox/BtnBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(240, 120)
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+theme_override_styles/normal = ExtResource("7_secondary")
+theme_override_styles/pressed = ExtResource("8_secondary_pressed")
+theme_override_styles/hover = ExtResource("7_secondary")
+theme_override_styles/disabled = ExtResource("9_secondary_disabled")
+text = "Back"
+
+[node name="FoundBtn" type="Button" parent="VBox/BtnBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(480, 120)
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+theme_override_styles/normal = ExtResource("4_primary")
+theme_override_styles/pressed = ExtResource("5_primary_pressed")
+theme_override_styles/hover = ExtResource("4_primary")
+theme_override_styles/disabled = ExtResource("6_primary_disabled")
+text = "Found Charter"

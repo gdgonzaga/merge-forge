@@ -1,0 +1,51 @@
+[gd_resource type="Resource" script_class="CustomerDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/loyalty_reward.gd" id="1_t6vqw"]
+[ext_resource type="Resource" path="res://resources/definitions/reagents/fire_essence.tres" id="2_bmf42"]
+[ext_resource type="Resource" path="res://resources/definitions/reagents/holy_essence.tres" id="3_vo06o"]
+[ext_resource type="Script" path="res://resources/definitions/customer_definition.gd" id="4_nfwa3"]
+[ext_resource type="Texture2D" path="res://resources/sprites/portraits/customer_02.png" id="5_vocrp"]
+[ext_resource type="Script" path="res://resources/definitions/order_template.gd" id="6_pmnyu"]
+[ext_resource type="Resource" path="res://resources/definitions/items/herb_bundle.tres" id="7_7whnc"]
+[ext_resource type="Resource" path="res://resources/definitions/items/herbal_tonic.tres" id="8_5bb1c"]
+
+[sub_resource type="Resource" id="Resource_qnoim"]
+script = ExtResource("1_t6vqw")
+points = 5
+title = "Familiar Face"
+gold = 100
+
+[sub_resource type="Resource" id="Resource_ajks3"]
+script = ExtResource("1_t6vqw")
+points = 15
+title = "Regular"
+reagent = ExtResource("2_bmf42")
+reagent_count = 2
+
+[sub_resource type="Resource" id="Resource_vhwf2"]
+script = ExtResource("1_t6vqw")
+points = 30
+title = "Old Friend"
+gold = 200
+reagent = ExtResource("3_vo06o")
+reagent_count = 1
+
+[sub_resource type="Resource" id="Resource_m4431"]
+script = ExtResource("6_pmnyu")
+item = ExtResource("7_7whnc")
+weight = 3
+max_quantity = 3
+
+[sub_resource type="Resource" id="Resource_fq20o"]
+script = ExtResource("6_pmnyu")
+item = ExtResource("8_5bb1c")
+
+[resource]
+script = ExtResource("4_nfwa3")
+id = "gh_02"
+name = "Fenna"
+role = "Herbalist"
+sprite = ExtResource("5_vocrp")
+max_orders = 2
+wants = Array[ExtResource("6_pmnyu")]([SubResource("Resource_m4431"), SubResource("Resource_fq20o")])
+loyalty_rewards = Array[ExtResource("1_t6vqw")]([SubResource("Resource_qnoim"), SubResource("Resource_ajks3"), SubResource("Resource_vhwf2")])

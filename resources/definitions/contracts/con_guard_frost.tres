@@ -1,0 +1,28 @@
+[gd_resource type="Resource" script_class="ContractDefinition" format=3]
+
+[ext_resource type="Resource" path="res://resources/definitions/customers/st_09.tres" id="1_boy2g"]
+[ext_resource type="Script" path="res://resources/definitions/order_template.gd" id="2_fdmt7"]
+[ext_resource type="Resource" path="res://resources/definitions/items/frost_blade.tres" id="3_gd3cc"]
+[ext_resource type="Resource" path="res://resources/definitions/items/sword.tres" id="4_u6cgu"]
+[ext_resource type="Script" path="res://resources/definitions/contract_definition.gd" id="5_rp03d"]
+
+[sub_resource type="Resource" id="Resource_h3mxe"]
+script = ExtResource("2_fdmt7")
+item = ExtResource("3_gd3cc")
+
+[sub_resource type="Resource" id="Resource_pne0s"]
+script = ExtResource("2_fdmt7")
+item = ExtResource("4_u6cgu")
+min_quantity = 2
+max_quantity = 2
+
+[resource]
+script = ExtResource("5_rp03d")
+id = "con_guard_frost"
+name = "Ser Maud's Frost Guard"
+giver = ExtResource("1_boy2g")
+min_shop_level = 20
+requirements = Array[ExtResource("2_fdmt7")]([SubResource("Resource_h3mxe"), SubResource("Resource_pne0s")])
+sessions_allowed = 3
+reward_gold = 1500
+loyalty_points = 5

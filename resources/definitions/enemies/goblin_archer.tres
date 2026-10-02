@@ -1,12 +1,12 @@
-[gd_resource type="Resource" script_class="EnemyDefinition" format=3]
+[gd_resource type="Resource" script_class="EnemyDefinition" format=3 uid="uid://bpindfdduvpt3"]
 
-[ext_resource type="Script" path="res://resources/definitions/weighted_item.gd" id="1_jt5v2"]
-[ext_resource type="Resource" path="res://resources/definitions/items/firecracker.tres" id="2_ke4nd"]
-[ext_resource type="Script" path="res://resources/definitions/enemy_definition.gd" id="2_w2asp"]
-[ext_resource type="Resource" path="res://resources/definitions/items/bomb.tres" id="3_1v204"]
-[ext_resource type="Texture2D" path="res://resources/sprites/enemies/goblin.png" id="3_8ia7f"]
-[ext_resource type="Resource" path="res://resources/definitions/items/herb_bundle.tres" id="4_xxrus"]
-[ext_resource type="Texture2D" path="res://resources/sprites/ui/badge_icon_arrow.png" id="5_arrow"]
+[ext_resource type="Script" uid="uid://c4qh4gihptmh2" path="res://resources/definitions/weighted_item.gd" id="1_jt5v2"]
+[ext_resource type="Resource" uid="uid://w3104ril7tnq" path="res://resources/definitions/items/firecracker.tres" id="2_ke4nd"]
+[ext_resource type="Script" uid="uid://cu7veosjkshwd" path="res://resources/definitions/enemy_definition.gd" id="2_w2asp"]
+[ext_resource type="Resource" uid="uid://rw2lfqgko75q" path="res://resources/definitions/items/bomb.tres" id="3_1v204"]
+[ext_resource type="Texture2D" uid="uid://c3avwcgha6uef" path="res://resources/sprites/enemies/goblin.png" id="3_8ia7f"]
+[ext_resource type="Resource" uid="uid://c7jf1g7xg0a5d" path="res://resources/definitions/items/herb_bundle.tres" id="4_xxrus"]
+[ext_resource type="Texture2D" uid="uid://cup7odeb4ac2" path="res://resources/sprites/ui/badge_icon_arrow.png" id="5_arrow"]
 
 [sub_resource type="Resource" id="Resource_v2ae0"]
 script = ExtResource("1_jt5v2")
@@ -32,9 +32,8 @@ windup = 1
 crit_windup = 6
 crit_chance = 0.15
 crit_name = "Arrow"
-crit_sprite = ExtResource("5_arrow")
 sprite = ExtResource("3_8ia7f")
+crit_sprite = ExtResource("5_arrow")
 min_drops = 2
 max_drops = 3
 drop_pool = Array[ExtResource("1_jt5v2")]([SubResource("Resource_v2ae0"), SubResource("Resource_d4mg5"), SubResource("Resource_gq3p0")])
-

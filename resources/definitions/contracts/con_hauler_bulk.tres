@@ -1,0 +1,35 @@
+[gd_resource type="Resource" script_class="ContractDefinition" format=3]
+
+[ext_resource type="Resource" path="res://resources/definitions/customers/st_08.tres" id="1_y8r75"]
+[ext_resource type="Script" path="res://resources/definitions/order_template.gd" id="2_66461"]
+[ext_resource type="Resource" path="res://resources/definitions/items/iron_ingot.tres" id="3_v6xgn"]
+[ext_resource type="Resource" path="res://resources/definitions/items/cut_gem.tres" id="4_jt8xy"]
+[ext_resource type="Resource" path="res://resources/definitions/reagents/fire_essence.tres" id="5_ykcgt"]
+[ext_resource type="Script" path="res://resources/definitions/contract_definition.gd" id="6_xu1kq"]
+
+[sub_resource type="Resource" id="Resource_jxsfn"]
+script = ExtResource("2_66461")
+item = ExtResource("3_v6xgn")
+min_quantity = 6
+max_quantity = 6
+min_quality = 1
+
+[sub_resource type="Resource" id="Resource_begyl"]
+script = ExtResource("2_66461")
+item = ExtResource("4_jt8xy")
+min_quantity = 6
+max_quantity = 6
+min_quality = 1
+
+[resource]
+script = ExtResource("6_xu1kq")
+id = "con_hauler_bulk"
+name = "Hesk's Fine Bulk"
+giver = ExtResource("1_y8r75")
+min_shop_level = 26
+requirements = Array[ExtResource("2_66461")]([SubResource("Resource_jxsfn"), SubResource("Resource_begyl")])
+sessions_allowed = 3
+reward_gold = 390
+reward_reagent = ExtResource("5_ykcgt")
+reward_reagent_count = 2
+loyalty_points = 4

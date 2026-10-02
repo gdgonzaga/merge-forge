@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="SessionModifierDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/crate_definition.gd" id="1_extk0"]
+[ext_resource type="Resource" path="res://resources/definitions/crates/themed_gem.tres" id="2_v4fq0"]
+[ext_resource type="Script" path="res://resources/definitions/customer_definition.gd" id="3_8rlcu"]
+[ext_resource type="Script" path="res://resources/definitions/session_modifier_definition.gd" id="4_6idwy"]
+[ext_resource type="Texture2D" path="res://resources/sprites/modifiers/herb_shortage.png" id="5_uu04c"]
+
+[resource]
+script = ExtResource("4_6idwy")
+id = "gem_shortage"
+name = "Gem Shortage"
+description = "Gems are scarce: gem crates cost more, and gem orders pay more."
+sprite = ExtResource("5_uu04c")
+min_shop_level = 5
+family = "gem"
+family_price_multiplier = 1.3
+affected_crates = Array[ExtResource("1_extk0")]([ExtResource("2_v4fq0")])
+crate_cost_multiplier = 1.5

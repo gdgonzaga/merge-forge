@@ -1,10 +1,10 @@
-[gd_resource type="Resource" script_class="CrateDefinition" format=3]
+[gd_resource type="Resource" script_class="CrateDefinition" format=3 uid="uid://ilvdrq5o6xs7"]
 
-[ext_resource type="Script" path="res://resources/definitions/weighted_item.gd" id="1_vfy4x"]
-[ext_resource type="Resource" path="res://resources/definitions/items/iron_ore.tres" id="2_vucyt"]
-[ext_resource type="Resource" path="res://resources/definitions/items/iron_ingot.tres" id="3_1dahh"]
-[ext_resource type="Script" path="res://resources/definitions/crate_definition.gd" id="4_ab6ln"]
-[ext_resource type="Texture2D" path="res://resources/sprites/items/crate_metal.png" id="5_sprite"]
+[ext_resource type="Script" uid="uid://c4qh4gihptmh2" path="res://resources/definitions/weighted_item.gd" id="1_vfy4x"]
+[ext_resource type="Resource" uid="uid://cg4gm83skbn2i" path="res://resources/definitions/items/iron_ore.tres" id="2_vucyt"]
+[ext_resource type="Resource" uid="uid://do5v12gikixbd" path="res://resources/definitions/items/iron_ingot.tres" id="3_1dahh"]
+[ext_resource type="Script" uid="uid://bsklmn8x8ctvs" path="res://resources/definitions/crate_definition.gd" id="4_ab6ln"]
+[ext_resource type="Texture2D" uid="uid://fg6vc8rmcrk7" path="res://resources/sprites/items/crate_metal.png" id="5_sprite"]
 
 [sub_resource type="Resource" id="Resource_rgade"]
 script = ExtResource("1_vfy4x")

@@ -2,6 +2,7 @@ extends Node
 
 @onready var scene_container: Node = $SceneContainer
 @onready var hud: Control = $CanvasLayer/HUD
+@onready var _splash_screen: SplashScreen = %SplashScreen
 
 var scene_map: Dictionary = {
 	"session_ended": "res://shop/session_summary.tscn",
@@ -12,6 +13,9 @@ var scene_map: Dictionary = {
 	"dungeon_failed": "res://dungeon/dungeon_summary.tscn",
 	"dungeon_summary_dismissed": "res://core/prep_phase.tscn",
 	"prep_quit_to_menu": "res://core/main_menu.tscn",
+	"prep_open_charter": "res://core/charter_screen.tscn",
+	"charter_closed": "res://core/prep_phase.tscn",
+	"charter_founded": "res://core/prep_phase.tscn",
 	"new_game_started": "res://core/prep_phase.tscn",
 	"continue_game": "res://core/prep_phase.tscn",
 	"intro": "res://core/intro.tscn",
@@ -23,6 +27,7 @@ var pending_dungeon_summary: Dictionary = {}
 
 
 func _ready() -> void:
+	_splash_screen.finished.connect(_on_splash_finished)
 	_transition_to("res://core/main_menu.tscn")
 	EventBus.new_game_started.connect(_on_new_game)
 	EventBus.continue_game.connect(_on_continue_game)
@@ -35,6 +40,13 @@ func _ready() -> void:
 	EventBus.dungeon_failed.connect(_on_dungeon_failed)
 	EventBus.dungeon_summary_dismissed.connect(_go_to.bind("dungeon_summary_dismissed"))
 	EventBus.prep_quit_to_menu.connect(_go_to.bind("prep_quit_to_menu"))
+	EventBus.prep_open_charter.connect(_go_to.bind("prep_open_charter"))
+	EventBus.charter_closed.connect(_go_to.bind("charter_closed"))
+	EventBus.charter_founded.connect(_on_charter_founded)
+
+
+func _on_splash_finished() -> void:
+	$SplashLayer.queue_free()
 
 
 func _go_to(_data = null, scene_key: String = "") -> void:
@@ -60,6 +72,12 @@ func _on_dungeon_failed(summary: Dictionary) -> void:
 func _on_prep_enter_dungeon(dungeon_id: String) -> void:
 	# Set before add_child so DungeonRun's _ready can read it.
 	_transition_to(scene_map["prep_enter_dungeon"], func(run: Node) -> void: run.dungeon_id = dungeon_id)
+
+
+# A charter is not an ad break (README principle 6): straight to the new
+# town's prep.
+func _on_charter_founded(_town_id: String) -> void:
+	_go_to(null, "charter_founded")
 
 
 func _on_new_game() -> void:

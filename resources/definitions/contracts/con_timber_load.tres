@@ -1,0 +1,33 @@
+[gd_resource type="Resource" script_class="ContractDefinition" format=3]
+
+[ext_resource type="Resource" path="res://resources/definitions/customers/gh_03.tres" id="1_kw54w"]
+[ext_resource type="Script" path="res://resources/definitions/order_template.gd" id="2_v5bs1"]
+[ext_resource type="Resource" path="res://resources/definitions/items/oak_stave.tres" id="3_52c7t"]
+[ext_resource type="Resource" path="res://resources/definitions/items/herbal_tonic.tres" id="4_tga2m"]
+[ext_resource type="Resource" path="res://resources/definitions/reagents/fire_essence.tres" id="5_t8qx2"]
+[ext_resource type="Script" path="res://resources/definitions/contract_definition.gd" id="6_mipls"]
+
+[sub_resource type="Resource" id="Resource_2rmj7"]
+script = ExtResource("2_v5bs1")
+item = ExtResource("3_52c7t")
+min_quantity = 3
+max_quantity = 3
+
+[sub_resource type="Resource" id="Resource_0w0ic"]
+script = ExtResource("2_v5bs1")
+item = ExtResource("4_tga2m")
+min_quantity = 3
+max_quantity = 3
+
+[resource]
+script = ExtResource("6_mipls")
+id = "con_timber_load"
+name = "Rook's Timber Load"
+giver = ExtResource("1_kw54w")
+min_shop_level = 12
+requirements = Array[ExtResource("2_v5bs1")]([SubResource("Resource_2rmj7"), SubResource("Resource_0w0ic")])
+sessions_allowed = 3
+reward_gold = 600
+reward_reagent = ExtResource("5_t8qx2")
+reward_reagent_count = 1
+loyalty_points = 4

@@ -1,0 +1,62 @@
+[gd_resource type="Resource" script_class="CustomerDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/loyalty_reward.gd" id="1_p38na"]
+[ext_resource type="Resource" path="res://resources/definitions/blueprints/bp_radiant_scepter.tres" id="2_dacxs"]
+[ext_resource type="Resource" path="res://resources/definitions/reagents/holy_essence.tres" id="3_53pmv"]
+[ext_resource type="Script" path="res://resources/definitions/customer_definition.gd" id="4_lh8jv"]
+[ext_resource type="Texture2D" path="res://resources/sprites/portraits/customer_10.png" id="5_y78of"]
+[ext_resource type="Script" path="res://resources/definitions/order_template.gd" id="6_4a6v4"]
+[ext_resource type="Resource" path="res://resources/definitions/items/keen_amulet.tres" id="7_3kjla"]
+[ext_resource type="Resource" path="res://resources/definitions/items/mending_ring.tres" id="8_u6wml"]
+[ext_resource type="Resource" path="res://resources/definitions/items/phoenix_diadem.tres" id="9_60y7e"]
+[ext_resource type="Resource" path="res://resources/definitions/items/radiant_scepter.tres" id="10_oksj0"]
+
+[sub_resource type="Resource" id="Resource_xhmhl"]
+script = ExtResource("1_p38na")
+points = 5
+title = "Familiar Face"
+gold = 250
+
+[sub_resource type="Resource" id="Resource_vus8v"]
+script = ExtResource("1_p38na")
+points = 15
+title = "Regular"
+blueprint = ExtResource("2_dacxs")
+
+[sub_resource type="Resource" id="Resource_vq373"]
+script = ExtResource("1_p38na")
+points = 30
+title = "Old Friend"
+gold = 200
+reagent = ExtResource("3_53pmv")
+reagent_count = 1
+
+[sub_resource type="Resource" id="Resource_6whq7"]
+script = ExtResource("6_4a6v4")
+item = ExtResource("7_3kjla")
+weight = 2
+max_quantity = 2
+
+[sub_resource type="Resource" id="Resource_alqpk"]
+script = ExtResource("6_4a6v4")
+item = ExtResource("8_u6wml")
+max_quantity = 2
+
+[sub_resource type="Resource" id="Resource_akpw1"]
+script = ExtResource("6_4a6v4")
+item = ExtResource("9_60y7e")
+
+[sub_resource type="Resource" id="Resource_rpkay"]
+script = ExtResource("6_4a6v4")
+item = ExtResource("10_oksj0")
+
+[resource]
+script = ExtResource("4_lh8jv")
+id = "st_10"
+name = "Seren"
+role = "Archmage"
+sprite = ExtResource("5_y78of")
+min_shop_level = 14
+max_orders = 3
+wants = Array[ExtResource("6_4a6v4")]([SubResource("Resource_6whq7"), SubResource("Resource_alqpk"), SubResource("Resource_akpw1"), SubResource("Resource_rpkay")])
+loyalty_rewards = Array[ExtResource("1_p38na")]([SubResource("Resource_xhmhl"), SubResource("Resource_vus8v"), SubResource("Resource_vq373")])

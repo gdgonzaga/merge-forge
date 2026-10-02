@@ -1,0 +1,57 @@
+[gd_resource type="Resource" script_class="CustomerDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/loyalty_reward.gd" id="1_v4ry4"]
+[ext_resource type="Resource" path="res://resources/definitions/blueprints/bp_flame_sword.tres" id="2_v2eij"]
+[ext_resource type="Resource" path="res://resources/definitions/reagents/ice_essence.tres" id="3_l4yvp"]
+[ext_resource type="Script" path="res://resources/definitions/customer_definition.gd" id="4_4xf3x"]
+[ext_resource type="Texture2D" path="res://resources/sprites/portraits/customer_05.png" id="5_gid0t"]
+[ext_resource type="Script" path="res://resources/definitions/order_template.gd" id="6_gt4fw"]
+[ext_resource type="Resource" path="res://resources/definitions/items/sword.tres" id="7_fk5nk"]
+[ext_resource type="Resource" path="res://resources/definitions/items/iron_shield.tres" id="8_oxuw4"]
+[ext_resource type="Resource" path="res://resources/definitions/items/iron_plate.tres" id="9_i0crj"]
+
+[sub_resource type="Resource" id="Resource_1freq"]
+script = ExtResource("1_v4ry4")
+points = 5
+title = "Familiar Face"
+gold = 200
+
+[sub_resource type="Resource" id="Resource_tcgnr"]
+script = ExtResource("1_v4ry4")
+points = 15
+title = "Regular"
+blueprint = ExtResource("2_v2eij")
+
+[sub_resource type="Resource" id="Resource_ogv2k"]
+script = ExtResource("1_v4ry4")
+points = 30
+title = "Old Friend"
+gold = 200
+reagent = ExtResource("3_l4yvp")
+reagent_count = 1
+
+[sub_resource type="Resource" id="Resource_iv3jv"]
+script = ExtResource("6_gt4fw")
+item = ExtResource("7_fk5nk")
+weight = 2
+
+[sub_resource type="Resource" id="Resource_3gtob"]
+script = ExtResource("6_gt4fw")
+item = ExtResource("8_oxuw4")
+
+[sub_resource type="Resource" id="Resource_npgdb"]
+script = ExtResource("6_gt4fw")
+item = ExtResource("9_i0crj")
+min_quantity = 2
+max_quantity = 3
+
+[resource]
+script = ExtResource("4_4xf3x")
+id = "st_05"
+name = "Ser Brannoc"
+role = "Mine Warden"
+sprite = ExtResource("5_gid0t")
+min_shop_level = 8
+max_orders = 2
+wants = Array[ExtResource("6_gt4fw")]([SubResource("Resource_iv3jv"), SubResource("Resource_3gtob"), SubResource("Resource_npgdb")])
+loyalty_rewards = Array[ExtResource("1_v4ry4")]([SubResource("Resource_1freq"), SubResource("Resource_tcgnr"), SubResource("Resource_ogv2k")])

@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="BlueprintDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/blueprint_definition.gd" id="1_tir1d"]
+
+[resource]
+script = ExtResource("1_tir1d")
+id = "bp_mending_ring"
+name = "Mending Ring Blueprint"
+cost = 300
+min_shop_level = 4

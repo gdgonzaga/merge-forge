@@ -1,11 +1,11 @@
-[gd_resource type="Resource" script_class="ItemDefinition" format=3]
+[gd_resource type="Resource" script_class="ItemDefinition" format=3 uid="uid://do5v12gikixbd"]
 
-[ext_resource type="Script" path="res://resources/definitions/item_definition.gd" id="1_4vgte"]
-[ext_resource type="Script" path="res://resources/definitions/merge_result.gd" id="1_q5irx"]
+[ext_resource type="Script" uid="uid://8qdrbetfqfv3" path="res://resources/definitions/item_definition.gd" id="1_4vgte"]
+[ext_resource type="Script" uid="uid://c3ll0lgyqpgap" path="res://resources/definitions/merge_result.gd" id="1_q5irx"]
 [ext_resource type="Resource" path="res://resources/definitions/blueprints/bp_iron_plate.tres" id="2_lgxfh"]
-[ext_resource type="Texture2D" path="res://resources/sprites/items/iron_ingot.png" id="2_lnj24"]
-[ext_resource type="Resource" path="res://resources/definitions/items/iron_plate.tres" id="3_2vb8o"]
-[ext_resource type="Script" path="res://resources/definitions/reagent_variant.gd" id="4_mxity"]
+[ext_resource type="Texture2D" uid="uid://8rwp2m5uttts" path="res://resources/sprites/items/iron_ingot.png" id="2_lnj24"]
+[ext_resource type="Resource" uid="uid://b4rm1u6ahosws" path="res://resources/definitions/items/iron_plate.tres" id="3_2vb8o"]
+[ext_resource type="Script" uid="uid://bwjarlm68nkgp" path="res://resources/definitions/reagent_variant.gd" id="4_mxity"]
 
 [sub_resource type="Resource" id="Resource_tvmtl"]
 script = ExtResource("1_q5irx")

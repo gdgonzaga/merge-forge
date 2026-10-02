@@ -1,0 +1,28 @@
+[gd_resource type="Resource" script_class="ContractDefinition" format=3]
+
+[ext_resource type="Resource" path="res://resources/definitions/customers/gh_09.tres" id="1_ft0ir"]
+[ext_resource type="Script" path="res://resources/definitions/order_template.gd" id="2_4v1fg"]
+[ext_resource type="Resource" path="res://resources/definitions/items/frost_wand.tres" id="3_t5sp5"]
+[ext_resource type="Resource" path="res://resources/definitions/items/longbow.tres" id="4_x8ukd"]
+[ext_resource type="Script" path="res://resources/definitions/contract_definition.gd" id="5_8hbfm"]
+
+[sub_resource type="Resource" id="Resource_o0pum"]
+script = ExtResource("2_4v1fg")
+item = ExtResource("3_t5sp5")
+
+[sub_resource type="Resource" id="Resource_gx7vw"]
+script = ExtResource("2_4v1fg")
+item = ExtResource("4_x8ukd")
+min_quantity = 2
+max_quantity = 2
+
+[resource]
+script = ExtResource("5_8hbfm")
+id = "con_frost_watch"
+name = "Warden Yew's Frost Watch"
+giver = ExtResource("1_ft0ir")
+min_shop_level = 20
+requirements = Array[ExtResource("2_4v1fg")]([SubResource("Resource_o0pum"), SubResource("Resource_gx7vw")])
+sessions_allowed = 3
+reward_gold = 1500
+loyalty_points = 5

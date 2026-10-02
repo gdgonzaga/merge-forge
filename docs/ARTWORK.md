@@ -1,6 +1,6 @@
 # Artwork Notes — MergeForge
 
-Last updated: 2026-09-28
+Last updated: 2026-09-30
 
 Notes for anyone making or swapping art. The game is pixel art on a 1080x1920 canvas.
 
@@ -70,6 +70,56 @@ These six definitions currently reuse existing item sprites and need their own 6
 | `frost_blade` | `resources/sprites/items/flame_sword.png` | A pale blue blade rimmed with frost. |
 | `holy_draught` | `resources/sprites/items/phoenix_draught.png` | A bright, gold-tinted potion with a white aura. |
 | `nightshade_tonic` | `resources/sprites/items/herbal_tonic.png` | A deep purple tonic with shadow around its bottle. |
+
+## Placeholder art (Phase 8)
+
+No new art was commissioned for towns, Guild Charter or the codex (Ruling 16). Every new definition below reuses an existing sprite.
+
+**15 new items** (gem items reuse herb sprites, wood items reuse metal sprites — the same tier-for-tier mapping as the family they mirror):
+
+| Definition | Current placeholder | Needed look |
+|---|---|---|
+| `rough_gem` | `resources/sprites/items/herb_leaf.png` | A small uncut gem shard, grey-blue with a rough facet. |
+| `cut_gem` | `resources/sprites/items/herb_bundle.png` | A cluster of cut gems with a faint inner glow. |
+| `polished_gem` | `resources/sprites/items/herbal_tonic.png` | A polished gem cluster with a bright, faceted shine. |
+| `mending_ring` | `resources/sprites/items/healing_potion.png` | A silver ring set with a healing-blue gem. |
+| `keen_amulet` | `resources/sprites/items/battle_elixir.png` | A sharp-cut amulet that glints when it catches light. |
+| `phoenix_diadem` | `resources/sprites/items/phoenix_draught.png` | A gold diadem crowned with a fiery gem. |
+| `radiant_scepter` | `resources/sprites/items/phoenix_draught.png` | A jeweled scepter radiating a warm, holy light. |
+| `shade_crystal` | `resources/sprites/items/herbal_tonic.png` | A dark, faceted crystal wreathed in shadow. |
+| `timber_log` | `resources/sprites/items/iron_ore.png` | A rough-cut log with visible wood grain. |
+| `wood_plank` | `resources/sprites/items/iron_ingot.png` | A stack of smooth, finished wood planks. |
+| `oak_stave` | `resources/sprites/items/iron_plate.png` | A sturdy oak stave banded at both ends. |
+| `longbow` | `resources/sprites/items/sword.png` | A curved longbow strung with a taut cord. |
+| `warding_staff` | `resources/sprites/items/iron_shield.png` | A carved staff topped with a warding rune. |
+| `ember_wand` | `resources/sprites/items/flame_sword.png` | A slender wand tipped with a flickering ember. |
+| `frost_wand` | `resources/sprites/items/flame_sword.png` | A slender wand rimmed with frost. |
+
+**Four new crates:**
+
+| Definition | Current placeholder | Needed look |
+|---|---|---|
+| `miner_crate` | `resources/sprites/items/crate_basic.png` | A miner's crate with pick-and-lantern stenciling. |
+| `themed_gem` | `resources/sprites/items/crate_herb.png` | A lined jeweler's box for sorted gems. |
+| `forager_crate` | `resources/sprites/items/crate_basic.png` | A forager's basket crate with a druid's-satchel look. |
+| `themed_wood` | `resources/sprites/items/crate_metal.png` | A bundled-timber crate with rope lashing. |
+
+**26 new customer portraits:** `st_01`-`st_13` (Stonereach) and `gh_01`-`gh_13` (Greenhollow) all reuse `resources/sprites/portraits/customer_01.png` through `customer_10.png` (cycling past 10). Needed look: a miner/jeweler cast for Stonereach, a ranger/druid cast for Greenhollow, matching each town's description.
+
+**Six new modifier icons:**
+
+| Definition | Current placeholder | Needed look |
+|---|---|---|
+| `gem_shortage` | `resources/sprites/modifiers/herb_shortage.png` | A cracked, empty gem-cutter's tray. |
+| `mage_conclave` | `resources/sprites/modifiers/knights_tournament.png` | A cluster of mage hats and glowing staves. |
+| `prospectors_day` | `resources/sprites/modifiers/caravan_day.png` | A prospector's pick and pan icon. |
+| `rangers_muster` | `resources/sprites/modifiers/knights_tournament.png` | A banner of crossed bows. |
+| `timber_glut` | `resources/sprites/modifiers/iron_glut.png` | A stacked-logs icon. |
+| `wagon_day` | `resources/sprites/modifiers/caravan_day.png` | A timber-laden wagon icon. |
+
+**Town backgrounds:** Stonereach and Greenhollow both reuse `resources/sprites/backgrounds/bg_shop_session.png`. Needed look: a mining-town backdrop (Stonereach) and a forest-village backdrop (Greenhollow), distinct from Millbrook's.
+
+**Enemies:** the Crystal Mine and Whisperwood reuse Goblin Cave's enemies (Slime, Goblin, Goblin Archer) for now (Ruling 13); each needs its own enemy set once Phase 8's placeholder economy is validated.
 
 ## Known gaps
 

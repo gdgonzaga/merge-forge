@@ -7,6 +7,7 @@ extends TestBase
 const USE_TARGETS: Array[String] = ["party-individual", "enemy-individual", "enemy-all"]
 const UPGRADE_EFFECTS: Array[String] = ["grid_size", "despawn_time", "crate_discount", "shelf_slots", "forecast_detail", "order_price", "contract_slots"]
 const ATTACK_TYPES: Array[String] = ["melee", "missile"]
+const PERK_EFFECTS: Array[String] = ["starting_gold", "xp_multiplier", "crate_discount", "starting_blueprint", "shelf_bonus", "loyalty_multiplier"]
 
 
 # A copy-pasted file that kept its source's id would shadow it in the catalog.
@@ -16,6 +17,8 @@ func test_every_definition_id_matches_its_file_name() -> void:
 		var catalog: Dictionary = catalogs[folder]
 		assert_bool(catalog.is_empty()).override_failure_message("no %s loaded" % folder).is_false()
 		for id: String in catalog:
+			if folder == "towns" and id == TEST_TOWN_ID:
+				continue
 			var file_id: String = (catalog[id] as Resource).resource_path.get_file().get_basename()
 			assert_str(id).override_failure_message("%s/%s.tres has id '%s'" % [folder, file_id, id]).is_equal(file_id)
 
@@ -184,12 +187,15 @@ func test_shop_rules_are_defined() -> void:
 	assert_float(rules.streak_cap).is_greater_equal(0.0)
 
 
-# A new player (no blueprints, level 1) must be dealt a full session.
-func test_a_fresh_game_deals_a_full_session() -> void:
+# A new player (no blueprints, level 1) must be dealt a full session in every town.
+func test_a_fresh_game_deals_a_full_session_in_every_town() -> void:
 	var size := DefinitionLibrary.get_shop_rules().session_size
-	var dealt: Array = preload("res://autoloads/customer_generator.gd").new().generate(
-		DefinitionLibrary.get_all_customers(), size, 1, 1, RecipeResolver.is_craftable)
-	assert_int(dealt.size()).is_equal(size)
+	for town in _shipped_towns():
+		reset_game_state()
+		GameManager.current_town = town.id
+		var dealt: Array = preload("res://autoloads/customer_generator.gd").new().generate(
+			town.customers, size, 1, 1, RecipeResolver.is_craftable)
+		assert_int(dealt.size()).override_failure_message("%s deals %d" % [town.id, dealt.size()]).is_equal(size)
 
 
 # Every catalog whose definitions carry min_shop_level.
@@ -216,40 +222,40 @@ func test_a_blueprint_never_unlocks_before_its_dependencies() -> void:
 				.override_failure_message("%s (Lv %d) needs %s (Lv %d)" % [blueprint.id, blueprint.min_shop_level, dep.id, dep.min_shop_level]).is_true()
 
 
-# A dungeon must never open before the player can make something that heals.
+# A dungeon must never open before the player can make something that heals there.
 func test_a_healing_item_is_craftable_when_each_dungeon_opens() -> void:
 	var rules := DefinitionLibrary.get_shop_rules()
-	for dungeon in DefinitionLibrary.get_all_dungeons():
-		reset_game_state()
-		GameManager.shop_xp = rules.xp_for_level(dungeon.min_shop_level)
-		for blueprint in DefinitionLibrary.get_all_blueprints():
-			if blueprint.min_shop_level <= dungeon.min_shop_level:
-				GameManager.add_blueprint(blueprint.id)
-		var heals := false
-		for item: ItemDefinition in DefinitionLibrary.get_all_items().values():
-			if item.dungeon_usable and item.effect != null and item.effect.type == "heal" and RecipeResolver.is_craftable(item):
-				heals = true
-		assert_bool(heals).override_failure_message("%s opens with nothing craftable that heals" % dungeon.id).is_true()
+	for town in _shipped_towns():
+		for dungeon in DefinitionLibrary.get_town_dungeons(town):
+			reset_game_state()
+			GameManager.current_town = town.id
+			GameManager.shop_xp = rules.xp_for_level(dungeon.min_shop_level)
+			for blueprint in town.blueprints:
+				if blueprint.min_shop_level <= dungeon.min_shop_level:
+					GameManager.add_blueprint(blueprint.id)
+			var heals := false
+			for item: ItemDefinition in DefinitionLibrary.get_all_items().values():
+				if item.dungeon_usable and item.effect != null and item.effect.type == "heal" and RecipeResolver.is_craftable(item):
+					heals = true
+			assert_bool(heals).override_failure_message("%s opens in %s with nothing craftable that heals" % [dungeon.id, town.id]).is_true()
 
 
 func test_unlocks_between_is_exclusive_below_and_inclusive_above() -> void:
-	_push_shipped_gates_away()
 	set_definition(DefinitionLibrary.crates, _gated_crate("__test_l2", 2))
 	set_definition(DefinitionLibrary.blueprints, _gated_blueprint("__test_l3", 3))
 	set_definition(DefinitionLibrary.blueprints, _gated_blueprint("__test_l4", 4))
-	assert_array(_ids_of(DefinitionLibrary.get_unlocks_between(2, 3))).is_equal(["__test_l3"])
+	assert_array(_ids_of(DefinitionLibrary.get_unlocks_between(2, 3, GameManager.get_current_town()))).is_equal(["__test_l3"])
 
 
 func test_unlocks_between_spans_every_skipped_level() -> void:
-	_push_shipped_gates_away()
 	set_definition(DefinitionLibrary.blueprints, _gated_blueprint("__test_l4", 4))
 	set_definition(DefinitionLibrary.crates, _gated_crate("__test_l2", 2))
 	set_definition(DefinitionLibrary.blueprints, _gated_blueprint("__test_l3", 3))
-	assert_array(_ids_of(DefinitionLibrary.get_unlocks_between(1, 4))).is_equal(["__test_l2", "__test_l3", "__test_l4"])
+	assert_array(_ids_of(DefinitionLibrary.get_unlocks_between(1, 4, GameManager.get_current_town()))).is_equal(["__test_l2", "__test_l3", "__test_l4"])
 
 
 func test_no_level_gained_unlocks_nothing() -> void:
-	assert_array(DefinitionLibrary.get_unlocks_between(3, 3)).is_empty()
+	assert_array(DefinitionLibrary.get_unlocks_between(3, 3, GameManager.get_current_town())).is_empty()
 
 
 func test_contracts_are_well_formed() -> void:
@@ -335,17 +341,6 @@ func test_every_gated_definition_has_a_name() -> void:
 		assert_str(definition.name).override_failure_message("%s has no name" % definition.id).is_not_empty()
 
 
-# Pushes every shipped gated definition out of the tested range, through
-# set_definition so TestBase restores it.
-func _push_shipped_gates_away() -> void:
-	for catalog: Dictionary in DefinitionLibrary.get_catalogs().values():
-		for definition: Resource in catalog.values().duplicate():
-			if "min_shop_level" in definition:
-				var moved: Resource = definition.duplicate()
-				moved.min_shop_level = 9999
-				set_definition(catalog, moved)
-
-
 func _gated_crate(id: String, level: int) -> CrateDefinition:
 	var crate := CrateDefinition.new()
 	crate.id = id
@@ -362,17 +357,18 @@ func _gated_blueprint(id: String, level: int) -> BlueprintDefinition:
 	return blueprint
 
 
-func _ids_of(defs: Array[Resource]) -> Array[String]:
+func _ids_of(defs: Array) -> Array[String]:
 	var ids: Array[String] = []
-	for definition in defs:
+	for definition: Resource in defs:
 		ids.append(definition.id)
 	return ids
 
 
-func test_some_archetype_is_open_at_level_1() -> void:
-	var open := DefinitionLibrary.get_all_customers().filter(
-		func(customer: CustomerDefinition) -> bool: return customer.min_shop_level == 1)
-	assert_bool(open.is_empty()).is_false()
+func test_some_archetype_is_open_at_level_1_in_every_town() -> void:
+	for town in _shipped_towns():
+		var open := town.customers.filter(
+			func(customer: CustomerDefinition) -> bool: return customer.min_shop_level == 1)
+		assert_bool(open.is_empty()).override_failure_message("%s opens with no customer" % town.id).is_false()
 
 
 # Party members and enemies share the combat stat fields CombatEngine reads.
@@ -387,3 +383,193 @@ func _assert_unit_stats(unit: Resource) -> void:
 		.override_failure_message("%s has crit_chance %s" % [id, unit.crit_chance]).is_true()
 	assert_bool(unit.attack_type in ATTACK_TYPES) \
 		.override_failure_message("%s has attack_type '%s'" % [id, unit.attack_type]).is_true()
+
+
+func test_towns_come_back_by_charters_required_then_id() -> void:
+	set_definition(DefinitionLibrary.towns, _town_def("__test_late", 9001))
+	set_definition(DefinitionLibrary.towns, _town_def("__test_tie_b", -1))
+	set_definition(DefinitionLibrary.towns, _town_def("__test_tie_a", -1))
+	var towns := DefinitionLibrary.get_all_towns()
+	assert_str(towns[0].id).is_equal("__test_tie_a")
+	assert_str(towns[1].id).is_equal("__test_tie_b")
+	assert_str(towns.back().id).is_equal("__test_late")
+	assert_object(DefinitionLibrary.get_town("__test_late")).is_same(towns.back())
+	assert_object(DefinitionLibrary.get_town("__missing_town")).is_null()
+
+
+func test_a_towns_shop_lists_come_back_in_display_order() -> void:
+	var town := _town_def("__test_sorted", 0)
+	town.crates.assign([_priced_crate("__test_c30", 30), _priced_crate("__test_c10", 10), _priced_crate("__test_b10", 10)])
+	town.blueprints.assign([_priced_blueprint("__test_p9", 9), _priced_blueprint("__test_p1", 1)])
+	town.dungeons.assign([_dungeon("__test_d9", 9), _dungeon("__test_d2", 2)])
+	assert_array(_ids_of(DefinitionLibrary.get_town_crates(town))).is_equal(["__test_b10", "__test_c10", "__test_c30"])
+	assert_array(_ids_of(DefinitionLibrary.get_town_blueprints(town))).is_equal(["__test_p1", "__test_p9"])
+	assert_array(_ids_of(DefinitionLibrary.get_town_dungeons(town))).is_equal(["__test_d2", "__test_d9"])
+
+
+func test_a_town_hands_out_its_list_for_a_scoped_catalog() -> void:
+	var town := _town_def("__test_lists", 0)
+	assert_bool(is_same(town.content("customers"), town.customers)).is_true()
+	assert_bool(is_same(town.content("dungeons"), town.dungeons)).is_true()
+	assert_array(town.content("items")).is_empty()
+
+
+func _town_def(id: String, charters_required: int) -> TownDefinition:
+	var town := TownDefinition.new()
+	town.id = id
+	town.name = id
+	town.charters_required = charters_required
+	return town
+
+
+func _priced_crate(id: String, cost: int) -> CrateDefinition:
+	var crate := CrateDefinition.new()
+	crate.id = id
+	crate.cost = cost
+	return crate
+
+
+func _priced_blueprint(id: String, cost: int) -> BlueprintDefinition:
+	var blueprint := BlueprintDefinition.new()
+	blueprint.id = id
+	blueprint.cost = cost
+	return blueprint
+
+
+# --- towns ---
+
+# A shop definition no town lists can never be met.
+func test_every_shop_definition_belongs_to_a_town() -> void:
+	var catalogs := DefinitionLibrary.get_catalogs()
+	for folder: String in TownDefinition.SCOPED_CATALOGS:
+		for definition: Resource in catalogs[folder].values():
+			var listed := false
+			for town in DefinitionLibrary.get_all_towns():
+				if definition in town.content(folder):
+					listed = true
+			assert_bool(listed).override_failure_message("%s/%s is in no town" % [folder, definition.id]).is_true()
+
+
+func test_the_starting_town_needs_no_charter() -> void:
+	var start := DefinitionLibrary.get_shop_rules().starting_town
+	assert_object(start).is_not_null()
+	assert_int(start.charters_required).is_equal(0)
+
+
+func test_towns_are_well_formed() -> void:
+	for town in _shipped_towns():
+		assert_str(town.name).override_failure_message("%s has no name" % town.id).is_not_empty()
+		assert_bool(town.background is Texture2D).override_failure_message("%s has no background" % town.id).is_true()
+		assert_float(town.price_multiplier).override_failure_message("%s price" % town.id).is_greater(0.0)
+		assert_int(town.charters_required).override_failure_message("%s charters" % town.id).is_greater_equal(0)
+		for folder: String in TownDefinition.SCOPED_CATALOGS:
+			for definition: Resource in town.content(folder):
+				assert_object(definition).override_failure_message("%s has an empty %s entry" % [town.id, folder]).is_not_null()
+
+
+# Links out of a town's content must land inside the same town.
+func test_town_references_stay_inside_the_town() -> void:
+	for town in _shipped_towns():
+		for modifier in town.modifiers:
+			for customer in modifier.boosted_customers:
+				assert_bool(customer in town.customers).override_failure_message("%s boosts %s outside %s" % [modifier.id, customer.id, town.id]).is_true()
+			for crate in modifier.affected_crates:
+				assert_bool(crate in town.crates).override_failure_message("%s prices %s outside %s" % [modifier.id, crate.id, town.id]).is_true()
+		for contract in town.contracts:
+			assert_bool(contract.giver in town.customers).override_failure_message("%s's giver is outside %s" % [contract.id, town.id]).is_true()
+			if contract.reward_blueprint != null:
+				assert_bool(contract.reward_blueprint in town.blueprints).override_failure_message("%s rewards %s outside %s" % [contract.id, contract.reward_blueprint.id, town.id]).is_true()
+		for customer in town.customers:
+			for reward in customer.loyalty_rewards:
+				if reward.blueprint != null:
+					assert_bool(reward.blueprint in town.blueprints).override_failure_message("%s gifts %s outside %s" % [customer.id, reward.blueprint.id, town.id]).is_true()
+		for dungeon in town.dungeons:
+			if dungeon.blueprint_reward != null:
+				assert_bool(dungeon.blueprint_reward in town.blueprints).override_failure_message("%s rewards a blueprint outside %s" % [dungeon.id, town.id]).is_true()
+		for blueprint in town.blueprints:
+			for dep in blueprint.dependencies:
+				assert_bool(dep in town.blueprints).override_failure_message("%s needs %s outside %s" % [blueprint.id, dep.id, town.id]).is_true()
+
+
+# Whatever a town's customers or contracts ask for, its crates, blueprints and
+# dungeons (for dungeon-only reagents) can make.
+func test_everything_a_town_asks_for_can_be_made_there() -> void:
+	for town in _shipped_towns():
+		var makeable := _makeable_in(town)
+		for customer in town.customers:
+			for want in customer.wants:
+				assert_bool(makeable.has(want.item.id)).override_failure_message("%s wants %s, unmakeable in %s" % [customer.id, want.item.id, town.id]).is_true()
+		for contract in town.contracts:
+			for requirement in contract.requirements:
+				assert_bool(makeable.has(requirement.item.id)).override_failure_message("%s needs %s, unmakeable in %s" % [contract.id, requirement.item.id, town.id]).is_true()
+
+
+func _shipped_towns() -> Array[TownDefinition]:
+	var shipped: Array[TownDefinition] = []
+	for town in DefinitionLibrary.get_all_towns():
+		if town.id != TEST_TOWN_ID:
+			shipped.append(town)
+	return shipped
+
+
+# Item ids a town can make at some level: what its crates sell, then merges
+# gated by its own blueprints (or none), with a reagent bought in prep or
+# dropped by one of its dungeons.
+func _makeable_in(town: TownDefinition) -> Dictionary:
+	var made := {}
+	for crate in town.crates:
+		for entry in crate.pool:
+			made[entry.item.id] = true
+	var dropped := {}
+	for dungeon in town.dungeons:
+		for reward in dungeon.reagent_rewards:
+			dropped[reward.reagent.id] = true
+	var changed := true
+	while changed:
+		changed = false
+		for source: ItemDefinition in DefinitionLibrary.get_all_items().values():
+			if not made.has(source.id):
+				continue
+			for option in source.merge_results:
+				if _open_in(option.blueprint, town) and not made.has(option.result.id):
+					made[option.result.id] = true
+					changed = true
+			for variant in source.reagent_variants:
+				var reagent_ok := variant.reagent.cost > 0 or dropped.has(variant.reagent.id)
+				if reagent_ok and _open_in(variant.blueprint, town) and not made.has(variant.result.id):
+					made[variant.result.id] = true
+					changed = true
+	return made
+
+
+func _open_in(blueprint: BlueprintDefinition, town: TownDefinition) -> bool:
+	return blueprint == null or blueprint in town.blueprints
+
+
+func test_perks_are_well_formed() -> void:
+	for perk in DefinitionLibrary.get_all_perks():
+		assert_str(perk.name).override_failure_message("%s has no name" % perk.id).is_not_empty()
+		assert_bool(perk.effect in PERK_EFFECTS).override_failure_message("%s has effect '%s'" % [perk.id, perk.effect]).is_true()
+		assert_bool(perk.levels.is_empty()).override_failure_message("%s has no levels" % perk.id).is_false()
+		var previous := 0
+		for level in perk.levels:
+			assert_object(level).override_failure_message("%s has an empty level" % perk.id).is_not_null()
+			assert_int(level.cost_points).override_failure_message("%s costs do not rise" % perk.id).is_greater(previous)
+			previous = level.cost_points
+			assert_float(level.value).override_failure_message("%s value" % perk.id).is_greater(0.0)
+			if perk.effect in ["starting_gold", "starting_blueprint", "shelf_bonus"]:
+				assert_float(level.value).override_failure_message("%s value is not whole" % perk.id).is_equal(floorf(level.value))
+
+
+func test_perks_are_found_by_id_and_listed_in_id_order() -> void:
+	var second := PerkDefinition.new()
+	second.id = "__test_b"
+	var first := PerkDefinition.new()
+	first.id = "__test_a"
+	set_definition(DefinitionLibrary.perks, second)
+	set_definition(DefinitionLibrary.perks, first)
+	assert_object(DefinitionLibrary.get_perk("__test_b")).is_same(second)
+	assert_object(DefinitionLibrary.get_perk("__missing_perk")).is_null()
+	var perks := DefinitionLibrary.get_all_perks()
+	assert_str(perks[0].id).is_equal("__test_a")
+	assert_str(perks[1].id).is_equal("__test_b")

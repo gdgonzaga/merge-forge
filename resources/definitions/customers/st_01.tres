@@ -1,0 +1,51 @@
+[gd_resource type="Resource" script_class="CustomerDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/loyalty_reward.gd" id="1_16k3n"]
+[ext_resource type="Resource" path="res://resources/definitions/reagents/fire_essence.tres" id="2_77oe7"]
+[ext_resource type="Resource" path="res://resources/definitions/reagents/ice_essence.tres" id="3_ablju"]
+[ext_resource type="Script" path="res://resources/definitions/customer_definition.gd" id="4_rwlx7"]
+[ext_resource type="Texture2D" path="res://resources/sprites/portraits/customer_01.png" id="5_of5ik"]
+[ext_resource type="Script" path="res://resources/definitions/order_template.gd" id="6_jlkol"]
+[ext_resource type="Resource" path="res://resources/definitions/items/iron_ingot.tres" id="7_c6q67"]
+[ext_resource type="Resource" path="res://resources/definitions/items/iron_plate.tres" id="8_6h6dc"]
+
+[sub_resource type="Resource" id="Resource_a5apg"]
+script = ExtResource("1_16k3n")
+points = 5
+title = "Familiar Face"
+gold = 100
+
+[sub_resource type="Resource" id="Resource_ra06i"]
+script = ExtResource("1_16k3n")
+points = 15
+title = "Regular"
+reagent = ExtResource("2_77oe7")
+reagent_count = 2
+
+[sub_resource type="Resource" id="Resource_smktq"]
+script = ExtResource("1_16k3n")
+points = 30
+title = "Old Friend"
+gold = 200
+reagent = ExtResource("3_ablju")
+reagent_count = 1
+
+[sub_resource type="Resource" id="Resource_f7cey"]
+script = ExtResource("6_jlkol")
+item = ExtResource("7_c6q67")
+weight = 3
+max_quantity = 3
+
+[sub_resource type="Resource" id="Resource_668om"]
+script = ExtResource("6_jlkol")
+item = ExtResource("8_6h6dc")
+
+[resource]
+script = ExtResource("4_rwlx7")
+id = "st_01"
+name = "Dagna"
+role = "Mine Foreman"
+sprite = ExtResource("5_of5ik")
+max_orders = 2
+wants = Array[ExtResource("6_jlkol")]([SubResource("Resource_f7cey"), SubResource("Resource_668om")])
+loyalty_rewards = Array[ExtResource("1_16k3n")]([SubResource("Resource_a5apg"), SubResource("Resource_ra06i"), SubResource("Resource_smktq")])

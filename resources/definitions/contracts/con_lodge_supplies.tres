@@ -1,0 +1,31 @@
+[gd_resource type="Resource" script_class="ContractDefinition" format=3]
+
+[ext_resource type="Resource" path="res://resources/definitions/customers/gh_06.tres" id="1_7rfut"]
+[ext_resource type="Script" path="res://resources/definitions/order_template.gd" id="2_hrlv7"]
+[ext_resource type="Resource" path="res://resources/definitions/items/herb_bundle.tres" id="3_qsajx"]
+[ext_resource type="Resource" path="res://resources/definitions/items/wood_plank.tres" id="4_83vxf"]
+[ext_resource type="Script" path="res://resources/definitions/contract_definition.gd" id="5_ok4s3"]
+
+[sub_resource type="Resource" id="Resource_bl0f1"]
+script = ExtResource("2_hrlv7")
+item = ExtResource("3_qsajx")
+min_quantity = 6
+max_quantity = 6
+
+[sub_resource type="Resource" id="Resource_f87y7"]
+script = ExtResource("2_hrlv7")
+item = ExtResource("4_83vxf")
+min_quantity = 4
+max_quantity = 4
+
+[resource]
+script = ExtResource("5_ok4s3")
+id = "con_lodge_supplies"
+name = "Maple's Inn Supplies"
+giver = ExtResource("1_7rfut")
+min_shop_level = 10
+weight = 2
+requirements = Array[ExtResource("2_hrlv7")]([SubResource("Resource_bl0f1"), SubResource("Resource_f87y7")])
+sessions_allowed = 2
+reward_gold = 270
+loyalty_points = 3

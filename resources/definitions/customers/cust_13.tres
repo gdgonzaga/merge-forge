@@ -1,11 +1,12 @@
-[gd_resource type="Resource" script_class="CustomerDefinition" format=3]
+[gd_resource type="Resource" script_class="CustomerDefinition" format=3 uid="uid://c5b81usvuqaq1"]
 
-[ext_resource type="Script" path="res://resources/definitions/order_template.gd" id="1_tpl"]
-[ext_resource type="Resource" path="res://resources/definitions/items/iron_plate.tres" id="2_plate"]
-[ext_resource type="Resource" path="res://resources/definitions/items/sword.tres" id="3_sword"]
-[ext_resource type="Resource" path="res://resources/definitions/items/iron_shield.tres" id="4_shield"]
-[ext_resource type="Script" path="res://resources/definitions/customer_definition.gd" id="5_cust"]
-[ext_resource type="Texture2D" path="res://resources/sprites/portraits/customer_05.png" id="6_sprite"]
+[ext_resource type="Script" uid="uid://dvuio2uw6rbji" path="res://resources/definitions/loyalty_reward.gd" id="1_pdcjh"]
+[ext_resource type="Script" uid="uid://lt1tn27q1lbl" path="res://resources/definitions/order_template.gd" id="1_tpl"]
+[ext_resource type="Resource" uid="uid://b4rm1u6ahosws" path="res://resources/definitions/items/iron_plate.tres" id="2_plate"]
+[ext_resource type="Resource" uid="uid://cdhk601r304ao" path="res://resources/definitions/items/sword.tres" id="3_sword"]
+[ext_resource type="Resource" uid="uid://dbvdcucclxgpn" path="res://resources/definitions/items/iron_shield.tres" id="4_shield"]
+[ext_resource type="Script" uid="uid://blookduysbunx" path="res://resources/definitions/customer_definition.gd" id="5_cust"]
+[ext_resource type="Texture2D" uid="uid://drhrbh6qaaa6f" path="res://resources/sprites/portraits/customer_05.png" id="6_sprite"]
 
 [sub_resource type="Resource" id="Resource_plate"]
 script = ExtResource("1_tpl")
@@ -30,7 +31,6 @@ name = "Lady Maren"
 role = "Royal Armorer"
 sprite = ExtResource("6_sprite")
 min_shop_level = 32
-weight = 1
-price_multiplier = 1.3
 max_orders = 2
+price_multiplier = 1.3
 wants = Array[ExtResource("1_tpl")]([SubResource("Resource_plate"), SubResource("Resource_sword"), SubResource("Resource_shield")])

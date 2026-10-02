@@ -1,11 +1,11 @@
-[gd_resource type="Resource" script_class="ContractDefinition" format=3]
+[gd_resource type="Resource" script_class="ContractDefinition" format=3 uid="uid://r4l21yi30ahp"]
 
-[ext_resource type="Script" path="res://resources/definitions/contract_definition.gd" id="1_contract"]
-[ext_resource type="Script" path="res://resources/definitions/order_template.gd" id="2_tpl"]
-[ext_resource type="Resource" path="res://resources/definitions/customers/cust_03.tres" id="3_giver"]
-[ext_resource type="Resource" path="res://resources/definitions/items/iron_plate.tres" id="item_0"]
-[ext_resource type="Resource" path="res://resources/definitions/items/herbal_tonic.tres" id="item_1"]
+[ext_resource type="Script" uid="uid://kqhibs3xg1x2" path="res://resources/definitions/contract_definition.gd" id="1_contract"]
+[ext_resource type="Script" uid="uid://lt1tn27q1lbl" path="res://resources/definitions/order_template.gd" id="2_tpl"]
+[ext_resource type="Resource" uid="uid://d0fmx380iyhpb" path="res://resources/definitions/customers/cust_03.tres" id="3_giver"]
 [ext_resource type="Resource" path="res://resources/definitions/reagents/fire_essence.tres" id="fire_reward"]
+[ext_resource type="Resource" uid="uid://b4rm1u6ahosws" path="res://resources/definitions/items/iron_plate.tres" id="item_0"]
+[ext_resource type="Resource" uid="uid://bkyhcay7c3k8h" path="res://resources/definitions/items/herbal_tonic.tres" id="item_1"]
 
 [sub_resource type="Resource" id="Resource_req_0"]
 script = ExtResource("2_tpl")
@@ -25,7 +25,6 @@ id = "con_caravan_load"
 name = "Garrick's Caravan Load"
 giver = ExtResource("3_giver")
 min_shop_level = 12
-weight = 1
 requirements = Array[ExtResource("2_tpl")]([SubResource("Resource_req_0"), SubResource("Resource_req_1")])
 sessions_allowed = 3
 reward_gold = 600

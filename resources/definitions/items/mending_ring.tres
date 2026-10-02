@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="ItemDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/effect_definition.gd" id="1_6kl8c"]
+[ext_resource type="Script" path="res://resources/definitions/merge_result.gd" id="2_gtngv"]
+[ext_resource type="Script" path="res://resources/definitions/reagent_variant.gd" id="3_b6nwj"]
+[ext_resource type="Script" path="res://resources/definitions/item_definition.gd" id="4_imr62"]
+[ext_resource type="Texture2D" path="res://resources/sprites/items/healing_potion.png" id="5_n00dd"]
+
+[sub_resource type="Resource" id="Resource_70xg4"]
+script = ExtResource("1_6kl8c")
+type = "heal"
+value = 90
+
+[resource]
+script = ExtResource("4_imr62")
+id = "mending_ring"
+name = "Mending Ring"
+family = "gem"
+gold_value = 280
+dungeon_usable = true
+dungeon_use_target = "party-individual"
+effect = SubResource("Resource_70xg4")
+sprite = ExtResource("5_n00dd")

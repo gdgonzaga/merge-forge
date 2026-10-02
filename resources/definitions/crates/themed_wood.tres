@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="CrateDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/weighted_item.gd" id="1_qdxbq"]
+[ext_resource type="Resource" path="res://resources/definitions/items/timber_log.tres" id="2_bdeje"]
+[ext_resource type="Resource" path="res://resources/definitions/items/wood_plank.tres" id="3_v1ohw"]
+[ext_resource type="Script" path="res://resources/definitions/crate_definition.gd" id="4_wi4ih"]
+[ext_resource type="Texture2D" path="res://resources/sprites/items/crate_metal.png" id="5_xvqyx"]
+
+[sub_resource type="Resource" id="Resource_0kio3"]
+script = ExtResource("1_qdxbq")
+item = ExtResource("2_bdeje")
+weight = 4
+
+[sub_resource type="Resource" id="Resource_v013y"]
+script = ExtResource("1_qdxbq")
+item = ExtResource("3_v1ohw")
+
+[resource]
+script = ExtResource("4_wi4ih")
+id = "themed_wood"
+name = "Timber Crate"
+sprite = ExtResource("5_xvqyx")
+cost = 25
+min_shop_level = 3
+min_items = 3
+max_items = 4
+pool = Array[ExtResource("1_qdxbq")]([SubResource("Resource_0kio3"), SubResource("Resource_v013y")])

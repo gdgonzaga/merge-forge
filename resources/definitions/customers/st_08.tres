@@ -1,0 +1,63 @@
+[gd_resource type="Resource" script_class="CustomerDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/loyalty_reward.gd" id="1_3w7jx"]
+[ext_resource type="Resource" path="res://resources/definitions/reagents/fire_essence.tres" id="2_ru8f5"]
+[ext_resource type="Resource" path="res://resources/definitions/reagents/shadow_essence.tres" id="3_sylcu"]
+[ext_resource type="Script" path="res://resources/definitions/customer_definition.gd" id="4_821sl"]
+[ext_resource type="Texture2D" path="res://resources/sprites/portraits/customer_08.png" id="5_022sa"]
+[ext_resource type="Script" path="res://resources/definitions/order_template.gd" id="6_mr3ht"]
+[ext_resource type="Resource" path="res://resources/definitions/items/iron_ingot.tres" id="7_v45lv"]
+[ext_resource type="Resource" path="res://resources/definitions/items/cut_gem.tres" id="8_w8okl"]
+[ext_resource type="Resource" path="res://resources/definitions/items/iron_plate.tres" id="9_loyhx"]
+
+[sub_resource type="Resource" id="Resource_jxkc6"]
+script = ExtResource("1_3w7jx")
+points = 5
+title = "Familiar Face"
+gold = 150
+
+[sub_resource type="Resource" id="Resource_w47ut"]
+script = ExtResource("1_3w7jx")
+points = 15
+title = "Regular"
+reagent = ExtResource("2_ru8f5")
+reagent_count = 2
+
+[sub_resource type="Resource" id="Resource_csmgc"]
+script = ExtResource("1_3w7jx")
+points = 30
+title = "Old Friend"
+gold = 200
+reagent = ExtResource("3_sylcu")
+reagent_count = 1
+
+[sub_resource type="Resource" id="Resource_fdn78"]
+script = ExtResource("6_mr3ht")
+item = ExtResource("7_v45lv")
+weight = 2
+min_quantity = 3
+max_quantity = 5
+
+[sub_resource type="Resource" id="Resource_7v618"]
+script = ExtResource("6_mr3ht")
+item = ExtResource("8_w8okl")
+weight = 2
+min_quantity = 3
+max_quantity = 5
+
+[sub_resource type="Resource" id="Resource_h4eqp"]
+script = ExtResource("6_mr3ht")
+item = ExtResource("9_loyhx")
+max_quantity = 2
+
+[resource]
+script = ExtResource("4_821sl")
+id = "st_08"
+name = "Hesk"
+role = "Ore Hauler"
+sprite = ExtResource("5_022sa")
+min_shop_level = 3
+min_orders = 2
+max_orders = 3
+wants = Array[ExtResource("6_mr3ht")]([SubResource("Resource_fdn78"), SubResource("Resource_7v618"), SubResource("Resource_h4eqp")])
+loyalty_rewards = Array[ExtResource("1_3w7jx")]([SubResource("Resource_jxkc6"), SubResource("Resource_w47ut"), SubResource("Resource_csmgc")])

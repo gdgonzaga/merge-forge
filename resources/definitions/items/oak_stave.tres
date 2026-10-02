@@ -1,0 +1,57 @@
+[gd_resource type="Resource" script_class="ItemDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/effect_definition.gd" id="1_mcy0q"]
+[ext_resource type="Script" path="res://resources/definitions/merge_result.gd" id="2_o6pwt"]
+[ext_resource type="Resource" path="res://resources/definitions/blueprints/bp_longbow.tres" id="3_c6yd8"]
+[ext_resource type="Resource" path="res://resources/definitions/items/longbow.tres" id="4_lmd52"]
+[ext_resource type="Resource" path="res://resources/definitions/blueprints/bp_warding_staff.tres" id="5_xod2d"]
+[ext_resource type="Resource" path="res://resources/definitions/items/warding_staff.tres" id="6_dfrp8"]
+[ext_resource type="Script" path="res://resources/definitions/reagent_variant.gd" id="7_g6cew"]
+[ext_resource type="Resource" path="res://resources/definitions/blueprints/bp_ember_wand.tres" id="8_u24m6"]
+[ext_resource type="Resource" path="res://resources/definitions/reagents/fire_essence.tres" id="9_qamxi"]
+[ext_resource type="Resource" path="res://resources/definitions/items/ember_wand.tres" id="10_fsc05"]
+[ext_resource type="Resource" path="res://resources/definitions/blueprints/bp_frost_wand.tres" id="11_3xwkr"]
+[ext_resource type="Resource" path="res://resources/definitions/reagents/ice_essence.tres" id="12_i4yu6"]
+[ext_resource type="Resource" path="res://resources/definitions/items/frost_wand.tres" id="13_vmuqe"]
+[ext_resource type="Script" path="res://resources/definitions/item_definition.gd" id="14_etkkd"]
+[ext_resource type="Texture2D" path="res://resources/sprites/items/iron_plate.png" id="15_8wwuk"]
+
+[sub_resource type="Resource" id="Resource_rl8st"]
+script = ExtResource("1_mcy0q")
+type = "absorb"
+value = 25
+
+[sub_resource type="Resource" id="Resource_l1eyy"]
+script = ExtResource("2_o6pwt")
+result = ExtResource("4_lmd52")
+blueprint = ExtResource("3_c6yd8")
+
+[sub_resource type="Resource" id="Resource_obblx"]
+script = ExtResource("2_o6pwt")
+result = ExtResource("6_dfrp8")
+blueprint = ExtResource("5_xod2d")
+
+[sub_resource type="Resource" id="Resource_wdk1w"]
+script = ExtResource("7_g6cew")
+result = ExtResource("10_fsc05")
+reagent = ExtResource("9_qamxi")
+blueprint = ExtResource("8_u24m6")
+
+[sub_resource type="Resource" id="Resource_qi8i8"]
+script = ExtResource("7_g6cew")
+result = ExtResource("13_vmuqe")
+reagent = ExtResource("12_i4yu6")
+blueprint = ExtResource("11_3xwkr")
+
+[resource]
+script = ExtResource("14_etkkd")
+id = "oak_stave"
+name = "Oak Stave"
+family = "wood"
+gold_value = 75
+dungeon_usable = true
+dungeon_use_target = "party-individual"
+effect = SubResource("Resource_rl8st")
+sprite = ExtResource("15_8wwuk")
+merge_results = Array[ExtResource("2_o6pwt")]([SubResource("Resource_l1eyy"), SubResource("Resource_obblx")])
+reagent_variants = Array[ExtResource("7_g6cew")]([SubResource("Resource_wdk1w"), SubResource("Resource_qi8i8")])

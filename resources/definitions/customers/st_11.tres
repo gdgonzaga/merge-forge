@@ -1,0 +1,38 @@
+[gd_resource type="Resource" script_class="CustomerDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/loyalty_reward.gd" id="1_n70ts"]
+[ext_resource type="Script" path="res://resources/definitions/customer_definition.gd" id="2_ifjwq"]
+[ext_resource type="Texture2D" path="res://resources/sprites/portraits/customer_03.png" id="3_fl56d"]
+[ext_resource type="Script" path="res://resources/definitions/order_template.gd" id="4_cjifa"]
+[ext_resource type="Resource" path="res://resources/definitions/items/cut_gem.tres" id="5_b2h6q"]
+[ext_resource type="Resource" path="res://resources/definitions/items/polished_gem.tres" id="6_sse1k"]
+[ext_resource type="Resource" path="res://resources/definitions/items/mending_ring.tres" id="7_0mr4k"]
+
+[sub_resource type="Resource" id="Resource_ql6nk"]
+script = ExtResource("4_cjifa")
+item = ExtResource("5_b2h6q")
+min_quantity = 2
+max_quantity = 3
+min_quality = 1
+
+[sub_resource type="Resource" id="Resource_lu4hq"]
+script = ExtResource("4_cjifa")
+item = ExtResource("6_sse1k")
+weight = 2
+max_quantity = 2
+min_quality = 1
+
+[sub_resource type="Resource" id="Resource_b5y1y"]
+script = ExtResource("4_cjifa")
+item = ExtResource("7_0mr4k")
+min_quality = 1
+
+[resource]
+script = ExtResource("2_ifjwq")
+id = "st_11"
+name = "Lorne"
+role = "Gem Appraiser"
+sprite = ExtResource("3_fl56d")
+min_shop_level = 18
+max_orders = 2
+wants = Array[ExtResource("4_cjifa")]([SubResource("Resource_ql6nk"), SubResource("Resource_lu4hq"), SubResource("Resource_b5y1y")])

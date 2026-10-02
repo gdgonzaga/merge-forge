@@ -1,0 +1,66 @@
+[gd_resource type="Resource" script_class="TownDefinition" format=3]
+
+[ext_resource type="Texture2D" path="res://resources/sprites/backgrounds/bg_shop_session.png" id="1_ehkgk"]
+[ext_resource type="Script" path="res://resources/definitions/blueprint_definition.gd" id="2_fhs58"]
+[ext_resource type="Resource" path="res://resources/definitions/blueprints/bp_iron_plate.tres" id="3_61t4d"]
+[ext_resource type="Resource" path="res://resources/definitions/blueprints/bp_sword.tres" id="4_t562t"]
+[ext_resource type="Resource" path="res://resources/definitions/blueprints/bp_iron_shield.tres" id="5_v5e77"]
+[ext_resource type="Resource" path="res://resources/definitions/blueprints/bp_flame_sword.tres" id="6_ck5x0"]
+[ext_resource type="Resource" path="res://resources/definitions/blueprints/bp_frost_blade.tres" id="7_jqqbh"]
+[ext_resource type="Resource" path="res://resources/definitions/blueprints/bp_mending_ring.tres" id="8_mktns"]
+[ext_resource type="Resource" path="res://resources/definitions/blueprints/bp_keen_amulet.tres" id="9_fwuae"]
+[ext_resource type="Resource" path="res://resources/definitions/blueprints/bp_shade_crystal.tres" id="10_j5qhm"]
+[ext_resource type="Resource" path="res://resources/definitions/blueprints/bp_phoenix_diadem.tres" id="11_timtv"]
+[ext_resource type="Resource" path="res://resources/definitions/blueprints/bp_radiant_scepter.tres" id="12_joi1j"]
+[ext_resource type="Script" path="res://resources/definitions/contract_definition.gd" id="13_8tadp"]
+[ext_resource type="Resource" path="res://resources/definitions/contracts/con_foreman_ingots.tres" id="14_o4ofe"]
+[ext_resource type="Resource" path="res://resources/definitions/contracts/con_cutter_stock.tres" id="15_mgx02"]
+[ext_resource type="Resource" path="res://resources/definitions/contracts/con_tavern_supplies.tres" id="16_ns1qg"]
+[ext_resource type="Resource" path="res://resources/definitions/contracts/con_ore_load.tres" id="17_cnqq6"]
+[ext_resource type="Resource" path="res://resources/definitions/contracts/con_warden_arms.tres" id="18_5uftt"]
+[ext_resource type="Resource" path="res://resources/definitions/contracts/con_shadow_study.tres" id="19_sl72o"]
+[ext_resource type="Resource" path="res://resources/definitions/contracts/con_fine_settings.tres" id="20_vywvp"]
+[ext_resource type="Resource" path="res://resources/definitions/contracts/con_guard_frost.tres" id="21_uj6l1"]
+[ext_resource type="Resource" path="res://resources/definitions/contracts/con_radiant_order.tres" id="22_8bvlv"]
+[ext_resource type="Resource" path="res://resources/definitions/contracts/con_hauler_bulk.tres" id="23_elhaa"]
+[ext_resource type="Script" path="res://resources/definitions/crate_definition.gd" id="24_gj8e8"]
+[ext_resource type="Resource" path="res://resources/definitions/crates/miner_crate.tres" id="25_lmwfo"]
+[ext_resource type="Resource" path="res://resources/definitions/crates/themed_gem.tres" id="26_cpxqx"]
+[ext_resource type="Resource" path="res://resources/definitions/crates/themed_metal.tres" id="27_fpory"]
+[ext_resource type="Script" path="res://resources/definitions/customer_definition.gd" id="28_344iv"]
+[ext_resource type="Resource" path="res://resources/definitions/customers/st_01.tres" id="29_2n71r"]
+[ext_resource type="Resource" path="res://resources/definitions/customers/st_02.tres" id="30_dn8dx"]
+[ext_resource type="Resource" path="res://resources/definitions/customers/st_03.tres" id="31_ss2xq"]
+[ext_resource type="Resource" path="res://resources/definitions/customers/st_04.tres" id="32_a15oj"]
+[ext_resource type="Resource" path="res://resources/definitions/customers/st_05.tres" id="33_kker6"]
+[ext_resource type="Resource" path="res://resources/definitions/customers/st_06.tres" id="34_suude"]
+[ext_resource type="Resource" path="res://resources/definitions/customers/st_07.tres" id="35_s40ou"]
+[ext_resource type="Resource" path="res://resources/definitions/customers/st_08.tres" id="36_ojajp"]
+[ext_resource type="Resource" path="res://resources/definitions/customers/st_09.tres" id="37_7p14m"]
+[ext_resource type="Resource" path="res://resources/definitions/customers/st_10.tres" id="38_dwu1b"]
+[ext_resource type="Resource" path="res://resources/definitions/customers/st_11.tres" id="39_hjlea"]
+[ext_resource type="Resource" path="res://resources/definitions/customers/st_12.tres" id="40_jqmwo"]
+[ext_resource type="Resource" path="res://resources/definitions/customers/st_13.tres" id="41_qb1gy"]
+[ext_resource type="Script" path="res://resources/definitions/dungeon_definition.gd" id="42_mvot0"]
+[ext_resource type="Resource" path="res://resources/definitions/dungeons/crystal_mine.tres" id="43_emo11"]
+[ext_resource type="Script" path="res://resources/definitions/session_modifier_definition.gd" id="44_ynhtj"]
+[ext_resource type="Resource" path="res://resources/definitions/modifiers/festival.tres" id="45_uhfr5"]
+[ext_resource type="Resource" path="res://resources/definitions/modifiers/gem_shortage.tres" id="46_w6jnk"]
+[ext_resource type="Resource" path="res://resources/definitions/modifiers/iron_glut.tres" id="47_knym5"]
+[ext_resource type="Resource" path="res://resources/definitions/modifiers/mage_conclave.tres" id="48_itstg"]
+[ext_resource type="Resource" path="res://resources/definitions/modifiers/prospectors_day.tres" id="49_isa0q"]
+[ext_resource type="Script" path="res://resources/definitions/town_definition.gd" id="50_bnw8c"]
+
+[resource]
+script = ExtResource("50_bnw8c")
+id = "stonereach"
+name = "Stonereach"
+description = "A mining town in the high passes, where jewelers cut gems for the mages' tower."
+background = ExtResource("1_ehkgk")
+charters_required = 1
+customers = Array[ExtResource("28_344iv")]([ExtResource("29_2n71r"), ExtResource("30_dn8dx"), ExtResource("31_ss2xq"), ExtResource("32_a15oj"), ExtResource("33_kker6"), ExtResource("34_suude"), ExtResource("35_s40ou"), ExtResource("36_ojajp"), ExtResource("37_7p14m"), ExtResource("38_dwu1b"), ExtResource("39_hjlea"), ExtResource("40_jqmwo"), ExtResource("41_qb1gy")])
+crates = Array[ExtResource("24_gj8e8")]([ExtResource("25_lmwfo"), ExtResource("26_cpxqx"), ExtResource("27_fpory")])
+modifiers = Array[ExtResource("44_ynhtj")]([ExtResource("45_uhfr5"), ExtResource("46_w6jnk"), ExtResource("47_knym5"), ExtResource("48_itstg"), ExtResource("49_isa0q")])
+contracts = Array[ExtResource("13_8tadp")]([ExtResource("14_o4ofe"), ExtResource("15_mgx02"), ExtResource("16_ns1qg"), ExtResource("17_cnqq6"), ExtResource("18_5uftt"), ExtResource("19_sl72o"), ExtResource("20_vywvp"), ExtResource("21_uj6l1"), ExtResource("22_8bvlv"), ExtResource("23_elhaa")])
+dungeons = Array[ExtResource("42_mvot0")]([ExtResource("43_emo11")])
+blueprints = Array[ExtResource("2_fhs58")]([ExtResource("3_61t4d"), ExtResource("4_t562t"), ExtResource("5_v5e77"), ExtResource("6_ck5x0"), ExtResource("7_jqqbh"), ExtResource("8_mktns"), ExtResource("9_fwuae"), ExtResource("10_j5qhm"), ExtResource("11_timtv"), ExtResource("12_joi1j")])

@@ -18,6 +18,8 @@ var dungeons: Dictionary = {}
 var shop_rules: Dictionary = {}
 var modifiers: Dictionary = {}
 var contracts: Dictionary = {}
+var towns: Dictionary = {}
+var perks: Dictionary = {}
 
 
 func _ready() -> void:
@@ -52,6 +54,8 @@ func get_catalogs() -> Dictionary:
 		"shop_rules": shop_rules,
 		"modifiers": modifiers,
 		"contracts": contracts,
+		"towns": towns,
+		"perks": perks,
 	}
 
 
@@ -109,7 +113,7 @@ func get_reagent(id: String) -> ReagentDefinition:
 
 func get_all_reagents() -> Array[ReagentDefinition]:
 	var result: Array[ReagentDefinition] = []
-	result.assign(_by_cost(reagents))
+	result.assign(_by_cost(reagents.values()))
 	return result
 
 
@@ -119,7 +123,7 @@ func get_blueprint(id: String) -> BlueprintDefinition:
 
 func get_all_blueprints() -> Array[BlueprintDefinition]:
 	var result: Array[BlueprintDefinition] = []
-	result.assign(_by_cost(blueprints))
+	result.assign(_by_cost(blueprints.values()))
 	return result
 
 
@@ -129,7 +133,7 @@ func get_crate(id: String) -> CrateDefinition:
 
 func get_all_crates() -> Array[CrateDefinition]:
 	var result: Array[CrateDefinition] = []
-	result.assign(_by_cost(crates))
+	result.assign(_by_cost(crates.values()))
 	return result
 
 
@@ -168,12 +172,7 @@ func get_dungeon(id: String) -> DungeonDefinition:
 # In unlock order: lowest min_shop_level first, ties by id.
 func get_all_dungeons() -> Array[DungeonDefinition]:
 	var result: Array[DungeonDefinition] = []
-	result.assign(dungeons.values())
-	result.sort_custom(func(a: DungeonDefinition, b: DungeonDefinition) -> bool:
-		if a.min_shop_level != b.min_shop_level:
-			return a.min_shop_level < b.min_shop_level
-		return a.id < b.id
-	)
+	result.assign(_in_unlock_order(dungeons.values()))
 	return result
 
 
@@ -210,14 +209,64 @@ func get_all_contracts() -> Array[ContractDefinition]:
 	return result
 
 
-# Everything that opens when the shop goes from old_level to new_level: above
-# old_level, up to and including new_level. Ordered by level, then catalog,
-# then id, so a multi-level jump reads in unlock order.
-func get_unlocks_between(old_level: int, new_level: int) -> Array[Resource]:
+func get_town(id: String) -> TownDefinition:
+	return towns.get(id, null)
+
+
+# In charter order: fewest charters required first, ties by id.
+func get_all_towns() -> Array[TownDefinition]:
+	var result: Array[TownDefinition] = []
+	result.assign(towns.values())
+	result.sort_custom(func(a: TownDefinition, b: TownDefinition) -> bool:
+		if a.charters_required != b.charters_required:
+			return a.charters_required < b.charters_required
+		return a.id < b.id
+	)
+	return result
+
+
+func get_perk(id: String) -> PerkDefinition:
+	return perks.get(id, null)
+
+
+# Sorted by id so the charter screen lists them in a stable order.
+func get_all_perks() -> Array[PerkDefinition]:
+	var result: Array[PerkDefinition] = []
+	result.assign(perks.values())
+	result.sort_custom(func(a: PerkDefinition, b: PerkDefinition) -> bool:
+		return a.id < b.id
+	)
+	return result
+
+
+func get_town_crates(town: TownDefinition) -> Array[CrateDefinition]:
+	var result: Array[CrateDefinition] = []
+	result.assign(_by_cost(town.crates))
+	return result
+
+
+func get_town_blueprints(town: TownDefinition) -> Array[BlueprintDefinition]:
+	var result: Array[BlueprintDefinition] = []
+	result.assign(_by_cost(town.blueprints))
+	return result
+
+
+func get_town_dungeons(town: TownDefinition) -> Array[DungeonDefinition]:
+	var result: Array[DungeonDefinition] = []
+	result.assign(_in_unlock_order(town.dungeons))
+	return result
+
+
+# Everything that opens when the shop goes from old_level to new_level in
+# `town`: above old_level, up to and including new_level. Scoped catalogs come
+# from the town, shared ones (such as reagents) whole. Ordered by level, then
+# catalog, then id, so a multi-level jump reads in unlock order.
+func get_unlocks_between(old_level: int, new_level: int, town: TownDefinition) -> Array[Resource]:
 	var found: Array[Array] = []
 	var catalogs := get_catalogs()
 	for folder: String in catalogs:
-		for definition: Resource in catalogs[folder].values():
+		var definitions: Array = town.content(folder) if folder in TownDefinition.SCOPED_CATALOGS else catalogs[folder].values()
+		for definition: Resource in definitions:
 			if "min_shop_level" in definition and definition.min_shop_level > old_level and definition.min_shop_level <= new_level:
 				found.append([definition.min_shop_level, folder, definition.id, definition])
 	found.sort()
@@ -228,11 +277,21 @@ func get_unlocks_between(old_level: int, new_level: int) -> Array[Resource]:
 
 
 # Shop listings run cheapest first; ties by id so the order is stable.
-static func _by_cost(catalog: Dictionary) -> Array:
-	var result := catalog.values()
+static func _by_cost(definitions: Array) -> Array:
+	var result := definitions.duplicate()
 	result.sort_custom(func(a: Resource, b: Resource) -> bool:
 		if a.cost != b.cost:
 			return a.cost < b.cost
+		return a.id < b.id
+	)
+	return result
+
+
+static func _in_unlock_order(definitions: Array) -> Array:
+	var result := definitions.duplicate()
+	result.sort_custom(func(a: Resource, b: Resource) -> bool:
+		if a.min_shop_level != b.min_shop_level:
+			return a.min_shop_level < b.min_shop_level
 		return a.id < b.id
 	)
 	return result

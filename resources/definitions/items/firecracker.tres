@@ -1,12 +1,12 @@
-[gd_resource type="Resource" script_class="ItemDefinition" format=3]
+[gd_resource type="Resource" script_class="ItemDefinition" format=3 uid="uid://w3104ril7tnq"]
 
-[ext_resource type="Script" path="res://resources/definitions/effect_definition.gd" id="1_effect"]
-[ext_resource type="Script" path="res://resources/definitions/item_definition.gd" id="2_item"]
-[ext_resource type="Script" path="res://resources/definitions/merge_result.gd" id="2_n3ngn"]
+[ext_resource type="Script" uid="uid://xn6sinp83boe" path="res://resources/definitions/effect_definition.gd" id="1_effect"]
+[ext_resource type="Script" uid="uid://8qdrbetfqfv3" path="res://resources/definitions/item_definition.gd" id="2_item"]
+[ext_resource type="Script" uid="uid://c3ll0lgyqpgap" path="res://resources/definitions/merge_result.gd" id="2_n3ngn"]
 [ext_resource type="Resource" path="res://resources/definitions/blueprints/bp_bomb.tres" id="3_isfx1"]
-[ext_resource type="Texture2D" path="res://resources/sprites/items/firecracker.png" id="3_sprite"]
-[ext_resource type="Resource" path="res://resources/definitions/items/bomb.tres" id="4_iyrm6"]
-[ext_resource type="Script" path="res://resources/definitions/reagent_variant.gd" id="5_v5on1"]
+[ext_resource type="Texture2D" uid="uid://5ty43gy0dqkt" path="res://resources/sprites/items/firecracker.png" id="3_sprite"]
+[ext_resource type="Resource" uid="uid://rw2lfqgko75q" path="res://resources/definitions/items/bomb.tres" id="4_iyrm6"]
+[ext_resource type="Script" uid="uid://bwjarlm68nkgp" path="res://resources/definitions/reagent_variant.gd" id="5_v5on1"]
 
 [sub_resource type="Resource" id="Resource_effect"]
 script = ExtResource("1_effect")

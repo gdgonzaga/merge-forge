@@ -2,22 +2,26 @@ extends Control
 
 const CONFIRM_DIALOG := preload("res://ui/confirm_dialog.tscn")
 const PURCHASES := preload("res://core/purchases.gd")
+const TOUCH_LAYOUT := preload("res://ui/touch_layout.gd")
 const TAB_FONT := preload("res://resources/fonts/ModernAntiqua-Regular.ttf")
 const SAFE_MARGIN := 48.0
 const TAB_PADDING_VERTICAL := 42.0
 
 @onready var _layout: VBoxContainer = %VBox
 @onready var _tabs: TabContainer = %TabContainer
+@onready var _title: Label = %Title
 
 @onready var _bp_scroll: VBoxContainer = $VBox/TabContainer/Blueprints/BpContent
 @onready var _upgrade_scroll: VBoxContainer = $VBox/TabContainer/Upgrades/UpgradeContent
 @onready var _reagent_scroll: VBoxContainer = $VBox/TabContainer/Reagents/ReagentContent
 @onready var _dungeon_btn: Button = %DungeonBtn
+@onready var _guild_btn: Button = %GuildBtn
 @onready var _forecast_panel: VBoxContainer = %ForecastPanel
 @onready var _contracts_panel: VBoxContainer = %ContractsPanel
 
 var _purchases: RefCounted = PURCHASES.new()
-# Today's single Enter Dungeon button targets the first dungeon to unlock.
+var _town: TownDefinition
+# The town's first dungeon to unlock; null when the town has none.
 var _dungeon: DungeonDefinition
 # The next session exactly as the shop will deal it.
 var _plan: SessionPlan
@@ -34,11 +38,15 @@ func _ready() -> void:
 	for child in _reagent_scroll.get_children():
 		child.queue_free()
 
-	_dungeon = DefinitionLibrary.get_all_dungeons()[0]
+	_town = GameManager.get_current_town()
+	_title.text = "Prep Phase · %s" % _town.name
+	var dungeons := DefinitionLibrary.get_town_dungeons(_town)
+	_dungeon = null if dungeons.is_empty() else dungeons[0]
 	_refresh_dungeon_button()
 	$VBox/BtnBox/QuitBtn.pressed.connect(_on_quit_pressed)
 	$VBox/BtnBox/SessionBtn.pressed.connect(EventBus.prep_start_session.emit)
-	_dungeon_btn.pressed.connect(EventBus.prep_enter_dungeon.emit.bind(_dungeon.id))
+	_dungeon_btn.pressed.connect(_on_dungeon_pressed)
+	_guild_btn.pressed.connect(EventBus.prep_open_charter.emit)
 	$VBox/DebugBtn.pressed.connect(_debug_unlock_all)
 	# Bound methods, not lambdas: Godot drops a connection when the callable's
 	# object is freed, and a lambda that never touches self has no object, so
@@ -55,27 +63,12 @@ func _ready() -> void:
 # Android reports the window's safe rectangle in physical pixels. Desktop
 # reports the whole display, which may be larger than the app window.
 func apply_safe_area(safe_area: Rect2i, screen_transform: Transform2D, platform_name: String) -> void:
-	var viewport_size := get_viewport_rect().size
-	var visible := Rect2(Vector2.ZERO, viewport_size)
-	if platform_name == "Android" and safe_area.has_area():
-		var to_canvas := screen_transform.affine_inverse()
-		var start := to_canvas * Vector2(safe_area.position)
-		var end := to_canvas * Vector2(safe_area.end)
-		visible = visible.intersection(Rect2(start, end - start))
-	_layout.offset_left = visible.position.x + SAFE_MARGIN
-	_layout.offset_top = visible.position.y + SAFE_MARGIN
-	_layout.offset_right = visible.end.x - viewport_size.x - SAFE_MARGIN
-	_layout.offset_bottom = visible.end.y - viewport_size.y - SAFE_MARGIN
+	TOUCH_LAYOUT.inset_to_safe_area(_layout, get_viewport_rect().size, safe_area, screen_transform, platform_name, SAFE_MARGIN)
 
 
 func _configure_tabs() -> void:
 	_tabs.add_theme_font_override("font", TAB_FONT)
-	_tabs.add_theme_font_size_override("font_size", 32)
-	for style_name: String in ["tab_selected", "tab_unselected", "tab_hovered", "tab_disabled"]:
-		var style: StyleBox = _tabs.get_theme_stylebox(style_name).duplicate()
-		style.set_content_margin(SIDE_TOP, TAB_PADDING_VERTICAL)
-		style.set_content_margin(SIDE_BOTTOM, TAB_PADDING_VERTICAL)
-		_tabs.add_theme_stylebox_override(style_name, style)
+	TOUCH_LAYOUT.size_tabs_for_touch(_tabs, 32, TAB_PADDING_VERTICAL)
 
 
 func _apply_display_safe_area() -> void:
@@ -120,9 +113,17 @@ func _on_shop_level_changed(_level: int) -> void:
 
 
 func _refresh_dungeon_button() -> void:
+	_dungeon_btn.visible = _dungeon != null
+	if _dungeon == null:
+		return
 	var open := GameManager.meets_level(_dungeon.min_shop_level)
 	_dungeon_btn.disabled = not open
 	_dungeon_btn.text = "Enter Dungeon" if open else "Dungeon (Lv %d)" % _dungeon.min_shop_level
+
+
+func _on_dungeon_pressed() -> void:
+	if _dungeon != null:
+		EventBus.prep_enter_dungeon.emit(_dungeon.id)
 
 
 func get_forecast_plan() -> SessionPlan:
@@ -156,7 +157,7 @@ func _refresh_blueprints() -> void:
 	for child in _bp_scroll.get_children():
 		child.queue_free()
 	var card_scene: PackedScene = load("res://shop/purchase_card.tscn")
-	for blueprint in DefinitionLibrary.get_all_blueprints():
+	for blueprint in DefinitionLibrary.get_town_blueprints(_town):
 		var bp_id := blueprint.id
 		var owned := RecipeResolver.has_blueprint(bp_id)
 		var level_ok := GameManager.meets_level(blueprint.min_shop_level)
@@ -255,12 +256,15 @@ func _refresh_reagents() -> void:
 		card.setup("%s (x%d)" % [reagent.name, owned_count], desc, Color(0.7, 0.7, 0.7), "%dg" % reagent.cost, disabled, try_purchase.bind("reagent", reagent.id), 72)
 
 
+# Where the current town's dungeons drop this reagent.
 func _dungeon_reagent_text(reagent: ReagentDefinition) -> String:
 	var sources: PackedStringArray = []
-	for dungeon in DefinitionLibrary.get_all_dungeons():
+	for dungeon in DefinitionLibrary.get_town_dungeons(_town):
 		for reward in dungeon.reagent_rewards:
 			if reward.reagent == reagent and not dungeon.name in sources:
 				sources.append(dungeon.name)
+	if sources.is_empty():
+		return "%s\nNot found in %s" % [reagent.description, _town.name]
 	return "%s\nFound in: %s" % [reagent.description, ", ".join(sources)]
 
 
@@ -270,7 +274,7 @@ func _debug_unlock_all() -> void:
 	GameManager.gold_changed.emit(20000)
 	var rules := DefinitionLibrary.get_shop_rules()
 	GameManager.add_shop_xp(rules.xp_for_level(rules.max_level) - GameManager.shop_xp)
-	for blueprint in DefinitionLibrary.get_all_blueprints():
+	for blueprint in DefinitionLibrary.get_town_blueprints(_town):
 		GameManager.add_blueprint(blueprint.id)
 	for reagent in DefinitionLibrary.get_all_reagents():
 		GameManager.add_reagent(reagent.id, 5)

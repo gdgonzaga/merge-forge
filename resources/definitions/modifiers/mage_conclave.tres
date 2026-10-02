@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="SessionModifierDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/crate_definition.gd" id="1_pq52e"]
+[ext_resource type="Script" path="res://resources/definitions/customer_definition.gd" id="2_juc0x"]
+[ext_resource type="Resource" path="res://resources/definitions/customers/st_07.tres" id="3_bv8e7"]
+[ext_resource type="Resource" path="res://resources/definitions/customers/st_10.tres" id="4_d6sj2"]
+[ext_resource type="Script" path="res://resources/definitions/session_modifier_definition.gd" id="5_hfchk"]
+[ext_resource type="Texture2D" path="res://resources/sprites/modifiers/knights_tournament.png" id="6_x3yjg"]
+
+[resource]
+script = ExtResource("5_hfchk")
+id = "mage_conclave"
+name = "Mage Conclave"
+description = "Mages gather in town for the conclave."
+sprite = ExtResource("6_x3yjg")
+min_shop_level = 18
+boosted_customers = Array[ExtResource("2_juc0x")]([ExtResource("3_bv8e7"), ExtResource("4_d6sj2")])
+customer_weight_multiplier = 3.0

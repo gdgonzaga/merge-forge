@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="ContractDefinition" format=3]
+
+[ext_resource type="Resource" path="res://resources/definitions/customers/st_01.tres" id="1_sp4jt"]
+[ext_resource type="Script" path="res://resources/definitions/order_template.gd" id="2_ymjbq"]
+[ext_resource type="Resource" path="res://resources/definitions/items/iron_ingot.tres" id="3_s4g1d"]
+[ext_resource type="Script" path="res://resources/definitions/contract_definition.gd" id="4_12fto"]
+
+[sub_resource type="Resource" id="Resource_u7ewt"]
+script = ExtResource("2_ymjbq")
+item = ExtResource("3_s4g1d")
+min_quantity = 8
+max_quantity = 8
+
+[resource]
+script = ExtResource("4_12fto")
+id = "con_foreman_ingots"
+name = "Dagna's Ingot Run"
+giver = ExtResource("1_sp4jt")
+min_shop_level = 10
+weight = 2
+requirements = Array[ExtResource("2_ymjbq")]([SubResource("Resource_u7ewt")])
+sessions_allowed = 2
+reward_gold = 220
+loyalty_points = 3

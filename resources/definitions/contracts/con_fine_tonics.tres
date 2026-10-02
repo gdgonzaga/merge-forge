@@ -1,10 +1,10 @@
-[gd_resource type="Resource" script_class="ContractDefinition" format=3]
+[gd_resource type="Resource" script_class="ContractDefinition" format=3 uid="uid://bykj7whsndiy1"]
 
-[ext_resource type="Script" path="res://resources/definitions/contract_definition.gd" id="1_contract"]
-[ext_resource type="Script" path="res://resources/definitions/order_template.gd" id="2_tpl"]
-[ext_resource type="Resource" path="res://resources/definitions/customers/cust_04.tres" id="3_giver"]
-[ext_resource type="Resource" path="res://resources/definitions/items/herbal_tonic.tres" id="item_0"]
+[ext_resource type="Script" uid="uid://kqhibs3xg1x2" path="res://resources/definitions/contract_definition.gd" id="1_contract"]
+[ext_resource type="Script" uid="uid://lt1tn27q1lbl" path="res://resources/definitions/order_template.gd" id="2_tpl"]
+[ext_resource type="Resource" uid="uid://b7xgfqyra57tb" path="res://resources/definitions/customers/cust_04.tres" id="3_giver"]
 [ext_resource type="Resource" path="res://resources/definitions/reagents/fire_essence.tres" id="fire_reward"]
+[ext_resource type="Resource" uid="uid://bkyhcay7c3k8h" path="res://resources/definitions/items/herbal_tonic.tres" id="item_0"]
 
 [sub_resource type="Resource" id="Resource_req_0"]
 script = ExtResource("2_tpl")
@@ -19,7 +19,6 @@ id = "con_fine_tonics"
 name = "Ysolde's Fine Tonics"
 giver = ExtResource("3_giver")
 min_shop_level = 18
-weight = 1
 requirements = Array[ExtResource("2_tpl")]([SubResource("Resource_req_0")])
 sessions_allowed = 2
 reward_gold = 360

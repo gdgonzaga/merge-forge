@@ -1,11 +1,11 @@
-[gd_resource type="Resource" script_class="ContractDefinition" format=3]
+[gd_resource type="Resource" script_class="ContractDefinition" format=3 uid="uid://bovgcgcihl867"]
 
-[ext_resource type="Script" path="res://resources/definitions/contract_definition.gd" id="1_contract"]
-[ext_resource type="Script" path="res://resources/definitions/order_template.gd" id="2_tpl"]
-[ext_resource type="Resource" path="res://resources/definitions/customers/cust_08.tres" id="3_giver"]
-[ext_resource type="Resource" path="res://resources/definitions/items/iron_ingot.tres" id="item_0"]
-[ext_resource type="Resource" path="res://resources/definitions/items/herb_bundle.tres" id="item_1"]
+[ext_resource type="Script" uid="uid://kqhibs3xg1x2" path="res://resources/definitions/contract_definition.gd" id="1_contract"]
+[ext_resource type="Script" uid="uid://lt1tn27q1lbl" path="res://resources/definitions/order_template.gd" id="2_tpl"]
+[ext_resource type="Resource" uid="uid://clq5sww876fnf" path="res://resources/definitions/customers/cust_08.tres" id="3_giver"]
 [ext_resource type="Resource" path="res://resources/definitions/reagents/fire_essence.tres" id="fire_reward"]
+[ext_resource type="Resource" uid="uid://do5v12gikixbd" path="res://resources/definitions/items/iron_ingot.tres" id="item_0"]
+[ext_resource type="Resource" uid="uid://c7jf1g7xg0a5d" path="res://resources/definitions/items/herb_bundle.tres" id="item_1"]
 
 [sub_resource type="Resource" id="Resource_req_0"]
 script = ExtResource("2_tpl")
@@ -27,7 +27,6 @@ id = "con_fine_bulk"
 name = "Maelys's Fine Bulk"
 giver = ExtResource("3_giver")
 min_shop_level = 26
-weight = 1
 requirements = Array[ExtResource("2_tpl")]([SubResource("Resource_req_0"), SubResource("Resource_req_1")])
 sessions_allowed = 3
 reward_gold = 390

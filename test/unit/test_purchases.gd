@@ -57,6 +57,14 @@ func test_blueprint_refused_when_gold_is_short() -> void:
 	assert_bool(RecipeResolver.has_blueprint("__test_bp")).is_false()
 
 
+func test_blueprint_refused_outside_the_current_town() -> void:
+	var blueprint := _blueprint("__test_bp", 30)
+	set_definition(DefinitionLibrary.blueprints, blueprint)
+	test_town.blueprints.erase(blueprint)
+	assert_bool(_purchases.buy_blueprint("__test_bp")).is_false()
+	assert_int(GameManager.gold).is_equal(50)
+
+
 func test_blueprint_refused_for_an_unknown_id() -> void:
 	assert_bool(_purchases.buy_blueprint("__test_missing")).is_false()
 	assert_int(GameManager.gold).is_equal(50)

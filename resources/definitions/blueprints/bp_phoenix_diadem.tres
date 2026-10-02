@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="BlueprintDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/blueprint_definition.gd" id="1_tmfuc"]
+[ext_resource type="Resource" path="res://resources/definitions/blueprints/bp_mending_ring.tres" id="2_gfcwf"]
+
+[resource]
+script = ExtResource("1_tmfuc")
+id = "bp_phoenix_diadem"
+name = "Phoenix Diadem Blueprint"
+cost = 4000
+min_shop_level = 14
+dependencies = Array[ExtResource("1_tmfuc")]([ExtResource("2_gfcwf")])

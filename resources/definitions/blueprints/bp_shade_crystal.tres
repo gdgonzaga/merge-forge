@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="BlueprintDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/blueprint_definition.gd" id="1_e3bmu"]
+
+[resource]
+script = ExtResource("1_e3bmu")
+id = "bp_shade_crystal"
+name = "Shade Crystal Blueprint"
+cost = 1200
+min_shop_level = 12

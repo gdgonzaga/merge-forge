@@ -1,0 +1,31 @@
+[gd_resource type="Resource" script_class="ContractDefinition" format=3]
+
+[ext_resource type="Resource" path="res://resources/definitions/customers/st_06.tres" id="1_eqe2y"]
+[ext_resource type="Script" path="res://resources/definitions/order_template.gd" id="2_dxysm"]
+[ext_resource type="Resource" path="res://resources/definitions/items/cut_gem.tres" id="3_e0xys"]
+[ext_resource type="Resource" path="res://resources/definitions/items/iron_ingot.tres" id="4_dccxn"]
+[ext_resource type="Script" path="res://resources/definitions/contract_definition.gd" id="5_fcwmr"]
+
+[sub_resource type="Resource" id="Resource_k11mx"]
+script = ExtResource("2_dxysm")
+item = ExtResource("3_e0xys")
+min_quantity = 6
+max_quantity = 6
+
+[sub_resource type="Resource" id="Resource_xksqk"]
+script = ExtResource("2_dxysm")
+item = ExtResource("4_dccxn")
+min_quantity = 4
+max_quantity = 4
+
+[resource]
+script = ExtResource("5_fcwmr")
+id = "con_tavern_supplies"
+name = "Pell's Tavern Supplies"
+giver = ExtResource("1_eqe2y")
+min_shop_level = 10
+weight = 2
+requirements = Array[ExtResource("2_dxysm")]([SubResource("Resource_k11mx"), SubResource("Resource_xksqk")])
+sessions_allowed = 2
+reward_gold = 270
+loyalty_points = 3

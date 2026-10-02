@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="ItemDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/effect_definition.gd" id="1_nv2uw"]
+[ext_resource type="Script" path="res://resources/definitions/merge_result.gd" id="2_43osm"]
+[ext_resource type="Script" path="res://resources/definitions/reagent_variant.gd" id="3_8eupm"]
+[ext_resource type="Script" path="res://resources/definitions/item_definition.gd" id="4_qygve"]
+[ext_resource type="Texture2D" path="res://resources/sprites/items/flame_sword.png" id="5_0utng"]
+
+[sub_resource type="Resource" id="Resource_dqo68"]
+script = ExtResource("1_nv2uw")
+type = "buff_attack"
+value = 8
+duration = 20
+
+[resource]
+script = ExtResource("4_qygve")
+id = "ember_wand"
+name = "Ember Wand"
+family = "wood"
+gold_value = 480
+dungeon_usable = true
+dungeon_use_target = "party-individual"
+effect = SubResource("Resource_dqo68")
+sprite = ExtResource("5_0utng")

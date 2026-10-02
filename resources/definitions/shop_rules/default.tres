@@ -1,14 +1,17 @@
 [gd_resource type="Resource" script_class="ShopRulesDefinition" format=3]
 
 [ext_resource type="Script" path="res://resources/definitions/shop_rules_definition.gd" id="1_rules"]
+[ext_resource type="Resource" path="res://resources/definitions/towns/millbrook.tres" id="2_town"]
 
 [resource]
 script = ExtResource("1_rules")
 id = "default"
+starting_town = ExtResource("2_town")
 session_size = 10
 modifier_chance = 0.35
 forecast_customers = 3
 contract_offers = 2
+max_shelf_slots = 6
 quality_price_multipliers = Array[float]([1.0, 1.2, 1.5])
 xp_per_gold = 0.5
 streak_step = 0.1
@@ -18,3 +21,7 @@ loyalty_per_quality_order = 2
 level_xp_base = 70
 level_xp_exponent = 1.5
 max_level = 60
+charter_level = 40
+charter_base_points = 10
+charter_points_per_level = 1.0
+codex_family_points = 5

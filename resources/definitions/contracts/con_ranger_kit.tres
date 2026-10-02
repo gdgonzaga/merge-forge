@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="ContractDefinition" format=3]
+
+[ext_resource type="Resource" path="res://resources/definitions/customers/gh_05.tres" id="1_2iy0r"]
+[ext_resource type="Script" path="res://resources/definitions/order_template.gd" id="2_1r3ht"]
+[ext_resource type="Resource" path="res://resources/definitions/items/longbow.tres" id="3_yy57t"]
+[ext_resource type="Resource" path="res://resources/definitions/items/warding_staff.tres" id="4_tryx1"]
+[ext_resource type="Script" path="res://resources/definitions/contract_definition.gd" id="5_xlkts"]
+
+[sub_resource type="Resource" id="Resource_uk1hi"]
+script = ExtResource("2_1r3ht")
+item = ExtResource("3_yy57t")
+
+[sub_resource type="Resource" id="Resource_wpb3b"]
+script = ExtResource("2_1r3ht")
+item = ExtResource("4_tryx1")
+
+[resource]
+script = ExtResource("5_xlkts")
+id = "con_ranger_kit"
+name = "Tarn's Ranger Kit"
+giver = ExtResource("1_2iy0r")
+min_shop_level = 14
+requirements = Array[ExtResource("2_1r3ht")]([SubResource("Resource_uk1hi"), SubResource("Resource_wpb3b")])
+sessions_allowed = 3
+reward_gold = 750
+loyalty_points = 4

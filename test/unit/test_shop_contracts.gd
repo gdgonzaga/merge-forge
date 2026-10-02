@@ -9,7 +9,6 @@ var _giver: CustomerDefinition
 
 func before_test() -> void:
 	super.before_test()
-	_push_shipped_shop_content_away()
 	set_definition(DefinitionLibrary.shop_rules, _rules(1))
 	_item = ItemDefinition.new()
 	_item.id = "__test_item"
@@ -166,14 +165,6 @@ func _customer() -> CustomerDefinition:
 	customer.name = "Giver"
 	customer.wants = [want]
 	return customer
-
-
-func _push_shipped_shop_content_away() -> void:
-	for catalog: Dictionary in [DefinitionLibrary.customers, DefinitionLibrary.crates, DefinitionLibrary.contracts]:
-		for definition: Resource in catalog.values().duplicate():
-			var moved: Resource = definition.duplicate()
-			moved.min_shop_level = 9999
-			set_definition(catalog, moved)
 
 
 func _rules(session_size: int) -> ShopRulesDefinition:

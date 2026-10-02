@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="ContractDefinition" format=3]
+
+[ext_resource type="Resource" path="res://resources/definitions/customers/gh_04.tres" id="1_fmjkq"]
+[ext_resource type="Script" path="res://resources/definitions/order_template.gd" id="2_nhu0d"]
+[ext_resource type="Resource" path="res://resources/definitions/items/herbal_tonic.tres" id="3_ws4mk"]
+[ext_resource type="Resource" path="res://resources/definitions/reagents/fire_essence.tres" id="4_4ruim"]
+[ext_resource type="Script" path="res://resources/definitions/contract_definition.gd" id="5_kpupm"]
+
+[sub_resource type="Resource" id="Resource_h4x5g"]
+script = ExtResource("2_nhu0d")
+item = ExtResource("3_ws4mk")
+min_quantity = 3
+max_quantity = 3
+min_quality = 1
+
+[resource]
+script = ExtResource("5_kpupm")
+id = "con_druid_tonics"
+name = "Wisteria's Fine Tonics"
+giver = ExtResource("1_fmjkq")
+min_shop_level = 18
+requirements = Array[ExtResource("2_nhu0d")]([SubResource("Resource_h4x5g")])
+sessions_allowed = 2
+reward_gold = 360
+reward_reagent = ExtResource("4_4ruim")
+reward_reagent_count = 1
+loyalty_points = 4

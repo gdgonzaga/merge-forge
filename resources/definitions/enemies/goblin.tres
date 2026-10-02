@@ -1,12 +1,12 @@
-[gd_resource type="Resource" script_class="EnemyDefinition" format=3]
+[gd_resource type="Resource" script_class="EnemyDefinition" format=3 uid="uid://bb877abnk5mq8"]
 
-[ext_resource type="Script" path="res://resources/definitions/weighted_item.gd" id="1_wbv7a"]
-[ext_resource type="Resource" path="res://resources/definitions/items/iron_plate.tres" id="2_cgvpa"]
-[ext_resource type="Script" path="res://resources/definitions/enemy_definition.gd" id="2_ydbyd"]
-[ext_resource type="Resource" path="res://resources/definitions/items/herb_bundle.tres" id="3_brvmg"]
-[ext_resource type="Texture2D" path="res://resources/sprites/enemies/goblin.png" id="3_dxv5k"]
-[ext_resource type="Resource" path="res://resources/definitions/items/herbal_tonic.tres" id="4_k737f"]
-[ext_resource type="Texture2D" path="res://resources/sprites/ui/badge_icon_smash.png" id="5_smash"]
+[ext_resource type="Script" uid="uid://c4qh4gihptmh2" path="res://resources/definitions/weighted_item.gd" id="1_wbv7a"]
+[ext_resource type="Resource" uid="uid://b4rm1u6ahosws" path="res://resources/definitions/items/iron_plate.tres" id="2_cgvpa"]
+[ext_resource type="Script" uid="uid://cu7veosjkshwd" path="res://resources/definitions/enemy_definition.gd" id="2_ydbyd"]
+[ext_resource type="Resource" uid="uid://c7jf1g7xg0a5d" path="res://resources/definitions/items/herb_bundle.tres" id="3_brvmg"]
+[ext_resource type="Texture2D" uid="uid://c3avwcgha6uef" path="res://resources/sprites/enemies/goblin.png" id="3_dxv5k"]
+[ext_resource type="Resource" uid="uid://bkyhcay7c3k8h" path="res://resources/definitions/items/herbal_tonic.tres" id="4_k737f"]
+[ext_resource type="Texture2D" uid="uid://bskj6d0jdm3fj" path="res://resources/sprites/ui/badge_icon_smash.png" id="5_smash"]
 
 [sub_resource type="Resource" id="Resource_kp2lk"]
 script = ExtResource("1_wbv7a")
@@ -32,9 +32,8 @@ windup = 1
 crit_windup = 4
 crit_chance = 0.15
 crit_name = "Smash"
-crit_sprite = ExtResource("5_smash")
 sprite = ExtResource("3_dxv5k")
+crit_sprite = ExtResource("5_smash")
 min_drops = 3
 max_drops = 4
 drop_pool = Array[ExtResource("1_wbv7a")]([SubResource("Resource_kp2lk"), SubResource("Resource_65xu4"), SubResource("Resource_42gio")])
-

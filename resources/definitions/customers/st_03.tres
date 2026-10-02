@@ -1,0 +1,61 @@
+[gd_resource type="Resource" script_class="CustomerDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/loyalty_reward.gd" id="1_fp86a"]
+[ext_resource type="Resource" path="res://resources/definitions/blueprints/bp_iron_shield.tres" id="2_3s1na"]
+[ext_resource type="Resource" path="res://resources/definitions/reagents/ice_essence.tres" id="3_re0m2"]
+[ext_resource type="Script" path="res://resources/definitions/customer_definition.gd" id="4_jjysk"]
+[ext_resource type="Texture2D" path="res://resources/sprites/portraits/customer_03.png" id="5_bxat3"]
+[ext_resource type="Script" path="res://resources/definitions/order_template.gd" id="6_kl3xx"]
+[ext_resource type="Resource" path="res://resources/definitions/items/iron_plate.tres" id="7_ign3j"]
+[ext_resource type="Resource" path="res://resources/definitions/items/polished_gem.tres" id="8_p2veg"]
+[ext_resource type="Resource" path="res://resources/definitions/items/iron_ingot.tres" id="9_450n5"]
+
+[sub_resource type="Resource" id="Resource_llvgw"]
+script = ExtResource("1_fp86a")
+points = 5
+title = "Familiar Face"
+gold = 150
+
+[sub_resource type="Resource" id="Resource_wqoqv"]
+script = ExtResource("1_fp86a")
+points = 15
+title = "Regular"
+blueprint = ExtResource("2_3s1na")
+
+[sub_resource type="Resource" id="Resource_uxwk4"]
+script = ExtResource("1_fp86a")
+points = 30
+title = "Old Friend"
+gold = 200
+reagent = ExtResource("3_re0m2")
+reagent_count = 1
+
+[sub_resource type="Resource" id="Resource_fa002"]
+script = ExtResource("6_kl3xx")
+item = ExtResource("7_ign3j")
+weight = 2
+max_quantity = 2
+
+[sub_resource type="Resource" id="Resource_xqjwy"]
+script = ExtResource("6_kl3xx")
+item = ExtResource("8_p2veg")
+weight = 2
+max_quantity = 2
+
+[sub_resource type="Resource" id="Resource_i8khp"]
+script = ExtResource("6_kl3xx")
+item = ExtResource("9_450n5")
+min_quantity = 3
+max_quantity = 4
+
+[resource]
+script = ExtResource("4_jjysk")
+id = "st_03"
+name = "Vell"
+role = "Ore Trader"
+sprite = ExtResource("5_bxat3")
+min_shop_level = 3
+min_orders = 2
+max_orders = 3
+wants = Array[ExtResource("6_kl3xx")]([SubResource("Resource_fa002"), SubResource("Resource_xqjwy"), SubResource("Resource_i8khp")])
+loyalty_rewards = Array[ExtResource("1_fp86a")]([SubResource("Resource_llvgw"), SubResource("Resource_wqoqv"), SubResource("Resource_uxwk4")])

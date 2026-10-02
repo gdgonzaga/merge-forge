@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="ItemDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/effect_definition.gd" id="1_1u2pa"]
+[ext_resource type="Script" path="res://resources/definitions/merge_result.gd" id="2_bs4ch"]
+[ext_resource type="Script" path="res://resources/definitions/reagent_variant.gd" id="3_g6gfo"]
+[ext_resource type="Script" path="res://resources/definitions/item_definition.gd" id="4_buffw"]
+[ext_resource type="Texture2D" path="res://resources/sprites/items/battle_elixir.png" id="5_p4mv6"]
+
+[sub_resource type="Resource" id="Resource_x4u8u"]
+script = ExtResource("1_1u2pa")
+type = "crit_charges"
+value = 3
+
+[resource]
+script = ExtResource("4_buffw")
+id = "keen_amulet"
+name = "Keen Amulet"
+family = "gem"
+gold_value = 280
+dungeon_usable = true
+dungeon_use_target = "party-individual"
+effect = SubResource("Resource_x4u8u")
+sprite = ExtResource("5_p4mv6")

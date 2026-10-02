@@ -1,0 +1,57 @@
+[gd_resource type="Resource" script_class="ItemDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/effect_definition.gd" id="1_c0aw5"]
+[ext_resource type="Script" path="res://resources/definitions/merge_result.gd" id="2_rfxbi"]
+[ext_resource type="Resource" path="res://resources/definitions/blueprints/bp_mending_ring.tres" id="3_tcgt6"]
+[ext_resource type="Resource" path="res://resources/definitions/items/mending_ring.tres" id="4_5ckms"]
+[ext_resource type="Resource" path="res://resources/definitions/blueprints/bp_keen_amulet.tres" id="5_5u6y4"]
+[ext_resource type="Resource" path="res://resources/definitions/items/keen_amulet.tres" id="6_yd4gh"]
+[ext_resource type="Script" path="res://resources/definitions/reagent_variant.gd" id="7_x0ole"]
+[ext_resource type="Resource" path="res://resources/definitions/blueprints/bp_phoenix_diadem.tres" id="8_4183a"]
+[ext_resource type="Resource" path="res://resources/definitions/reagents/fire_essence.tres" id="9_8yawl"]
+[ext_resource type="Resource" path="res://resources/definitions/items/phoenix_diadem.tres" id="10_sph6c"]
+[ext_resource type="Resource" path="res://resources/definitions/blueprints/bp_radiant_scepter.tres" id="11_s3n1w"]
+[ext_resource type="Resource" path="res://resources/definitions/reagents/holy_essence.tres" id="12_fkp10"]
+[ext_resource type="Resource" path="res://resources/definitions/items/radiant_scepter.tres" id="13_12fu3"]
+[ext_resource type="Script" path="res://resources/definitions/item_definition.gd" id="14_mlyqr"]
+[ext_resource type="Texture2D" path="res://resources/sprites/items/herbal_tonic.png" id="15_r15wu"]
+
+[sub_resource type="Resource" id="Resource_85hfv"]
+script = ExtResource("1_c0aw5")
+type = "heal"
+value = 30
+
+[sub_resource type="Resource" id="Resource_2vwec"]
+script = ExtResource("2_rfxbi")
+result = ExtResource("4_5ckms")
+blueprint = ExtResource("3_tcgt6")
+
+[sub_resource type="Resource" id="Resource_p6jaf"]
+script = ExtResource("2_rfxbi")
+result = ExtResource("6_yd4gh")
+blueprint = ExtResource("5_5u6y4")
+
+[sub_resource type="Resource" id="Resource_hpg40"]
+script = ExtResource("7_x0ole")
+result = ExtResource("10_sph6c")
+reagent = ExtResource("9_8yawl")
+blueprint = ExtResource("8_4183a")
+
+[sub_resource type="Resource" id="Resource_hpnjd"]
+script = ExtResource("7_x0ole")
+result = ExtResource("13_12fu3")
+reagent = ExtResource("12_fkp10")
+blueprint = ExtResource("11_s3n1w")
+
+[resource]
+script = ExtResource("14_mlyqr")
+id = "polished_gem"
+name = "Polished Gem"
+family = "gem"
+gold_value = 75
+dungeon_usable = true
+dungeon_use_target = "party-individual"
+effect = SubResource("Resource_85hfv")
+sprite = ExtResource("15_r15wu")
+merge_results = Array[ExtResource("2_rfxbi")]([SubResource("Resource_2vwec"), SubResource("Resource_p6jaf")])
+reagent_variants = Array[ExtResource("7_x0ole")]([SubResource("Resource_hpg40"), SubResource("Resource_hpnjd")])

@@ -13,7 +13,6 @@ var _item: ItemDefinition
 
 func before_test() -> void:
 	super.before_test()
-	_push_shipped_shop_content_away()
 	set_definition(DefinitionLibrary.shop_rules, _rules(3))
 	_item = ItemDefinition.new()
 	_item.id = "__test_item"
@@ -236,16 +235,6 @@ func _crate_buttons_named(session: Control, crate_name: String) -> int:
 	return count
 
 
-# Shipped archetypes and crates would join the session; move them out of reach
-# through set_definition so TestBase restores them.
-func _push_shipped_shop_content_away() -> void:
-	for catalog: Dictionary in [DefinitionLibrary.customers, DefinitionLibrary.crates]:
-		for definition: Resource in catalog.values().duplicate():
-			var moved: Resource = definition.duplicate()
-			moved.min_shop_level = 9999
-			set_definition(catalog, moved)
-
-
 # Level 2 at 100 XP, level 3 at 300.
 func _rules(session_size: int) -> ShopRulesDefinition:
 	var rules := ShopRulesDefinition.new()
@@ -293,3 +282,22 @@ func _give_shelf(slots: int) -> void:
 	shelf.levels = [level]
 	set_definition(DefinitionLibrary.upgrades, shelf)
 	GameManager.raise_upgrade_level("__test_shelf")
+
+
+# --- towns ---
+
+func test_a_crate_outside_the_town_gets_no_button() -> void:
+	var away := _crate("__test_away_crate", "Away Crate", 1, _item)
+	set_definition(DefinitionLibrary.crates, away)
+	test_town.crates.erase(away)
+	var session := _start_session()
+	await _await_crate_buttons_settled(session)
+	assert_int(_crate_buttons_named(session, "Away Crate")).is_equal(0)
+	assert_int(_crate_buttons_named(session, "Level One Crate")).is_equal(1)
+
+
+func test_the_shop_shows_the_towns_background() -> void:
+	var backdrop := PlaceholderTexture2D.new()
+	test_town.background = backdrop
+	var session := _start_session()
+	assert_object(session.get_node("%BG").texture).is_same(backdrop)

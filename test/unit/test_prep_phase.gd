@@ -29,11 +29,9 @@ func test_leaving_prep_phase_drops_its_game_manager_connections() -> void:
 	assert_array(_connection_counts(signals)).is_equal(before)
 
 
-func test_dungeon_button_enters_the_first_dungeon_to_unlock() -> void:
-	var dungeon := DungeonDefinition.new()
-	dungeon.id = "__test_dungeon"
-	dungeon.min_shop_level = -9001
-	set_definition(DefinitionLibrary.dungeons, dungeon)
+func test_dungeon_button_enters_the_towns_first_dungeon_to_unlock() -> void:
+	set_definition(DefinitionLibrary.dungeons, _test_dungeon("__test_late", 3))
+	set_definition(DefinitionLibrary.dungeons, _test_dungeon("__test_dungeon", 1))
 	var entered: Array[String] = []
 	var on_enter := func(dungeon_id: String) -> void: entered.append(dungeon_id)
 	EventBus.prep_enter_dungeon.connect(on_enter)
@@ -45,6 +43,53 @@ func test_dungeon_button_enters_the_first_dungeon_to_unlock() -> void:
 	EventBus.prep_enter_dungeon.disconnect(on_enter)
 	assert_bool(enabled).is_true()
 	assert_array(entered).is_equal(["__test_dungeon"])
+
+
+# Spec review focus 4: prep used to index the first dungeon of the catalog.
+func test_a_town_without_a_dungeon_hides_the_dungeon_button() -> void:
+	var away := _test_dungeon("__test_away", 1)
+	set_definition(DefinitionLibrary.dungeons, away)
+	test_town.dungeons.erase(away)
+	var prep: Control = auto_free(PREP_PHASE.instantiate())
+	add_child(prep)
+	assert_bool(prep.get_node("%DungeonBtn").visible).is_false()
+
+
+func test_the_title_names_the_town() -> void:
+	var prep: Control = auto_free(PREP_PHASE.instantiate())
+	add_child(prep)
+	assert_str(prep.get_node("%Title").text).is_equal("Prep Phase · Test Town")
+
+
+func test_a_blueprint_outside_the_town_is_not_for_sale() -> void:
+	var blueprint := BlueprintDefinition.new()
+	blueprint.id = "__test_away_bp"
+	blueprint.name = "Away Blueprint"
+	blueprint.cost = 1
+	set_definition(DefinitionLibrary.blueprints, blueprint)
+	test_town.blueprints.erase(blueprint)
+	var prep: Control = auto_free(PREP_PHASE.instantiate())
+	add_child(prep)
+	assert_object(_card_named(prep, "VBox/TabContainer/Blueprints/BpContent", "Away Blueprint")).is_null()
+
+
+func test_a_dungeon_only_reagent_the_town_cannot_find_says_so() -> void:
+	var ice := ReagentDefinition.new()
+	ice.id = "__test_ice"
+	ice.name = "Test Ice"
+	ice.description = "Cold."
+	set_definition(DefinitionLibrary.reagents, ice)
+	var prep: Control = auto_free(PREP_PHASE.instantiate())
+	add_child(prep)
+	var card: PanelContainer = _card_named(prep, REAGENT_CONTENT, "Test Ice (x0)")
+	assert_str(card.desc_label.text).is_equal("Cold.\nNot found in Test Town")
+
+
+func _test_dungeon(id: String, level: int) -> DungeonDefinition:
+	var dungeon := DungeonDefinition.new()
+	dungeon.id = id
+	dungeon.min_shop_level = level
+	return dungeon
 
 
 func test_blueprint_below_its_level_shows_its_unlock_level_and_cannot_be_bought() -> void:
@@ -127,10 +172,6 @@ func test_a_dungeon_only_reagent_says_where_it_is_found_and_cannot_be_bought() -
 
 
 func test_the_contracts_tab_shows_the_planned_offers() -> void:
-	for contract: ContractDefinition in DefinitionLibrary.contracts.values().duplicate():
-		var moved: ContractDefinition = contract.duplicate()
-		moved.min_shop_level = 9999
-		set_definition(DefinitionLibrary.contracts, moved)
 	var item := ItemDefinition.new()
 	item.id = "__test_contract_item"
 	item.name = "Test Item"
@@ -253,3 +294,16 @@ func _card_named(prep: Control, content_path: String, card_name: String) -> Pane
 		if child.name_label.text == card_name:
 			return child
 	return null
+
+
+func test_the_guild_button_opens_the_guild_hall() -> void:
+	var opened: Array[bool] = []
+	var on_open := func() -> void: opened.append(true)
+	EventBus.prep_open_charter.connect(on_open)
+	var prep: Control = auto_free(PREP_PHASE.instantiate())
+	add_child(prep)
+	var button: Button = prep.get_node("%GuildBtn")
+	button.pressed.emit()
+	EventBus.prep_open_charter.disconnect(on_open)
+	assert_array(opened).is_equal([true])
+	assert_float(button.custom_minimum_size.y).is_greater_equal(120.0)

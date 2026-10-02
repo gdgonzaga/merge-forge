@@ -9,18 +9,21 @@ const CUSTOMER_GENERATOR := preload("res://autoloads/customer_generator.gd")
 const CONTRACT_OFFERS := preload("res://autoloads/contract_offers.gd")
 
 
+# Everything a session deals comes from the current town. The town's price
+# multiplier joins Shop Signage's, so the order card, forecast and payout agree.
 func plan_next_session() -> SessionPlan:
+	var town := GameManager.get_current_town()
 	var plan: SessionPlan = CUSTOMER_GENERATOR.new().plan(
-		DefinitionLibrary.get_all_customers(),
-		DefinitionLibrary.get_all_modifiers(),
+		town.customers,
+		town.modifiers,
 		DefinitionLibrary.get_shop_rules(),
 		GameManager.get_shop_level(),
 		GameManager.get_session_seed(),
 		RecipeResolver.is_craftable,
-		GameManager.get_order_price_multiplier(),
+		GameManager.get_order_price_multiplier() * town.price_multiplier,
 	)
 	plan.contract_offers = CONTRACT_OFFERS.new().offer(
-		DefinitionLibrary.get_all_contracts(),
+		town.contracts,
 		GameManager.get_shop_level(),
 		GameManager.get_session_seed(),
 		_settled_contract_ids(),

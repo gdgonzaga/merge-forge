@@ -1,0 +1,69 @@
+[gd_resource type="Resource" script_class="DungeonDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/encounter_definition.gd" id="1_l8of5"]
+[ext_resource type="Script" path="res://resources/definitions/enemy_spawn.gd" id="2_ht8rb"]
+[ext_resource type="Resource" path="res://resources/definitions/enemies/slime.tres" id="3_pr0hk"]
+[ext_resource type="Resource" path="res://resources/definitions/enemies/goblin_archer.tres" id="4_7f42a"]
+[ext_resource type="Resource" path="res://resources/definitions/enemies/goblin.tres" id="5_toi3h"]
+[ext_resource type="Script" path="res://resources/definitions/reagent_reward.gd" id="6_3srbc"]
+[ext_resource type="Resource" path="res://resources/definitions/reagents/ice_essence.tres" id="7_khhkb"]
+[ext_resource type="Resource" path="res://resources/definitions/reagents/shadow_essence.tres" id="8_whs3p"]
+[ext_resource type="Resource" path="res://resources/definitions/reagents/holy_essence.tres" id="9_lc0l2"]
+[ext_resource type="Script" path="res://resources/definitions/dungeon_definition.gd" id="10_fbyb3"]
+
+[sub_resource type="Resource" id="Resource_q3bwl"]
+script = ExtResource("2_ht8rb")
+enemy = ExtResource("3_pr0hk")
+count = 2
+
+[sub_resource type="Resource" id="Resource_wslkf"]
+script = ExtResource("1_l8of5")
+spawns = Array[ExtResource("2_ht8rb")]([SubResource("Resource_q3bwl")])
+
+[sub_resource type="Resource" id="Resource_fsj77"]
+script = ExtResource("2_ht8rb")
+enemy = ExtResource("4_7f42a")
+
+[sub_resource type="Resource" id="Resource_tgyol"]
+script = ExtResource("2_ht8rb")
+enemy = ExtResource("5_toi3h")
+
+[sub_resource type="Resource" id="Resource_r6yir"]
+script = ExtResource("1_l8of5")
+spawns = Array[ExtResource("2_ht8rb")]([SubResource("Resource_fsj77"), SubResource("Resource_tgyol")])
+
+[sub_resource type="Resource" id="Resource_2i5ub"]
+script = ExtResource("2_ht8rb")
+enemy = ExtResource("5_toi3h")
+count = 2
+
+[sub_resource type="Resource" id="Resource_85tqs"]
+script = ExtResource("1_l8of5")
+spawns = Array[ExtResource("2_ht8rb")]([SubResource("Resource_2i5ub")])
+
+[sub_resource type="Resource" id="Resource_q53nw"]
+script = ExtResource("6_3srbc")
+reagent = ExtResource("7_khhkb")
+chance = 0.5
+
+[sub_resource type="Resource" id="Resource_7j0al"]
+script = ExtResource("6_3srbc")
+reagent = ExtResource("8_whs3p")
+chance = 0.5
+
+[sub_resource type="Resource" id="Resource_wyyiu"]
+script = ExtResource("6_3srbc")
+reagent = ExtResource("9_lc0l2")
+chance = 0.35
+
+[resource]
+script = ExtResource("10_fbyb3")
+id = "whisperwood"
+name = "Whisperwood"
+min_shop_level = 6
+walk_speed = 0.075
+encounter_points = Array[float]([0.2, 0.5, 0.8])
+encounters = Array[ExtResource("1_l8of5")]([SubResource("Resource_wslkf"), SubResource("Resource_r6yir"), SubResource("Resource_85tqs")])
+gold_reward = 120
+reagent_rewards = Array[ExtResource("6_3srbc")]([SubResource("Resource_q53nw"), SubResource("Resource_7j0al"), SubResource("Resource_wyyiu")])
+xp_reward = 60

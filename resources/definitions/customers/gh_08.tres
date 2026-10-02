@@ -1,0 +1,63 @@
+[gd_resource type="Resource" script_class="CustomerDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/loyalty_reward.gd" id="1_xeu0x"]
+[ext_resource type="Resource" path="res://resources/definitions/reagents/fire_essence.tres" id="2_lgoen"]
+[ext_resource type="Resource" path="res://resources/definitions/reagents/shadow_essence.tres" id="3_v563g"]
+[ext_resource type="Script" path="res://resources/definitions/customer_definition.gd" id="4_e0m60"]
+[ext_resource type="Texture2D" path="res://resources/sprites/portraits/customer_08.png" id="5_p3tio"]
+[ext_resource type="Script" path="res://resources/definitions/order_template.gd" id="6_hwepm"]
+[ext_resource type="Resource" path="res://resources/definitions/items/wood_plank.tres" id="7_anrkv"]
+[ext_resource type="Resource" path="res://resources/definitions/items/herb_bundle.tres" id="8_njie4"]
+[ext_resource type="Resource" path="res://resources/definitions/items/oak_stave.tres" id="9_3gytf"]
+
+[sub_resource type="Resource" id="Resource_rrrj5"]
+script = ExtResource("1_xeu0x")
+points = 5
+title = "Familiar Face"
+gold = 150
+
+[sub_resource type="Resource" id="Resource_01nkf"]
+script = ExtResource("1_xeu0x")
+points = 15
+title = "Regular"
+reagent = ExtResource("2_lgoen")
+reagent_count = 2
+
+[sub_resource type="Resource" id="Resource_p4mb1"]
+script = ExtResource("1_xeu0x")
+points = 30
+title = "Old Friend"
+gold = 200
+reagent = ExtResource("3_v563g")
+reagent_count = 1
+
+[sub_resource type="Resource" id="Resource_5fw6e"]
+script = ExtResource("6_hwepm")
+item = ExtResource("7_anrkv")
+weight = 2
+min_quantity = 3
+max_quantity = 5
+
+[sub_resource type="Resource" id="Resource_cdnbo"]
+script = ExtResource("6_hwepm")
+item = ExtResource("8_njie4")
+weight = 2
+min_quantity = 3
+max_quantity = 5
+
+[sub_resource type="Resource" id="Resource_g1kqd"]
+script = ExtResource("6_hwepm")
+item = ExtResource("9_3gytf")
+max_quantity = 2
+
+[resource]
+script = ExtResource("4_e0m60")
+id = "gh_08"
+name = "Osric"
+role = "Wagon Master"
+sprite = ExtResource("5_p3tio")
+min_shop_level = 3
+min_orders = 2
+max_orders = 3
+wants = Array[ExtResource("6_hwepm")]([SubResource("Resource_5fw6e"), SubResource("Resource_cdnbo"), SubResource("Resource_g1kqd")])
+loyalty_rewards = Array[ExtResource("1_xeu0x")]([SubResource("Resource_rrrj5"), SubResource("Resource_01nkf"), SubResource("Resource_p4mb1")])

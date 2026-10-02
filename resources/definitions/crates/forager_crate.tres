@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="CrateDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/weighted_item.gd" id="1_g5bw6"]
+[ext_resource type="Resource" path="res://resources/definitions/items/timber_log.tres" id="2_epvao"]
+[ext_resource type="Resource" path="res://resources/definitions/items/herb_leaf.tres" id="3_468jl"]
+[ext_resource type="Script" path="res://resources/definitions/crate_definition.gd" id="4_77rdd"]
+[ext_resource type="Texture2D" path="res://resources/sprites/items/crate_basic.png" id="5_4atdj"]
+
+[sub_resource type="Resource" id="Resource_g1se8"]
+script = ExtResource("1_g5bw6")
+item = ExtResource("2_epvao")
+weight = 3
+
+[sub_resource type="Resource" id="Resource_cgdug"]
+script = ExtResource("1_g5bw6")
+item = ExtResource("3_468jl")
+weight = 2
+
+[resource]
+script = ExtResource("4_77rdd")
+id = "forager_crate"
+name = "Forager's Crate"
+sprite = ExtResource("5_4atdj")
+cost = 10
+min_items = 3
+max_items = 5
+pool = Array[ExtResource("1_g5bw6")]([SubResource("Resource_g1se8"), SubResource("Resource_cgdug")])

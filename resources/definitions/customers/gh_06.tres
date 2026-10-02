@@ -1,0 +1,57 @@
+[gd_resource type="Resource" script_class="CustomerDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/loyalty_reward.gd" id="1_ciamm"]
+[ext_resource type="Resource" path="res://resources/definitions/reagents/fire_essence.tres" id="2_bsq0j"]
+[ext_resource type="Resource" path="res://resources/definitions/reagents/shadow_essence.tres" id="3_70jqg"]
+[ext_resource type="Script" path="res://resources/definitions/customer_definition.gd" id="4_oufmj"]
+[ext_resource type="Texture2D" path="res://resources/sprites/portraits/customer_06.png" id="5_0ueis"]
+[ext_resource type="Script" path="res://resources/definitions/order_template.gd" id="6_d7kjy"]
+[ext_resource type="Resource" path="res://resources/definitions/items/herb_bundle.tres" id="7_o5a1n"]
+[ext_resource type="Resource" path="res://resources/definitions/items/wood_plank.tres" id="8_vs5ut"]
+
+[sub_resource type="Resource" id="Resource_dw0er"]
+script = ExtResource("1_ciamm")
+points = 5
+title = "Familiar Face"
+gold = 100
+
+[sub_resource type="Resource" id="Resource_ahhw6"]
+script = ExtResource("1_ciamm")
+points = 15
+title = "Regular"
+reagent = ExtResource("2_bsq0j")
+reagent_count = 2
+
+[sub_resource type="Resource" id="Resource_2gmqg"]
+script = ExtResource("1_ciamm")
+points = 30
+title = "Old Friend"
+gold = 200
+reagent = ExtResource("3_70jqg")
+reagent_count = 1
+
+[sub_resource type="Resource" id="Resource_8n48d"]
+script = ExtResource("6_d7kjy")
+item = ExtResource("7_o5a1n")
+weight = 2
+min_quantity = 2
+max_quantity = 3
+
+[sub_resource type="Resource" id="Resource_ebgbu"]
+script = ExtResource("6_d7kjy")
+item = ExtResource("8_vs5ut")
+weight = 2
+min_quantity = 2
+max_quantity = 3
+
+[resource]
+script = ExtResource("4_oufmj")
+id = "gh_06"
+name = "Maple"
+role = "Innkeeper"
+sprite = ExtResource("5_0ueis")
+min_orders = 2
+max_orders = 2
+price_multiplier = 0.9
+wants = Array[ExtResource("6_d7kjy")]([SubResource("Resource_8n48d"), SubResource("Resource_ebgbu")])
+loyalty_rewards = Array[ExtResource("1_ciamm")]([SubResource("Resource_dw0er"), SubResource("Resource_ahhw6"), SubResource("Resource_2gmqg")])

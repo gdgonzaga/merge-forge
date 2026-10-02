@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="ItemDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/merge_result.gd" id="1_2wrup"]
+[ext_resource type="Resource" path="res://resources/definitions/blueprints/bp_oak_stave.tres" id="2_iajl0"]
+[ext_resource type="Resource" path="res://resources/definitions/items/oak_stave.tres" id="3_1w2uj"]
+[ext_resource type="Script" path="res://resources/definitions/reagent_variant.gd" id="4_k8s8t"]
+[ext_resource type="Script" path="res://resources/definitions/item_definition.gd" id="5_q7p0r"]
+[ext_resource type="Texture2D" path="res://resources/sprites/items/iron_ingot.png" id="6_10j0x"]
+
+[sub_resource type="Resource" id="Resource_6urvp"]
+script = ExtResource("1_2wrup")
+result = ExtResource("3_1w2uj")
+blueprint = ExtResource("2_iajl0")
+
+[resource]
+script = ExtResource("5_q7p0r")
+id = "wood_plank"
+name = "Wood Plank"
+family = "wood"
+gold_value = 20
+sprite = ExtResource("6_10j0x")
+merge_results = Array[ExtResource("1_2wrup")]([SubResource("Resource_6urvp")])

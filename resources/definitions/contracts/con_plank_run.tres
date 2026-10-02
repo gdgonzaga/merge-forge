@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="ContractDefinition" format=3]
+
+[ext_resource type="Resource" path="res://resources/definitions/customers/gh_01.tres" id="1_wo0h7"]
+[ext_resource type="Script" path="res://resources/definitions/order_template.gd" id="2_e75me"]
+[ext_resource type="Resource" path="res://resources/definitions/items/wood_plank.tres" id="3_8vw3c"]
+[ext_resource type="Script" path="res://resources/definitions/contract_definition.gd" id="4_eftgd"]
+
+[sub_resource type="Resource" id="Resource_mxy5g"]
+script = ExtResource("2_e75me")
+item = ExtResource("3_8vw3c")
+min_quantity = 8
+max_quantity = 8
+
+[resource]
+script = ExtResource("4_eftgd")
+id = "con_plank_run"
+name = "Alder's Plank Run"
+giver = ExtResource("1_wo0h7")
+min_shop_level = 10
+weight = 2
+requirements = Array[ExtResource("2_e75me")]([SubResource("Resource_mxy5g")])
+sessions_allowed = 2
+reward_gold = 220
+loyalty_points = 3

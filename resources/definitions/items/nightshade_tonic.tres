@@ -1,8 +1,10 @@
-[gd_resource type="Resource" script_class="ItemDefinition" format=3]
+[gd_resource type="Resource" script_class="ItemDefinition" format=3 uid="uid://b8opnr83csspn"]
 
-[ext_resource type="Script" path="res://resources/definitions/effect_definition.gd" id="1_effect"]
-[ext_resource type="Script" path="res://resources/definitions/item_definition.gd" id="2_item"]
-[ext_resource type="Texture2D" path="res://resources/sprites/items/herbal_tonic.png" id="3_sprite"]
+[ext_resource type="Script" uid="uid://xn6sinp83boe" path="res://resources/definitions/effect_definition.gd" id="1_effect"]
+[ext_resource type="Script" uid="uid://c3ll0lgyqpgap" path="res://resources/definitions/merge_result.gd" id="2_46q3e"]
+[ext_resource type="Script" uid="uid://8qdrbetfqfv3" path="res://resources/definitions/item_definition.gd" id="2_item"]
+[ext_resource type="Script" uid="uid://bwjarlm68nkgp" path="res://resources/definitions/reagent_variant.gd" id="3_6dhjl"]
+[ext_resource type="Texture2D" uid="uid://dw0ft2h02g5t7" path="res://resources/sprites/items/herbal_tonic.png" id="3_sprite"]
 
 [sub_resource type="Resource" id="Resource_effect"]
 script = ExtResource("1_effect")

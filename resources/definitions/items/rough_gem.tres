@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="ItemDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/merge_result.gd" id="1_1yy03"]
+[ext_resource type="Resource" path="res://resources/definitions/items/cut_gem.tres" id="2_w27af"]
+[ext_resource type="Script" path="res://resources/definitions/reagent_variant.gd" id="3_fa51h"]
+[ext_resource type="Script" path="res://resources/definitions/item_definition.gd" id="4_osup2"]
+[ext_resource type="Texture2D" path="res://resources/sprites/items/herb_leaf.png" id="5_iu576"]
+
+[sub_resource type="Resource" id="Resource_b7u8u"]
+script = ExtResource("1_1yy03")
+result = ExtResource("2_w27af")
+
+[resource]
+script = ExtResource("4_osup2")
+id = "rough_gem"
+name = "Rough Gem"
+family = "gem"
+gold_value = 5
+sprite = ExtResource("5_iu576")
+merge_results = Array[ExtResource("1_1yy03")]([SubResource("Resource_b7u8u")])

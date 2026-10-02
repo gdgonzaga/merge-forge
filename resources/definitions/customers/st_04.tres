@@ -1,0 +1,62 @@
+[gd_resource type="Resource" script_class="CustomerDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/loyalty_reward.gd" id="1_6xrew"]
+[ext_resource type="Resource" path="res://resources/definitions/blueprints/bp_shade_crystal.tres" id="2_3510l"]
+[ext_resource type="Resource" path="res://resources/definitions/reagents/shadow_essence.tres" id="3_hijbr"]
+[ext_resource type="Script" path="res://resources/definitions/customer_definition.gd" id="4_y772l"]
+[ext_resource type="Texture2D" path="res://resources/sprites/portraits/customer_04.png" id="5_kfaky"]
+[ext_resource type="Script" path="res://resources/definitions/order_template.gd" id="6_ao66n"]
+[ext_resource type="Resource" path="res://resources/definitions/items/polished_gem.tres" id="7_jjcna"]
+[ext_resource type="Resource" path="res://resources/definitions/items/mending_ring.tres" id="8_00p84"]
+[ext_resource type="Resource" path="res://resources/definitions/items/keen_amulet.tres" id="9_y3fde"]
+[ext_resource type="Resource" path="res://resources/definitions/items/shade_crystal.tres" id="10_2u6sa"]
+
+[sub_resource type="Resource" id="Resource_3kori"]
+script = ExtResource("1_6xrew")
+points = 5
+title = "Familiar Face"
+gold = 150
+
+[sub_resource type="Resource" id="Resource_g3fel"]
+script = ExtResource("1_6xrew")
+points = 15
+title = "Regular"
+blueprint = ExtResource("2_3510l")
+
+[sub_resource type="Resource" id="Resource_bncnd"]
+script = ExtResource("1_6xrew")
+points = 30
+title = "Old Friend"
+gold = 200
+reagent = ExtResource("3_hijbr")
+reagent_count = 1
+
+[sub_resource type="Resource" id="Resource_1gb20"]
+script = ExtResource("6_ao66n")
+item = ExtResource("7_jjcna")
+weight = 3
+max_quantity = 2
+
+[sub_resource type="Resource" id="Resource_slkyn"]
+script = ExtResource("6_ao66n")
+item = ExtResource("8_00p84")
+
+[sub_resource type="Resource" id="Resource_suptt"]
+script = ExtResource("6_ao66n")
+item = ExtResource("9_y3fde")
+
+[sub_resource type="Resource" id="Resource_qnwtc"]
+script = ExtResource("6_ao66n")
+item = ExtResource("10_2u6sa")
+max_quantity = 2
+
+[resource]
+script = ExtResource("4_y772l")
+id = "st_04"
+name = "Ilsabet"
+role = "Jeweler"
+sprite = ExtResource("5_kfaky")
+min_shop_level = 5
+max_orders = 3
+wants = Array[ExtResource("6_ao66n")]([SubResource("Resource_1gb20"), SubResource("Resource_slkyn"), SubResource("Resource_suptt"), SubResource("Resource_qnwtc")])
+loyalty_rewards = Array[ExtResource("1_6xrew")]([SubResource("Resource_3kori"), SubResource("Resource_g3fel"), SubResource("Resource_bncnd")])

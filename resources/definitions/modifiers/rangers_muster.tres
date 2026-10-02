@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="SessionModifierDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/crate_definition.gd" id="1_3ptxg"]
+[ext_resource type="Script" path="res://resources/definitions/customer_definition.gd" id="2_y14xl"]
+[ext_resource type="Resource" path="res://resources/definitions/customers/gh_05.tres" id="3_8egq4"]
+[ext_resource type="Resource" path="res://resources/definitions/customers/gh_09.tres" id="4_xmw3e"]
+[ext_resource type="Script" path="res://resources/definitions/session_modifier_definition.gd" id="5_kugxv"]
+[ext_resource type="Texture2D" path="res://resources/sprites/modifiers/knights_tournament.png" id="6_hlsag"]
+
+[resource]
+script = ExtResource("5_kugxv")
+id = "rangers_muster"
+name = "Rangers' Muster"
+description = "Rangers gather in town for the muster."
+sprite = ExtResource("6_hlsag")
+min_shop_level = 18
+boosted_customers = Array[ExtResource("2_y14xl")]([ExtResource("3_8egq4"), ExtResource("4_xmw3e")])
+customer_weight_multiplier = 3.0

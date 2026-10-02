@@ -12,7 +12,7 @@ func setup(old_level: int, new_level: int) -> void:
 		return
 	_banner.text = "Level %d!" % new_level
 	var names: PackedStringArray = []
-	for definition in DefinitionLibrary.get_unlocks_between(old_level, new_level):
+	for definition in DefinitionLibrary.get_unlocks_between(old_level, new_level, GameManager.get_current_town()):
 		names.append("Unlocked: %s" % definition.name)
 	_list.text = "\n".join(names)
 	_list.visible = not names.is_empty()

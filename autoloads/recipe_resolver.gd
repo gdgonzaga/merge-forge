@@ -52,19 +52,20 @@ func are_dependencies_met(blueprint: BlueprintDefinition) -> bool:
 
 
 # True when the player can make `item` today: a crate open at the player's
-# level sells it, or a merge they hold the blueprint for makes it from
-# something craftable. A reagent variant counts when the reagent is for sale
-# at their level or in stock.
+# level in the current town sells it, or a merge they hold the blueprint for
+# makes it from something craftable. A reagent variant counts when the
+# reagent is for sale at their level or in stock.
 func is_craftable(item: ItemDefinition) -> bool:
 	return _is_craftable(item, {}, "")
 
 
 # A contract can ask for items craftable now or opened by one blueprint the
-# player could buy at their current level. Gold is not considered.
+# current town sells that the player could buy at their current level. Gold is
+# not considered.
 func is_within_one_blueprint(items: Array[ItemDefinition]) -> bool:
 	if _all_craftable(items, ""):
 		return true
-	for blueprint in DefinitionLibrary.get_all_blueprints():
+	for blueprint in GameManager.get_current_town().blueprints:
 		if _is_buyable(blueprint) and _all_craftable(items, blueprint.id):
 			return true
 	return false
@@ -97,7 +98,7 @@ func _is_craftable(item: ItemDefinition, visited: Dictionary, extra_blueprint: S
 
 
 func _sold_in_a_crate(item: ItemDefinition) -> bool:
-	for crate in DefinitionLibrary.get_all_crates():
+	for crate in GameManager.get_current_town().crates:
 		if not GameManager.meets_level(crate.min_shop_level):
 			continue
 		for entry in crate.pool:
@@ -124,6 +125,52 @@ func _is_unlocked_with(blueprint: BlueprintDefinition, extra_blueprint: String) 
 func _can_get_reagent(reagent: ReagentDefinition) -> bool:
 	return (reagent.cost > 0 and GameManager.meets_level(reagent.min_shop_level)) \
 		or GameManager.reagent_inventory.get(reagent.id, 0) > 0
+
+
+# Every item a merge or reagent variant makes, starting from what some town's
+# crates sell: the codex lists these whatever the blueprints, levels or
+# reagents. A raw item no merge makes is left out, and so is anything no
+# town's crates reach. Sorted by family, then gold value, then id.
+func get_codex_items() -> Array[ItemDefinition]:
+	var reachable := {}
+	for town in DefinitionLibrary.get_all_towns():
+		for crate in town.crates:
+			for entry in crate.pool:
+				if entry.item != null:
+					reachable[entry.item.id] = true
+	var made := {}
+	var changed := true
+	while changed:
+		changed = false
+		for source: ItemDefinition in DefinitionLibrary.get_all_items().values():
+			if not reachable.has(source.id):
+				continue
+			for product in _merge_products(source):
+				if not made.has(product.id):
+					made[product.id] = product
+					reachable[product.id] = true
+					changed = true
+	var items: Array[ItemDefinition] = []
+	items.assign(made.values())
+	items.sort_custom(func(a: ItemDefinition, b: ItemDefinition) -> bool:
+		if a.family != b.family:
+			return a.family < b.family
+		if a.gold_value != b.gold_value:
+			return a.gold_value < b.gold_value
+		return a.id < b.id
+	)
+	return items
+
+
+func _merge_products(source: ItemDefinition) -> Array[ItemDefinition]:
+	var products: Array[ItemDefinition] = []
+	for option in source.merge_results:
+		if option.result != null:
+			products.append(option.result)
+	for variant in source.reagent_variants:
+		if variant.result != null:
+			products.append(variant.result)
+	return products
 
 
 static func roll_weighted_pool(pool: Array[WeightedItem], min_rolls: int, max_rolls: int) -> Array[ItemDefinition]:

@@ -1,0 +1,62 @@
+[gd_resource type="Resource" script_class="CustomerDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/loyalty_reward.gd" id="1_o56o8"]
+[ext_resource type="Resource" path="res://resources/definitions/blueprints/bp_holy_draught.tres" id="2_c1804"]
+[ext_resource type="Resource" path="res://resources/definitions/reagents/holy_essence.tres" id="3_oi6fn"]
+[ext_resource type="Script" path="res://resources/definitions/customer_definition.gd" id="4_kw6dl"]
+[ext_resource type="Texture2D" path="res://resources/sprites/portraits/customer_10.png" id="5_j3ur2"]
+[ext_resource type="Script" path="res://resources/definitions/order_template.gd" id="6_d03bo"]
+[ext_resource type="Resource" path="res://resources/definitions/items/battle_elixir.tres" id="7_khxsg"]
+[ext_resource type="Resource" path="res://resources/definitions/items/healing_potion.tres" id="8_gnlw8"]
+[ext_resource type="Resource" path="res://resources/definitions/items/phoenix_draught.tres" id="9_i4np0"]
+[ext_resource type="Resource" path="res://resources/definitions/items/holy_draught.tres" id="10_4pbge"]
+
+[sub_resource type="Resource" id="Resource_7l6id"]
+script = ExtResource("1_o56o8")
+points = 5
+title = "Familiar Face"
+gold = 250
+
+[sub_resource type="Resource" id="Resource_mhg5h"]
+script = ExtResource("1_o56o8")
+points = 15
+title = "Regular"
+blueprint = ExtResource("2_c1804")
+
+[sub_resource type="Resource" id="Resource_qfw0b"]
+script = ExtResource("1_o56o8")
+points = 30
+title = "Old Friend"
+gold = 200
+reagent = ExtResource("3_oi6fn")
+reagent_count = 1
+
+[sub_resource type="Resource" id="Resource_vf7yk"]
+script = ExtResource("6_d03bo")
+item = ExtResource("7_khxsg")
+weight = 2
+max_quantity = 2
+
+[sub_resource type="Resource" id="Resource_dj74j"]
+script = ExtResource("6_d03bo")
+item = ExtResource("8_gnlw8")
+max_quantity = 2
+
+[sub_resource type="Resource" id="Resource_r2o0b"]
+script = ExtResource("6_d03bo")
+item = ExtResource("9_i4np0")
+
+[sub_resource type="Resource" id="Resource_jjp60"]
+script = ExtResource("6_d03bo")
+item = ExtResource("10_4pbge")
+
+[resource]
+script = ExtResource("4_kw6dl")
+id = "gh_10"
+name = "Elowen"
+role = "Grove Keeper"
+sprite = ExtResource("5_j3ur2")
+min_shop_level = 14
+max_orders = 3
+wants = Array[ExtResource("6_d03bo")]([SubResource("Resource_vf7yk"), SubResource("Resource_dj74j"), SubResource("Resource_r2o0b"), SubResource("Resource_jjp60")])
+loyalty_rewards = Array[ExtResource("1_o56o8")]([SubResource("Resource_7l6id"), SubResource("Resource_mhg5h"), SubResource("Resource_qfw0b")])

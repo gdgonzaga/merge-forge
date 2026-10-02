@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="CrateDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/weighted_item.gd" id="1_y76vw"]
+[ext_resource type="Resource" path="res://resources/definitions/items/iron_ore.tres" id="2_i2306"]
+[ext_resource type="Resource" path="res://resources/definitions/items/rough_gem.tres" id="3_mndi6"]
+[ext_resource type="Script" path="res://resources/definitions/crate_definition.gd" id="4_dfo3r"]
+[ext_resource type="Texture2D" path="res://resources/sprites/items/crate_basic.png" id="5_760ov"]
+
+[sub_resource type="Resource" id="Resource_ovra5"]
+script = ExtResource("1_y76vw")
+item = ExtResource("2_i2306")
+weight = 3
+
+[sub_resource type="Resource" id="Resource_chhmq"]
+script = ExtResource("1_y76vw")
+item = ExtResource("3_mndi6")
+weight = 2
+
+[resource]
+script = ExtResource("4_dfo3r")
+id = "miner_crate"
+name = "Miner's Crate"
+sprite = ExtResource("5_760ov")
+cost = 10
+min_items = 3
+max_items = 5
+pool = Array[ExtResource("1_y76vw")]([SubResource("Resource_ovra5"), SubResource("Resource_chhmq")])

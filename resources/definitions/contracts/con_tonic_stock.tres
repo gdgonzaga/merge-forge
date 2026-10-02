@@ -1,9 +1,9 @@
-[gd_resource type="Resource" script_class="ContractDefinition" format=3]
+[gd_resource type="Resource" script_class="ContractDefinition" format=3 uid="uid://b7j8d57ka1xf5"]
 
-[ext_resource type="Script" path="res://resources/definitions/contract_definition.gd" id="1_contract"]
-[ext_resource type="Script" path="res://resources/definitions/order_template.gd" id="2_tpl"]
-[ext_resource type="Resource" path="res://resources/definitions/customers/cust_02.tres" id="3_giver"]
-[ext_resource type="Resource" path="res://resources/definitions/items/herbal_tonic.tres" id="item_0"]
+[ext_resource type="Script" uid="uid://kqhibs3xg1x2" path="res://resources/definitions/contract_definition.gd" id="1_contract"]
+[ext_resource type="Script" uid="uid://lt1tn27q1lbl" path="res://resources/definitions/order_template.gd" id="2_tpl"]
+[ext_resource type="Resource" uid="uid://bvtoy6ps2v5nm" path="res://resources/definitions/customers/cust_02.tres" id="3_giver"]
+[ext_resource type="Resource" uid="uid://bkyhcay7c3k8h" path="res://resources/definitions/items/herbal_tonic.tres" id="item_0"]
 
 [sub_resource type="Resource" id="Resource_req_0"]
 script = ExtResource("2_tpl")

@@ -1,0 +1,61 @@
+[gd_resource type="Resource" script_class="CustomerDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/loyalty_reward.gd" id="1_tim67"]
+[ext_resource type="Resource" path="res://resources/definitions/blueprints/bp_warding_staff.tres" id="2_wrecw"]
+[ext_resource type="Resource" path="res://resources/definitions/reagents/ice_essence.tres" id="3_kmoq2"]
+[ext_resource type="Script" path="res://resources/definitions/customer_definition.gd" id="4_e5ga4"]
+[ext_resource type="Texture2D" path="res://resources/sprites/portraits/customer_03.png" id="5_dm03y"]
+[ext_resource type="Script" path="res://resources/definitions/order_template.gd" id="6_1hy8l"]
+[ext_resource type="Resource" path="res://resources/definitions/items/oak_stave.tres" id="7_ay8uh"]
+[ext_resource type="Resource" path="res://resources/definitions/items/herbal_tonic.tres" id="8_u1m5t"]
+[ext_resource type="Resource" path="res://resources/definitions/items/wood_plank.tres" id="9_pdlwl"]
+
+[sub_resource type="Resource" id="Resource_5uk2y"]
+script = ExtResource("1_tim67")
+points = 5
+title = "Familiar Face"
+gold = 150
+
+[sub_resource type="Resource" id="Resource_5ci2r"]
+script = ExtResource("1_tim67")
+points = 15
+title = "Regular"
+blueprint = ExtResource("2_wrecw")
+
+[sub_resource type="Resource" id="Resource_dj1r8"]
+script = ExtResource("1_tim67")
+points = 30
+title = "Old Friend"
+gold = 200
+reagent = ExtResource("3_kmoq2")
+reagent_count = 1
+
+[sub_resource type="Resource" id="Resource_0l5l3"]
+script = ExtResource("6_1hy8l")
+item = ExtResource("7_ay8uh")
+weight = 2
+max_quantity = 2
+
+[sub_resource type="Resource" id="Resource_bihqn"]
+script = ExtResource("6_1hy8l")
+item = ExtResource("8_u1m5t")
+weight = 2
+max_quantity = 2
+
+[sub_resource type="Resource" id="Resource_muq6d"]
+script = ExtResource("6_1hy8l")
+item = ExtResource("9_pdlwl")
+min_quantity = 3
+max_quantity = 4
+
+[resource]
+script = ExtResource("4_e5ga4")
+id = "gh_03"
+name = "Rook"
+role = "Timber Merchant"
+sprite = ExtResource("5_dm03y")
+min_shop_level = 3
+min_orders = 2
+max_orders = 3
+wants = Array[ExtResource("6_1hy8l")]([SubResource("Resource_0l5l3"), SubResource("Resource_bihqn"), SubResource("Resource_muq6d")])
+loyalty_rewards = Array[ExtResource("1_tim67")]([SubResource("Resource_5uk2y"), SubResource("Resource_5ci2r"), SubResource("Resource_dj1r8")])

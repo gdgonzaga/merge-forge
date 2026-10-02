@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="ContractDefinition" format=3]
+
+[ext_resource type="Resource" path="res://resources/definitions/customers/st_04.tres" id="1_nest3"]
+[ext_resource type="Script" path="res://resources/definitions/order_template.gd" id="2_lb3v5"]
+[ext_resource type="Resource" path="res://resources/definitions/items/polished_gem.tres" id="3_vm5m3"]
+[ext_resource type="Resource" path="res://resources/definitions/reagents/fire_essence.tres" id="4_hu2s5"]
+[ext_resource type="Script" path="res://resources/definitions/contract_definition.gd" id="5_srbc6"]
+
+[sub_resource type="Resource" id="Resource_ffa8d"]
+script = ExtResource("2_lb3v5")
+item = ExtResource("3_vm5m3")
+min_quantity = 3
+max_quantity = 3
+min_quality = 1
+
+[resource]
+script = ExtResource("5_srbc6")
+id = "con_fine_settings"
+name = "Ilsabet's Fine Settings"
+giver = ExtResource("1_nest3")
+min_shop_level = 18
+requirements = Array[ExtResource("2_lb3v5")]([SubResource("Resource_ffa8d")])
+sessions_allowed = 2
+reward_gold = 360
+reward_reagent = ExtResource("4_hu2s5")
+reward_reagent_count = 1
+loyalty_points = 4

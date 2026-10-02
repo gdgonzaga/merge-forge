@@ -1,0 +1,62 @@
+[gd_resource type="Resource" script_class="CustomerDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/loyalty_reward.gd" id="1_bmyax"]
+[ext_resource type="Resource" path="res://resources/definitions/blueprints/bp_nightshade_tonic.tres" id="2_kcdk2"]
+[ext_resource type="Resource" path="res://resources/definitions/reagents/shadow_essence.tres" id="3_a7rop"]
+[ext_resource type="Script" path="res://resources/definitions/customer_definition.gd" id="4_ua2o6"]
+[ext_resource type="Texture2D" path="res://resources/sprites/portraits/customer_04.png" id="5_vndi7"]
+[ext_resource type="Script" path="res://resources/definitions/order_template.gd" id="6_a88sm"]
+[ext_resource type="Resource" path="res://resources/definitions/items/herbal_tonic.tres" id="7_7fb7d"]
+[ext_resource type="Resource" path="res://resources/definitions/items/healing_potion.tres" id="8_nx8mv"]
+[ext_resource type="Resource" path="res://resources/definitions/items/battle_elixir.tres" id="9_8uyom"]
+[ext_resource type="Resource" path="res://resources/definitions/items/nightshade_tonic.tres" id="10_jwnmy"]
+
+[sub_resource type="Resource" id="Resource_viavt"]
+script = ExtResource("1_bmyax")
+points = 5
+title = "Familiar Face"
+gold = 150
+
+[sub_resource type="Resource" id="Resource_urkx6"]
+script = ExtResource("1_bmyax")
+points = 15
+title = "Regular"
+blueprint = ExtResource("2_kcdk2")
+
+[sub_resource type="Resource" id="Resource_ero1w"]
+script = ExtResource("1_bmyax")
+points = 30
+title = "Old Friend"
+gold = 200
+reagent = ExtResource("3_a7rop")
+reagent_count = 1
+
+[sub_resource type="Resource" id="Resource_vw7nh"]
+script = ExtResource("6_a88sm")
+item = ExtResource("7_7fb7d")
+weight = 3
+max_quantity = 2
+
+[sub_resource type="Resource" id="Resource_uf5no"]
+script = ExtResource("6_a88sm")
+item = ExtResource("8_nx8mv")
+
+[sub_resource type="Resource" id="Resource_yktd5"]
+script = ExtResource("6_a88sm")
+item = ExtResource("9_8uyom")
+
+[sub_resource type="Resource" id="Resource_q3am8"]
+script = ExtResource("6_a88sm")
+item = ExtResource("10_jwnmy")
+max_quantity = 2
+
+[resource]
+script = ExtResource("4_ua2o6")
+id = "gh_04"
+name = "Wisteria"
+role = "Druid"
+sprite = ExtResource("5_vndi7")
+min_shop_level = 5
+max_orders = 3
+wants = Array[ExtResource("6_a88sm")]([SubResource("Resource_vw7nh"), SubResource("Resource_uf5no"), SubResource("Resource_yktd5"), SubResource("Resource_q3am8")])
+loyalty_rewards = Array[ExtResource("1_bmyax")]([SubResource("Resource_viavt"), SubResource("Resource_urkx6"), SubResource("Resource_ero1w")])

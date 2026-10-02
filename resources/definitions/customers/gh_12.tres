@@ -1,0 +1,41 @@
+[gd_resource type="Resource" script_class="CustomerDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/loyalty_reward.gd" id="1_wpwd8"]
+[ext_resource type="Script" path="res://resources/definitions/customer_definition.gd" id="2_h3lj6"]
+[ext_resource type="Texture2D" path="res://resources/sprites/portraits/customer_08.png" id="3_4ol1h"]
+[ext_resource type="Script" path="res://resources/definitions/order_template.gd" id="4_gybp1"]
+[ext_resource type="Resource" path="res://resources/definitions/items/wood_plank.tres" id="5_d67h6"]
+[ext_resource type="Resource" path="res://resources/definitions/items/herb_bundle.tres" id="6_e7vlp"]
+[ext_resource type="Resource" path="res://resources/definitions/items/oak_stave.tres" id="7_riusc"]
+
+[sub_resource type="Resource" id="Resource_q0ixp"]
+script = ExtResource("4_gybp1")
+item = ExtResource("5_d67h6")
+min_quantity = 4
+max_quantity = 6
+min_quality = 1
+
+[sub_resource type="Resource" id="Resource_l8huh"]
+script = ExtResource("4_gybp1")
+item = ExtResource("6_e7vlp")
+min_quantity = 4
+max_quantity = 6
+min_quality = 1
+
+[sub_resource type="Resource" id="Resource_7w3u5"]
+script = ExtResource("4_gybp1")
+item = ExtResource("7_riusc")
+min_quantity = 2
+max_quantity = 3
+min_quality = 1
+
+[resource]
+script = ExtResource("2_h3lj6")
+id = "gh_12"
+name = "Hollis"
+role = "Lodge Quartermaster"
+sprite = ExtResource("3_4ol1h")
+min_shop_level = 24
+min_orders = 2
+max_orders = 3
+wants = Array[ExtResource("4_gybp1")]([SubResource("Resource_q0ixp"), SubResource("Resource_l8huh"), SubResource("Resource_7w3u5")])

@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="BlueprintDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/blueprint_definition.gd" id="1_oeu7c"]
+[ext_resource type="Resource" path="res://resources/definitions/blueprints/bp_oak_stave.tres" id="2_6gduy"]
+
+[resource]
+script = ExtResource("1_oeu7c")
+id = "bp_longbow"
+name = "Longbow Blueprint"
+cost = 1400
+min_shop_level = 8
+dependencies = Array[ExtResource("1_oeu7c")]([ExtResource("2_6gduy")])

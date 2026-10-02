@@ -21,6 +21,12 @@ func test_default_state() -> void:
 	assert_int(GameManager.grid_rows).is_equal(5)
 	assert_bool(GameManager.seen_intro).is_false()
 	assert_bool(GameManager.debug_mode).is_false()
+	assert_int(GameManager.charters).is_equal(0)
+	assert_int(GameManager.charter_points).is_equal(0)
+	assert_dict(GameManager.perk_levels).is_empty()
+	assert_dict(GameManager.codex).is_empty()
+	assert_int(GameManager.codex_stars_credited).is_equal(0)
+	assert_array(GameManager.codex_families_credited).is_empty()
 
 
 # --- add_gold ---
@@ -81,8 +87,8 @@ func test_add_shop_xp_ignores_zero_and_negative_amounts() -> void:
 	var seen: Array[int] = []
 	var on_xp := func(xp: int) -> void: seen.append(xp)
 	GameManager.shop_xp_changed.connect(on_xp)
-	GameManager.add_shop_xp(0)
-	GameManager.add_shop_xp(-100)
+	assert_int(GameManager.add_shop_xp(0)).is_equal(0)
+	assert_int(GameManager.add_shop_xp(-100)).is_equal(0)
 	GameManager.shop_xp_changed.disconnect(on_xp)
 	assert_int(GameManager.shop_xp).is_equal(30)
 	assert_array(seen).is_empty()
@@ -270,6 +276,12 @@ func test_serialize_deserialize_round_trip() -> void:
 	GameManager.record_session_played()
 	GameManager.add_loyalty("cust_x", 3)
 	GameManager.active_contracts = [{"id": "con_x", "delivered": {"ore": 2}, "sessions_left": 2}]
+	GameManager.charters = 1
+	GameManager.charter_points = 3
+	GameManager.perk_levels = {"perk_x": 2}
+	GameManager.codex = {"ore": 1}
+	GameManager.codex_stars_credited = 2
+	GameManager.codex_families_credited.assign(["metal"])
 
 	var saved := GameManager.serialize()
 	reset_game_state()
@@ -307,3 +319,19 @@ func test_new_games_roll_their_own_run_seed() -> void:
 	var first: int = GameManager.run_seed
 	reset_game_state()
 	assert_int(GameManager.run_seed).is_not_equal(first)
+
+
+# --- towns ---
+
+# deserialize({}) directly: TestBase's reset may point the game elsewhere.
+func test_a_new_game_opens_in_the_starting_town() -> void:
+	var start := TownDefinition.new()
+	start.id = "__test_start"
+	set_definition(DefinitionLibrary.towns, start)
+	var rules := ShopRulesDefinition.new()
+	rules.id = "default"
+	rules.starting_town = start
+	set_definition(DefinitionLibrary.shop_rules, rules)
+	GameManager.deserialize({})
+	assert_str(GameManager.current_town).is_equal("__test_start")
+	assert_object(GameManager.get_current_town()).is_same(start)

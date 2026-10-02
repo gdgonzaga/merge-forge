@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="ItemDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/effect_definition.gd" id="1_mb7c4"]
+[ext_resource type="Script" path="res://resources/definitions/merge_result.gd" id="2_q624a"]
+[ext_resource type="Script" path="res://resources/definitions/reagent_variant.gd" id="3_sokln"]
+[ext_resource type="Script" path="res://resources/definitions/item_definition.gd" id="4_a6vu2"]
+[ext_resource type="Texture2D" path="res://resources/sprites/items/phoenix_draught.png" id="5_hlgqr"]
+
+[sub_resource type="Resource" id="Resource_53sux"]
+script = ExtResource("1_mb7c4")
+type = "heal"
+value = 150
+
+[resource]
+script = ExtResource("4_a6vu2")
+id = "radiant_scepter"
+name = "Radiant Scepter"
+family = "gem"
+gold_value = 560
+dungeon_usable = true
+dungeon_use_target = "party-individual"
+effect = SubResource("Resource_53sux")
+sprite = ExtResource("5_hlgqr")

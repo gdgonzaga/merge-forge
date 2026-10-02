@@ -30,3 +30,4 @@
 - Shop session UI order containers, alot space for the max number of orders so bottom ui elements don't reposition
 - Shop session UI order buttons: use button_secondary_disabled for orders that cannot be fulfilled yet
 - Shop session UI order buttons: when an unfulfillable order (using the disabled button theme) becomes fulfillable, show a slight glow on the button and change the theme to button_secondary.
+- Change UI artwork for different towns, increasing its quality. from wood to stone to metal

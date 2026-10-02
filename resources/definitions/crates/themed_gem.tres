@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="CrateDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/weighted_item.gd" id="1_10btj"]
+[ext_resource type="Resource" path="res://resources/definitions/items/rough_gem.tres" id="2_g3vuo"]
+[ext_resource type="Resource" path="res://resources/definitions/items/cut_gem.tres" id="3_dq2xe"]
+[ext_resource type="Script" path="res://resources/definitions/crate_definition.gd" id="4_yurrv"]
+[ext_resource type="Texture2D" path="res://resources/sprites/items/crate_herb.png" id="5_aw21x"]
+
+[sub_resource type="Resource" id="Resource_ebuc8"]
+script = ExtResource("1_10btj")
+item = ExtResource("2_g3vuo")
+weight = 4
+
+[sub_resource type="Resource" id="Resource_b8qb3"]
+script = ExtResource("1_10btj")
+item = ExtResource("3_dq2xe")
+
+[resource]
+script = ExtResource("4_yurrv")
+id = "themed_gem"
+name = "Gem Crate"
+sprite = ExtResource("5_aw21x")
+cost = 25
+min_shop_level = 2
+min_items = 3
+max_items = 4
+pool = Array[ExtResource("1_10btj")]([SubResource("Resource_ebuc8"), SubResource("Resource_b8qb3")])

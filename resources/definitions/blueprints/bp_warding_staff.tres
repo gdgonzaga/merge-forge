@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="BlueprintDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/blueprint_definition.gd" id="1_6ifef"]
+[ext_resource type="Resource" path="res://resources/definitions/blueprints/bp_oak_stave.tres" id="2_c2dyg"]
+
+[resource]
+script = ExtResource("1_6ifef")
+id = "bp_warding_staff"
+name = "Warding Staff Blueprint"
+cost = 900
+min_shop_level = 10
+dependencies = Array[ExtResource("1_6ifef")]([ExtResource("2_c2dyg")])

@@ -25,8 +25,11 @@
 - Connected-group merge detection (3+ identical orthogonally adjacent items auto-triggers)
 - Fixed recipe tree with player choice (2–4 options per merge)
 - Blueprint system gating recipe branches
-- 2 material families in MVP gameplay (Metal, Herb), each with a 4-step merge chain defined on the item definitions. Gem and Wood families have the family key reserved in data (`"gem"`, `"wood"`) but no items are defined yet.
-- Reagents: Fire Essence (bought in prep) plus Ice, Shadow and Holy Essence (dungeon-only, from Goblin Cave clears), each making a variant item as a merge option
+- 4 material families: Metal and Herb (Millbrook), Gem (Stonereach) and Wood (Greenhollow), each with a 4-step merge chain defined on the item definitions
+- Reagents: Fire Essence (bought in prep) plus Ice, Shadow and Holy Essence (dungeon-only, from every town's dungeon), each making a variant item as a merge option
+- Towns: Millbrook, Stonereach and Greenhollow, each with its own customers, crates, market modifiers, contracts, dungeon and blueprints
+- Guild Charter prestige: a hard reset into a chosen town that earns charter points for permanent perks
+- Codex: every item a merge can make, with the best quality reached
 - Regulars: loyalty tracks on the 10 named customers
 - Contracts: multi-session orders from regulars
 - Shop mode: 10-customer sessions with order fulfillment
@@ -56,8 +59,7 @@
 
 ### Deferred to Later Versions
 
-- Additional dungeons beyond the first. Shadow and Holy Essence should move to their own dungeons once there are more (Phase 7 ships all three from the Goblin Cave).
-- Gem and Wood material families (family keys reserved: `"gem"`, `"wood"`; no items defined yet)
+- Enemies of their own for the Crystal Mine and Whisperwood (both reuse Goblin Cave's enemies for now)
 - Party Abilities / Active Skills (auto-attack only for MVP)
 - Dungeon Mid-Exit Penalty (MVP wipes all partial progress)
 - Equipment Durability / Repair mechanic — party equipment wears during dungeon raids, player crafts repair items (usable item type: `repair`)
@@ -247,10 +249,12 @@ Transitions:
   - Encounter 1 (20%): 2× Slime
   - Encounter 2 (50%): 1× Goblin Archer, 1× Goblin
   - Encounter 3 (80%): 2× Goblin
-- **Number of dungeons:** 1 (MVP). More planned for later versions.
+- **Number of dungeons:** One per town (Goblin Cave, Crystal Mine, Whisperwood).
 - **Progression unlock:** Shop-level-based. Fulfilling orders and clearing dungeons earn shop XP, which never decreases. Crossing a level unlocks every definition (customer archetype, dungeon, blueprint, crate, reagent) whose `min_shop_level` is that level.
 - **Difficulty scaling:** Higher-level customer archetypes demand more advanced items. Dungeon enemies have more HP and damage in later encounters.
 - **Save / checkpoint system:** Auto-save after session end, after purchases, and after dungeon end. Single JSON file at `user://save_data.json`.
+
+A run is one town from level 1. At `charter_level` (40) the player may found a Guild Charter in any open town (see Submodule — Towns & Guild Charter): the run resets and a new one starts in that town.
 
 ### Shop Levels
 
@@ -278,6 +282,8 @@ The curve is a power law: XP from level k to k+1 is `round(level_xp_base x k^lev
 | 32 | Customer: Lady Maren (Royal Armorer) — Masterwork, rare, `price_multiplier` 1.3 |
 | Other levels 17–60 | No new catalog unlocks yet; existing upgrade tracks may still add levels |
 
+Stonereach and Greenhollow mirror Millbrook's unlock levels with their own customers, crates and blueprints (see `resources/definitions/towns/`).
+
 ### What Persists Between Sessions
 
 - Gold balance
@@ -290,6 +296,9 @@ The curve is a power law: XP from level k to k+1 is `round(level_xp_base x k^lev
 - Board state (items on grid carry over)
 - Display shelf contents (`shop_shelf_state`; shop only)
 - Grid size (if upgraded)
+- Current town (`current_town`), charters founded, charter points, perk levels, the codex and its credited stars and families
+
+A charter keeps only `sessions_played`, `seen_intro`, charters, charter points, perk levels, the codex and its credits; everything else resets.
 
 ---
 
@@ -315,6 +324,12 @@ The curve is a power law: XP from level k to k+1 is `round(level_xp_base x k^lev
 - **Overlay (CanvasLayer):** HUD — gold, shop level and XP bar (always visible during gameplay)
 - **Bottom:** Continue button → start next session or enter dungeon. Quit button (with confirmation) → return to Main Menu.
 - Does NOT have: Timer, limited item slots
+
+### Guild Hall
+- Opened from prep's Guild button. TabContainer with two tabs:
+  - **Charter:** status line (shop level vs. `charter_level`), charter points banked plus what founding now would earn, a town choice (locked towns show "opens at charter N"), a perk pick list spending those points, and a Found button. Found only opens a confirm dialog listing what is lost; only its Confirm founds.
+  - **Codex:** every family, one section each; an item not made yet shows as a black silhouette named "???", an item made shows its name and a star per quality reached (Normal 1, Fine 2, Masterwork 3); a completed family shows its charter-point payout.
+- Back button and Android back return to prep.
 
 ### Dungeon Mode (In-Game)
 - **Top:** Progress bar (0–100%)
@@ -413,7 +428,16 @@ The curve is a power law: XP from level k to k+1 is `round(level_xp_base x k^lev
 | Max shop level | 60 | XP past the level-60 threshold has nowhere to go; the HUD's XP bar stays full |
 | Dungeon gold reward | 120g | Goblin Cave (MVP) |
 | Dungeon XP reward | 60 | Goblin Cave, on clear. A wipe gives none. |
-| Dungeon unlock | Level 6 | Goblin Cave's `min_shop_level` |
+| Dungeon unlock | Level 6 | Goblin Cave's `min_shop_level` (Crystal Mine and Whisperwood mirror it) |
+| Charter level | 40 | `ShopRulesDefinition.charter_level`; shop level required to found a Guild Charter |
+| Charter points | `charter_base_points (10) + floor((level - charter_level) x charter_points_per_level (1.0)) + new codex stars + codex_family_points (5) x newly completed families` | `ShopRulesDefinition.charter_points()`; 0 below `charter_level` |
+| Codex stars | Best quality reached + 1, per item | Normal 1, Fine 2, Masterwork 3; "new" is since the last charter (`codex_stars_credited`) |
+| Perk: Guild Stipend | Starting gold 400 / 1000 / 2500 | Cost 3 / 6 / 10 charter points |
+| Perk: Guild Training | Shop XP x1.1 / x1.2 / x1.3 | Cost 4 / 8 / 14 charter points |
+| Perk: Trade Ties | Crate cost x0.95 / x0.9 / x0.85 | Cost 3 / 6 / 10 charter points; multiplies with Bulk Deal |
+| Perk: Inherited Plans | 1 / 2 / 3 starting blueprints | Cost 4 / 8 / 14 charter points; the town's cheapest, dependencies first, ignoring shop level |
+| Perk: Spare Shelf | +1 / +2 shelf slots | Cost 3 / 7 charter points; capped by `max_shelf_slots` (6) |
+| Perk: Good Name | Loyalty gain x1.5 / x2.0 | Cost 3 / 7 charter points |
 
 ### Market Modifiers (MVP)
 
@@ -429,7 +453,7 @@ The curve is a power law: XP from level k to k+1 is `round(level_xp_base x k^lev
 
 ### Item Catalog (MVP)
 
-All items are `.tres` definitions in `resources/definitions/items/`; each item lists its merge results and fire variants. Three families, one role each in the dungeon: herbs heal, metal buffs, powder damages. Tier 1 is always a raw material; tiers 2 to 4 are dungeon-usable, and enemies drop only usable items. Effect values are starting points for playtesting.
+All items are `.tres` definitions in `resources/definitions/items/`; each item lists its merge results and reagent variants. Five families, one role each in the dungeon: herb and gem heal, metal and wood buff, powder damages. Gem mirrors herb's chain (heal, crit charges, revive) and wood mirrors metal's (absorb, attack buff), so the same fixed values apply — only the item ids and sprites differ. Tier 1 is always a raw material; tiers 2 to 4 are dungeon-usable. Enemy drop pools are shared by every town's dungeon and only ever hold herb, metal and powder items (see Submodule — Towns & Guild Charter), so gem and wood items are crate-and-merge only, never a drop. Effect values are starting points for playtesting.
 
 Effects in *italics* are defined but not applied yet: CombatEngine only runs `heal` and `buff_attack`, and only party members accept drops, so using such an item consumes it with no effect until the engine supports it.
 
@@ -458,6 +482,31 @@ Effects in *italics* are defined but not applied yet: CombatEngine only runs `he
 | flame_sword | Flame Sword | 480 | 3x iron_plate + fire_essence (bp_flame_sword) | +8 ATK for 20s |
 | frost_blade | Frost Blade | 560 | 3x iron_plate + ice_essence (bp_frost_blade) | +8 ATK for 20s |
 
+**Gem family (healing, Stonereach):**
+
+| item_id | Name | Gold | Source | Dungeon effect (party-individual) |
+|---------|------|------|--------|------------------|
+| rough_gem | Rough Gem | 5 | Crates | Raw |
+| cut_gem | Cut Gem | 20 | 3x rough_gem | Heal 10 |
+| polished_gem | Polished Gem | 75 | 3x cut_gem | Heal 30 |
+| mending_ring | Mending Ring | 280 | 3x polished_gem (bp_mending_ring) | Heal 90 |
+| keen_amulet | Keen Amulet | 280 | 3x polished_gem (bp_keen_amulet) | *3 crit charges* |
+| phoenix_diadem | Phoenix Diadem | 480 | 3x polished_gem + fire_essence (bp_phoenix_diadem) | *Revive a KO'd member at 50% HP* |
+| radiant_scepter | Radiant Scepter | 560 | 3x polished_gem + holy_essence (bp_radiant_scepter) | Heal 150 |
+| shade_crystal | Shade Crystal | 200 | 3x cut_gem + shadow_essence (bp_shade_crystal) | Heal 45 |
+
+**Wood family (buffs, Greenhollow):**
+
+| item_id | Name | Gold | Source | Dungeon effect (party-individual) |
+|---------|------|------|--------|------------------|
+| timber_log | Timber Log | 5 | Crates | Raw |
+| wood_plank | Wood Plank | 20 | 3x timber_log | Raw |
+| oak_stave | Oak Stave | 75 | 3x wood_plank (bp_oak_stave) | *25 HP absorb shield* |
+| longbow | Longbow | 280 | 3x oak_stave (bp_longbow) | +4 ATK for 20s |
+| warding_staff | Warding Staff | 280 | 3x oak_stave (bp_warding_staff) | *60 HP absorb shield* |
+| ember_wand | Ember Wand | 480 | 3x oak_stave + fire_essence (bp_ember_wand) | +8 ATK for 20s |
+| frost_wand | Frost Wand | 560 | 3x oak_stave + ice_essence (bp_frost_wand) | +8 ATK for 20s |
+
 **Powder family (damage):**
 
 | item_id | Name | Gold | Source | Dungeon effect |
@@ -473,19 +522,13 @@ Effects in *italics* are defined but not applied yet: CombatEngine only runs `he
 | item_id | Name | Price | Notes |
 |---------|------|-------|-------|
 | fire_essence | Fire Essence | 100g | Bought in prep phase. Stored in reagent_inventory. |
-| ice_essence | Ice Essence | Dungeon only | Goblin Cave clear, 50% chance for 1. Stored in reagent_inventory. |
-| shadow_essence | Shadow Essence | Dungeon only | Goblin Cave clear, 50% chance for 1. Stored in reagent_inventory. |
-| holy_essence | Holy Essence | Dungeon only | Goblin Cave clear, 35% chance for 1. Stored in reagent_inventory. |
+| ice_essence | Ice Essence | Dungeon only | Every town's dungeon clear, 50% chance for 1. Stored in reagent_inventory. |
+| shadow_essence | Shadow Essence | Dungeon only | Every town's dungeon clear, 50% chance for 1. Stored in reagent_inventory. |
+| holy_essence | Holy Essence | Dungeon only | Every town's dungeon clear, 35% chance for 1. Stored in reagent_inventory. |
 
 **Deferred (data-only, not in MVP gameplay):**
 
-| item_id | Name | Family | Notes |
-|---------|------|--------|-------|
-| wood_shaft | Wood Shaft | wood | Wood family items exist in data for forward compatibility. |
-| magic_focus | Magic Focus | wood | |
-| staff | Staff | wood | Blueprint exists (bp_staff) but Wood family not in MVP. |
-| wand | Wand | wood | Blueprint exists (bp_wand) but Wood family not in MVP. |
-| flame_staff | Flame Staff | wood | Variant of staff + fire_essence. Blueprint exists (bp_flame_staff) but Wood family not in MVP. |
+Powder is the one family with no crate: `blast_powder` has no source, so `firecracker`, `bomb`, `cluster_bomb` and `fire_bomb` (and their blueprints) can only be made from dungeon drops, never merged from something a town sells. `RecipeResolver.get_codex_items()` leaves the whole family out, and `GameManager.record_crafted()` ignores their merges (dropped items still merge on the dungeon board and emit `EventBus.merge_completed`), so they never count toward codex stars.
 
 ---
 
@@ -498,7 +541,7 @@ Effects in *italics* are defined but not applied yet: CombatEngine only runs `he
 - **Target Android API:** 36, which Google Play requires for new apps and updates from 2026-08-31. The export preset is still at 33 and must be raised before release.
 - **Ad integration:** AdMob interstitials only (see Submodule — Ads). Requires the INTERNET permission (currently off in the export preset) and a Gradle build (already on).
 - **Consent (UMP/TCF):** Yes. Google's UMP consent message runs on launch before any ad request, and there's an in-game "Privacy choices" entry point. Store and account setup is in `docs/ADS-COMPLIANCE.md`.
-- **Save system:** Yes — single JSON file (`user://save_data.json`), auto-save at checkpoints. `SAVE_VERSION` 9 adds `regular_loyalty` and `active_contracts`. This is a breaking schema change; older saves load as CORRUPT.
+- **Save system:** Yes — single JSON file (`user://save_data.json`), auto-save at checkpoints. `SAVE_VERSION` 10 adds `current_town`, `charters`, `charter_points`, `perk_levels`, `codex`, `codex_stars_credited` and `codex_families_credited`. This is a breaking schema change; older saves load as CORRUPT.
 - **In-app purchases:** Not for v1.0 (paid ad removal is in `docs/TODO.md`)
 - **Performance targets:** 60fps on mid-range Android devices
 - **Rendering:** 2D, mobile renderer
@@ -920,6 +963,77 @@ Combat tick (every 1 second):
 
 ---
 
+### Submodule — Towns & Guild Charter
+
+**What it does:**
+A run plays out in one town. A town scopes its customers, crates, market modifiers, contracts, dungeon and blueprints; items, reagents, upgrades, perks, party members, enemies and the shop rules are shared by every town. At `charter_level` the player may found a Guild Charter in any open town from the Guild Hall: the run resets to a fresh game in that town, keeping only a handful of fields, and the charter earns permanent perk points.
+
+**What triggers it:**
+The player taps Found on the Guild Hall's Charter tab and confirms the dialog listing what is lost.
+
+**Inputs:**
+- `GameManager.get_shop_level()` against `ShopRulesDefinition.charter_level`
+- The chosen `TownDefinition` and whether it's open (`town.charters_required <= charters + 1`; `charters_required` counts the charter being founded, so Stonereach (1) opens at the first charter and Greenhollow (2) at the second)
+- The codex (`GameManager.codex`) and its credited stars/families
+- The perk picks the player chose to buy with this charter's points
+
+**Outputs:**
+- Resets every GameManager field except `CHARTER_KEPT_FIELDS`, via `deserialize({})`'s fresh-game defaults
+- Sets `current_town` to the chosen town and rolls a new `run_seed` (never the old one, so re-founding the same town can't replay it)
+- Banks earned charter points, spends them on the picks, raises `perk_levels`
+- Applies the run's starting perks (starting gold, starting blueprints) before the first save
+- `EventBus.charter_founded(town_id)` routes straight to the new town's prep — not an ad break
+
+**States / Logic:**
+```
+1. Player opens the Guild Hall (prep's Guild button -> EventBus.prep_open_charter)
+2. Charter tab shows status, banked + earned points, town choices, perk picks
+3. Found -> confirm dialog listing what is lost
+4. Confirm -> GameManager.found_charter(town_id, picks):
+   a. Refuse if below charter_level, the town isn't open, or the picks cost more than the points available
+   b. Bank this charter's points (charter_points() below), reset to fresh-game defaults except
+      CHARTER_KEPT_FIELDS, set current_town, charters += 1, spend the picks, roll a new run_seed
+   c. Apply the town's starting perks (Guild Stipend's gold, Inherited Plans' cheapest blueprints)
+5. Save, then EventBus.charter_founded(town_id) -> straight to the new town's prep (no ad)
+```
+
+**Fixed values:**
+
+| Property | Value | Notes |
+|----------|-------|-------|
+| `charter_level` | 40 | Shop level required to found a charter |
+| `charter_base_points` | 10 | Flat points every eligible charter earns |
+| `charter_points_per_level` | 1.0 | Extra points per level past `charter_level` |
+| `codex_family_points` | 5 | Points per family completed since the last charter, paid once ever |
+| Charter points formula | `charter_base_points + floor((level - charter_level) x charter_points_per_level) + new codex stars + codex_family_points x newly completed families` | 0 below `charter_level` |
+| Codex stars | Best quality reached + 1, per item (Normal 1, Fine 2, Masterwork 3) | "New" stars are since the last charter (`codex_stars_credited`) |
+| Kept across a charter (`CHARTER_KEPT_FIELDS`) | `sessions_played`, `seen_intro`, `charters`, `charter_points`, `perk_levels`, `codex`, `codex_stars_credited`, `codex_families_credited` | Everything else resets through `deserialize({})` |
+
+**Perk table:**
+
+| Perk | Effect | Levels (cost -> value) |
+|------|--------|-------------------------|
+| Guild Stipend | Starting gold | 3 -> 400, 6 -> 1000, 10 -> 2500 |
+| Guild Training | Shop XP multiplier | 4 -> x1.1, 8 -> x1.2, 14 -> x1.3 |
+| Trade Ties | Crate cost multiplier | 3 -> x0.95, 6 -> x0.9, 10 -> x0.85 |
+| Inherited Plans | Starting blueprints (town's cheapest, dependencies first) | 4 -> 1, 8 -> 2, 14 -> 3 |
+| Spare Shelf | Extra shelf slots (capped by `max_shelf_slots`, 6) | 3 -> +1, 7 -> +2 |
+| Good Name | Loyalty gain multiplier | 3 -> x1.5, 7 -> x2.0 |
+
+**The codex:** every item a merge (or reagent variant) can make starting from some town's crates, whatever the blueprints, levels or reagents currently owned. A raw crate item no merge makes (Iron Ore) is left out, and so is anything no town's crates reach (today the whole powder family, since no crate sells Blast Powder). An item not made yet shows as a black silhouette named "???" in the Guild Hall's Codex tab, whether or not the player has visited its town — no names leak early.
+
+**Does NOT:**
+- Let founding be undone once confirmed, or apply picks before the player confirms
+- Show an ad between the Guild Hall and the new town's prep
+- Store `unlocked_towns`: openness is derived from `charters` every time, so it can never disagree with the save
+
+**GDD dependencies:**
+- Shop Level (the charter gate)
+- Merge System (`merge_completed`'s `result_quality` feeds the codex)
+- Economy (perk multipliers apply inside `add_shop_xp`, `add_loyalty`, `get_crate_discount`, `get_shelf_slots`)
+
+---
+
 ### Submodule — Ads
 
 **What it does:**
@@ -935,6 +1049,7 @@ The player leaving a summary screen for the prep phase: the Session Summary's Co
   - over a popup;
   - after a dungeon wipe (a loss plus an ad stacks frustration).
 - **Grace period:** no ads until the player has completed `AD_GRACE_SESSIONS` shop sessions in a new game. This needs a persistent count of completed shop sessions.
+- The grace period counts sessions per new game, never per charter: a charter keeps `sessions_played`.
 - **Frequency cap:** at least `AD_MIN_INTERVAL` seconds since the last ad was shown. The AdMob ad-unit frequency cap is a backstop, not the rule.
 - **Consent first:** the UMP consent check runs on every launch, and ads are only requested once UMP allows it. When UMP says privacy options are required, the main menu shows a "Privacy choices" button next to the privacy policy link.
 - **Failure is silent:** no fill, a load error, or no consent just skips the ad. Game flow never waits on an ad.
@@ -1009,6 +1124,13 @@ The player leaving a summary screen for the prep phase: the Session Summary's Co
 | 2026-09-28 | Leveled upgrade tracks and the display shelf | Upgrades are tracks of levels (`UpgradeDefinition.levels: Array[UpgradeLevel]`), so they keep absorbing gold for the long haul; buying an upgrade buys its next level, and `GameManager.upgrade_levels` replaces `purchased_upgrades` (`SAVE_VERSION` 7, breaking: old saves load as CORRUPT). Three new tracks: Display Shelf, Town Crier and Shop Signage. The shelf is a second `BoardGrid` inside `MergeBoard` with merges off (a spike beat a custom shelf widget), so drag and drop between board and shelf reuses the board's code; the shop only talks to `MergeBoard`. A shrinking shelf never loses items: saved items past its end go to the board, else staging. Town Crier starts at 5, not the spec's 3, because the free forecast already shows 3; a level value of 0 means every customer, and revealing every customer also shows their orders, so no "top level" flag is needed in data. Shop Signage multiplies inside the customer generator, where order gold is computed and rounded once, so the order card, the forecast and the payout agree. The level-up panel doesn't list upgrade levels: it lists catalog entries with a top-level `min_shop_level`, and upgrades gate per level. Layout: with a 6-slot shelf and a 3-order customer the shop screen leaves the merge board 1202 px at 1080x1920, and a 6x7 board (968 px tall) plus the shelf, staging and padding needs 1332 (still over 1202 with the padding cut to nothing), so Board Expansion stops at 6x6 (its 6x7 level was cut). `merge_board.tscn` padding was trimmed and the board area now sizes to its grid; 6x6 with a 6-slot shelf fits at 1080x1920 and 1080x2520 with 128 px cells. Sim: level costs retuned so buying every blueprint and every upgrade level takes about 52 best-case sessions (target 40-60, was about 72), with unlock levels spread from 1 to 55. That pace is gold only: the level curve, not gold, sets when every upgrade can be maxed, since best play reaches level 50 around session 330 and level 55 around session 418; the gates are kept on purpose so something still unlocks through the 50s. |
 | 2026-09-29 | Item quality replaces the merge gold bonus | The free-gold bonus loop (`calculate_bonus_gold`, bonus coins, the merge "+N" float) is gone for good. A board item is `{item_id, definition, quality}` (0 Normal, 1 Fine, 2 Masterwork; `ItemDefinition.MAX_QUALITY`/`QUALITY_NAMES`), made by `RecipeResolver.make_item(def, quality = 0)`; crates and drops still give Normal items. Merge detection ignores quality, so a mixed-quality group still merges as one; `board/quality_rules.gd.resolve()` sets the result to `min(2, floor(mean quality) + 1 if count >= 5)` and refunds the group's lowest-quality items (count % 3 of them) — the upgrade is paid for with the best inputs. Honestly, this doesn't close a farm or tax quality with extra materials: after the first 5-group, the 2 refunded Normal items are just the next pair for the following group, so each further Fine costs the same 3 inputs as a Normal result. "Lowest refunded" only stops a mixed group from minting quality for free; the real cost of quality is held stock and board space while five of an item assemble, plus the planning to get them there. A Fine or Masterwork result pops a star sparkle instead of gold, and a merge that drops quality below the group's best shows a floating "Fine lost" / "Masterwork lost" cue over the result cell (`MergeBoard.show_quality_lost`, `quality_lost` signal). The merge-choice popup names the predicted quality, but only appears for 2+ options and only after the merge is already committed — it is not a warning, and the display shelf is the only place a quality item is safe from an unwanted auto-merge. Skill now pays through premium orders instead of free gold: `OrderTemplate.min_quality` and `ShopRulesDefinition.quality_price_multipliers` price a quality want, and fulfillment (`BoardGrid.count_items_on_board`/`remove_items_by_id`, `MergeBoard.count_sellable`/`take_sellable`, all gaining `min_quality`) takes the lowest *qualifying* quality first, shelf before board within one quality. Three new archetypes ship at levels 18-32 (Odile the Connoisseur, Borin the Guild Quartermaster, Lady Maren the Royal Armorer), reusing existing customer portraits as placeholder art since no new art was commissioned for this phase. `SAVE_VERSION` 8, breaking: every board entry (shop board, shelf, dungeon board) now requires `quality`; old saves load as CORRUPT. Quality has no dungeon effect yet (dungeon drops stay Normal; quality still forms on the dungeon board since the resolver is shared, but a shop Fine potion can't reach the dungeon today) — see the deferred item in `docs/TODO.md`. Checked by `tmp/shop-improvements/sim/economy_sim.gd`, whose pricing didn't originally include the quality premium: once fixed, pace with the shipped archetype levels and weights came out to 28.7 best-case sessions, below the 40-60 target. Retuned by dropping Odile's and Borin's archetype weight from 2 to 1 and lowering `quality_price_multipliers` from `[1.0, 1.6, 2.8]` to `[1.0, 1.2, 1.5]` (levels held at 18/24/32); pace now lands at 40.3 best-case sessions. The spec's x1.6 / x2.8 gives 30.1 sessions and x1.1 / x1.3 gives 43.0; x1.2 / x1.5 is the largest premium that stays in the 40-60 band. |
 | 2026-09-29 | Regulars, contracts and dungeon-only essences | Ten named regulars gain 5/15/30-point loyalty tracks and one-time gifts. Contracts use the Contract Board's 1/2/3 slots and stable seeded offers; delivery and fulfilment save the board and shelf with progress. Repeatable contracts give no blueprint or dungeon-only reagent. Frost Blade, Holy Draught and Nightshade Tonic use Ice, Holy and Shadow Essence; all three drop from the Goblin Cave until future dungeons can separate them. Content uses placeholder sprites for the six new reagent and variant visuals. `SAVE_VERSION` 9 adds loyalty and active contracts, breaking old saves. The economy sim gives 41.1 best-case sessions (target 40–60), contract reward-to-goods ratios 1.33–1.38 (target 1.1–1.6), about 190 contract gold per best-case session, and the first dungeon-only order at level 12 / best-play session 15. |
+| 2026-09-30 | The Codex is a Guild Hall tab, not a prep tab | The spec asked for a prep "Codex" tab, but prep already has 5 tabs and `test_prep_tabs_are_touch_sized_and_all_visible_at_portrait_width` requires every tab to be at least 120 px wide inside the 984 px bar — a sixth short tab can't do both. The Guild Hall (`core/charter_screen.tscn`) gets two tabs, Charter and Codex, and prep gets a Guild button that opens it; the codex feeds charter points, so it sits beside them. |
+| 2026-09-30 | `unlocked_towns` is not saved | A town is open when `town.charters_required <= charters + 1` (`charters_required` counts the charter being founded, so Stonereach at 1 opens at the first charter and Greenhollow at 2 the second). Fully derived from `charters`, so a stored copy could never disagree with it. If a later feature unlocks towns another way, it adds the field then with its own `SAVE_VERSION` bump. |
+| 2026-09-30 | Perks are bought only when founding, in one atomic call | The Guild Hall keeps a pick list; `GameManager.found_charter(town_id, picks)` banks the charter's points, charges the picks, resets and applies the starting perks together, and the screen saves once after. So the points a charter earns can pay for perks that shape the run it starts, and nothing is ever half-applied. This extends the spec's `found_charter(town_id)` signature with an optional `picks` argument. |
+| 2026-09-30 | Codex points count stars; families pay once ever | A codex entry shows one star per quality reached (Normal 1, Fine 2, Masterwork 3). "New codex entries since the last charter" is new stars since the last charter, tracked by `codex_stars_credited`. A completed family pays `ShopRulesDefinition.codex_family_points` once ever, tracked by `codex_families_credited`. Two save fields beyond the spec's list. |
+| 2026-09-30 | What the codex lists | Every item a merge (or reagent variant) can make starting from some town's crates, whatever the blueprints, levels or reagents owned. Raw crate items no merge makes (Iron Ore) are left out, and so is anything no town's crates reach — today that is the whole powder family, since no crate sells Blast Powder. An item not made yet shows as a black silhouette named "???", whether or not the player has visited its town (Review Focus 5: silhouettes, no names). |
+| 2026-09-30 | New content mirrors Millbrook's numbers | The gem family mirrors herb (heal, crit charges and revive effects) and the wood family mirrors metal (absorb and attack buffs), so the economy stays inside the sim's targets. Stonereach sells gem + metal, Greenhollow wood + herb. The new dungeons (Crystal Mine, Whisperwood) reuse Goblin Cave's enemies, encounters and essence drops exactly, which also settles Phase 7's "all three essences come from the Goblin Cave" dependency for the new towns; new enemies of their own are deferred (`docs/ARTWORK.md`). Checked by `tmp/shop-improvements/sim/phase8.txt`: Millbrook pace 41.1, Stonereach 41.4, Greenhollow 40.2 best-case sessions (target 40-60), and the first charter lands at best-play session 178 in every town. |
+| 2026-09-30 | Android back still quits the app | The Guild Hall handles `NOTIFICATION_WM_GO_BACK_REQUEST` itself (closes its confirm dialog, else returns to prep), but the project's `quit_on_go_back` setting is unchanged, as Phase 7 flagged. Flagged again here rather than changed. |
 
 ---
 

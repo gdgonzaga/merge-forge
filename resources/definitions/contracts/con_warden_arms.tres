@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="ContractDefinition" format=3]
+
+[ext_resource type="Resource" path="res://resources/definitions/customers/st_05.tres" id="1_r215p"]
+[ext_resource type="Script" path="res://resources/definitions/order_template.gd" id="2_bil8i"]
+[ext_resource type="Resource" path="res://resources/definitions/items/sword.tres" id="3_cuf5p"]
+[ext_resource type="Resource" path="res://resources/definitions/items/iron_shield.tres" id="4_ojage"]
+[ext_resource type="Script" path="res://resources/definitions/contract_definition.gd" id="5_gbfx7"]
+
+[sub_resource type="Resource" id="Resource_pm354"]
+script = ExtResource("2_bil8i")
+item = ExtResource("3_cuf5p")
+
+[sub_resource type="Resource" id="Resource_o14um"]
+script = ExtResource("2_bil8i")
+item = ExtResource("4_ojage")
+
+[resource]
+script = ExtResource("5_gbfx7")
+id = "con_warden_arms"
+name = "Ser Brannoc's Arms"
+giver = ExtResource("1_r215p")
+min_shop_level = 14
+requirements = Array[ExtResource("2_bil8i")]([SubResource("Resource_pm354"), SubResource("Resource_o14um")])
+sessions_allowed = 3
+reward_gold = 750
+loyalty_points = 4

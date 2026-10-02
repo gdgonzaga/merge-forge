@@ -1,0 +1,69 @@
+[gd_resource type="Resource" script_class="DungeonDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/encounter_definition.gd" id="1_5yd1o"]
+[ext_resource type="Script" path="res://resources/definitions/enemy_spawn.gd" id="2_nxq41"]
+[ext_resource type="Resource" path="res://resources/definitions/enemies/slime.tres" id="3_2ec2r"]
+[ext_resource type="Resource" path="res://resources/definitions/enemies/goblin_archer.tres" id="4_ylkco"]
+[ext_resource type="Resource" path="res://resources/definitions/enemies/goblin.tres" id="5_qbuyl"]
+[ext_resource type="Script" path="res://resources/definitions/reagent_reward.gd" id="6_7a06r"]
+[ext_resource type="Resource" path="res://resources/definitions/reagents/ice_essence.tres" id="7_y7grr"]
+[ext_resource type="Resource" path="res://resources/definitions/reagents/shadow_essence.tres" id="8_e83nh"]
+[ext_resource type="Resource" path="res://resources/definitions/reagents/holy_essence.tres" id="9_gdpbh"]
+[ext_resource type="Script" path="res://resources/definitions/dungeon_definition.gd" id="10_gklrw"]
+
+[sub_resource type="Resource" id="Resource_bgk0t"]
+script = ExtResource("2_nxq41")
+enemy = ExtResource("3_2ec2r")
+count = 2
+
+[sub_resource type="Resource" id="Resource_igon3"]
+script = ExtResource("1_5yd1o")
+spawns = Array[ExtResource("2_nxq41")]([SubResource("Resource_bgk0t")])
+
+[sub_resource type="Resource" id="Resource_7blar"]
+script = ExtResource("2_nxq41")
+enemy = ExtResource("4_ylkco")
+
+[sub_resource type="Resource" id="Resource_yikeg"]
+script = ExtResource("2_nxq41")
+enemy = ExtResource("5_qbuyl")
+
+[sub_resource type="Resource" id="Resource_4gvhv"]
+script = ExtResource("1_5yd1o")
+spawns = Array[ExtResource("2_nxq41")]([SubResource("Resource_7blar"), SubResource("Resource_yikeg")])
+
+[sub_resource type="Resource" id="Resource_tofyb"]
+script = ExtResource("2_nxq41")
+enemy = ExtResource("5_qbuyl")
+count = 2
+
+[sub_resource type="Resource" id="Resource_luxhm"]
+script = ExtResource("1_5yd1o")
+spawns = Array[ExtResource("2_nxq41")]([SubResource("Resource_tofyb")])
+
+[sub_resource type="Resource" id="Resource_3h42a"]
+script = ExtResource("6_7a06r")
+reagent = ExtResource("7_y7grr")
+chance = 0.5
+
+[sub_resource type="Resource" id="Resource_pj47m"]
+script = ExtResource("6_7a06r")
+reagent = ExtResource("8_e83nh")
+chance = 0.5
+
+[sub_resource type="Resource" id="Resource_a1l4d"]
+script = ExtResource("6_7a06r")
+reagent = ExtResource("9_gdpbh")
+chance = 0.35
+
+[resource]
+script = ExtResource("10_gklrw")
+id = "crystal_mine"
+name = "Crystal Mine"
+min_shop_level = 6
+walk_speed = 0.075
+encounter_points = Array[float]([0.2, 0.5, 0.8])
+encounters = Array[ExtResource("1_5yd1o")]([SubResource("Resource_igon3"), SubResource("Resource_4gvhv"), SubResource("Resource_luxhm")])
+gold_reward = 120
+reagent_rewards = Array[ExtResource("6_7a06r")]([SubResource("Resource_3h42a"), SubResource("Resource_pj47m"), SubResource("Resource_a1l4d")])
+xp_reward = 60

@@ -1,10 +1,10 @@
-[gd_resource type="Resource" script_class="ItemDefinition" format=3]
+[gd_resource type="Resource" script_class="ItemDefinition" format=3 uid="uid://dq6tgp0twb57i"]
 
-[ext_resource type="Script" path="res://resources/definitions/item_definition.gd" id="1_7t6hw"]
-[ext_resource type="Script" path="res://resources/definitions/merge_result.gd" id="1_478w5"]
-[ext_resource type="Texture2D" path="res://resources/sprites/items/herb_leaf.png" id="2_bqaub"]
-[ext_resource type="Resource" path="res://resources/definitions/items/herb_bundle.tres" id="2_ms7hd"]
-[ext_resource type="Script" path="res://resources/definitions/reagent_variant.gd" id="3_6oq6h"]
+[ext_resource type="Script" uid="uid://8qdrbetfqfv3" path="res://resources/definitions/item_definition.gd" id="1_7t6hw"]
+[ext_resource type="Script" uid="uid://c3ll0lgyqpgap" path="res://resources/definitions/merge_result.gd" id="1_478w5"]
+[ext_resource type="Texture2D" uid="uid://b6f3oojmyk0ao" path="res://resources/sprites/items/herb_leaf.png" id="2_bqaub"]
+[ext_resource type="Resource" uid="uid://c7jf1g7xg0a5d" path="res://resources/definitions/items/herb_bundle.tres" id="2_ms7hd"]
+[ext_resource type="Script" uid="uid://bwjarlm68nkgp" path="res://resources/definitions/reagent_variant.gd" id="3_6oq6h"]
 
 [sub_resource type="Resource" id="Resource_x7bqt"]
 script = ExtResource("1_478w5")

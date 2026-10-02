@@ -112,3 +112,9 @@ func _give_discount(value: float) -> void:
 	discount.levels = [level]
 	set_definition(DefinitionLibrary.upgrades, discount)
 	GameManager.raise_upgrade_level("__test_discount")
+
+
+func test_a_crate_outside_the_town_is_refused() -> void:
+	test_town.crates.erase(DefinitionLibrary.get_crate("__test_crate"))
+	assert_bool(_board.buy_crate("__test_crate")).is_false()
+	assert_int(GameManager.gold).is_equal(50)

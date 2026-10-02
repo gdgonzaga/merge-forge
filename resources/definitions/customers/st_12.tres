@@ -1,0 +1,41 @@
+[gd_resource type="Resource" script_class="CustomerDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/loyalty_reward.gd" id="1_gfme8"]
+[ext_resource type="Script" path="res://resources/definitions/customer_definition.gd" id="2_ybi3t"]
+[ext_resource type="Texture2D" path="res://resources/sprites/portraits/customer_08.png" id="3_tx2dq"]
+[ext_resource type="Script" path="res://resources/definitions/order_template.gd" id="4_7mag0"]
+[ext_resource type="Resource" path="res://resources/definitions/items/iron_ingot.tres" id="5_yel05"]
+[ext_resource type="Resource" path="res://resources/definitions/items/cut_gem.tres" id="6_oa2pl"]
+[ext_resource type="Resource" path="res://resources/definitions/items/iron_plate.tres" id="7_jkwqc"]
+
+[sub_resource type="Resource" id="Resource_gvfh0"]
+script = ExtResource("4_7mag0")
+item = ExtResource("5_yel05")
+min_quantity = 4
+max_quantity = 6
+min_quality = 1
+
+[sub_resource type="Resource" id="Resource_sx0fm"]
+script = ExtResource("4_7mag0")
+item = ExtResource("6_oa2pl")
+min_quantity = 4
+max_quantity = 6
+min_quality = 1
+
+[sub_resource type="Resource" id="Resource_vu4kg"]
+script = ExtResource("4_7mag0")
+item = ExtResource("7_jkwqc")
+min_quantity = 2
+max_quantity = 3
+min_quality = 1
+
+[resource]
+script = ExtResource("2_ybi3t")
+id = "st_12"
+name = "Brakka"
+role = "Guild Quartermaster"
+sprite = ExtResource("3_tx2dq")
+min_shop_level = 24
+min_orders = 2
+max_orders = 3
+wants = Array[ExtResource("4_7mag0")]([SubResource("Resource_gvfh0"), SubResource("Resource_sx0fm"), SubResource("Resource_vu4kg")])

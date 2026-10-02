@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="SessionModifierDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/crate_definition.gd" id="1_2aohj"]
+[ext_resource type="Script" path="res://resources/definitions/customer_definition.gd" id="2_2lsdc"]
+[ext_resource type="Resource" path="res://resources/definitions/customers/gh_08.tres" id="3_4x6w8"]
+[ext_resource type="Script" path="res://resources/definitions/session_modifier_definition.gd" id="4_b1kpv"]
+[ext_resource type="Texture2D" path="res://resources/sprites/modifiers/caravan_day.png" id="5_ad368"]
+
+[resource]
+script = ExtResource("4_b1kpv")
+id = "wagon_day"
+name = "Wagon Day"
+description = "A wagon train rolls in: more customers than usual."
+sprite = ExtResource("5_ad368")
+min_shop_level = 25
+boosted_customers = Array[ExtResource("2_2lsdc")]([ExtResource("3_4x6w8")])
+customer_weight_multiplier = 3.0
+session_size_delta = 3

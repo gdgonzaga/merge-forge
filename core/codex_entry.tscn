@@ -1,0 +1,29 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://core/codex_entry.gd" id="1_script"]
+[ext_resource type="PackedScene" path="res://ui/quality_stars.tscn" id="2_stars"]
+
+[node name="CodexEntry" type="VBoxContainer"]
+custom_minimum_size = Vector2(280, 0)
+theme_override_constants/separation = 8
+script = ExtResource("1_script")
+
+[node name="Icon" type="TextureRect" parent="."]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(120, 120)
+layout_mode = 2
+size_flags_horizontal = 4
+expand_mode = 1
+stretch_mode = 5
+
+[node name="NameLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="Stars" parent="." instance=ExtResource("2_stars")]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 4

@@ -5,6 +5,7 @@ extends TestBase
 
 
 func test_planning_twice_gives_the_same_session() -> void:
+	set_definition(DefinitionLibrary.customers, _wanting("__test_local", _sold_item("__test_town_item"), 1))
 	var first := _describe(SessionPlanner.plan_next_session())
 	var second := _describe(SessionPlanner.plan_next_session())
 	assert_array(first).is_not_empty()
@@ -67,10 +68,6 @@ func test_planning_twice_offers_the_same_contracts() -> void:
 
 
 func _reachable_contract() -> ContractDefinition:
-	for contract: ContractDefinition in DefinitionLibrary.contracts.values().duplicate():
-		var moved: ContractDefinition = contract.duplicate()
-		moved.min_shop_level = 9999
-		set_definition(DefinitionLibrary.contracts, moved)
 	var item := ItemDefinition.new()
 	item.id = "__test_contract_item"
 	set_definition(DefinitionLibrary.items, item)
@@ -89,3 +86,67 @@ func _reachable_contract() -> ContractDefinition:
 	contract.sessions_allowed = 3
 	set_definition(DefinitionLibrary.contracts, contract)
 	return contract
+
+
+# --- towns ---
+
+func test_the_plan_deals_only_the_current_towns_customers() -> void:
+	var item := _sold_item("__test_town_item")
+	set_definition(DefinitionLibrary.customers, _wanting("__test_local", item, 1))
+	var elsewhere := _wanting("__test_elsewhere", item, 100000)
+	set_definition(DefinitionLibrary.customers, elsewhere)
+	test_town.customers.erase(elsewhere)
+	var ids := {}
+	for customer in SessionPlanner.plan_next_session().customers:
+		ids[customer.definition.id] = true
+	assert_array(ids.keys()).is_equal(["__test_local"])
+
+
+func test_the_towns_price_multiplier_scales_every_order() -> void:
+	var item := _sold_item("__test_town_item")
+	item.gold_value = 10
+	set_definition(DefinitionLibrary.customers, _wanting("__test_local", item, 1))
+	test_town.price_multiplier = 2.0
+	# 10 gold x 1 item x the town's 2.0; no upgrade, modifier or quality applies.
+	assert_int(SessionPlanner.plan_next_session().customers[0].orders[0].gold_reward).is_equal(20)
+
+
+func test_a_modifier_outside_the_town_never_rolls() -> void:
+	var rules: ShopRulesDefinition = DefinitionLibrary.get_shop_rules().duplicate()
+	rules.modifier_chance = 1.0
+	set_definition(DefinitionLibrary.shop_rules, rules)
+	var fair := SessionModifierDefinition.new()
+	fair.id = "__test_fair"
+	set_definition(DefinitionLibrary.modifiers, fair)
+	test_town.modifiers.erase(fair)
+	assert_object(SessionPlanner.plan_next_session().modifier).is_null()
+
+
+func test_a_contract_outside_the_town_is_never_offered() -> void:
+	var contract := _reachable_contract()
+	test_town.contracts.erase(contract)
+	assert_bool(contract in SessionPlanner.plan_next_session().contract_offers).is_false()
+
+
+# An item a test-town crate sells.
+func _sold_item(id: String) -> ItemDefinition:
+	var item := ItemDefinition.new()
+	item.id = id
+	set_definition(DefinitionLibrary.items, item)
+	var entry := WeightedItem.new()
+	entry.item = item
+	var crate := CrateDefinition.new()
+	crate.id = id + "_crate"
+	crate.pool = [entry]
+	set_definition(DefinitionLibrary.crates, crate)
+	return item
+
+
+func _wanting(id: String, item: ItemDefinition, weight: int) -> CustomerDefinition:
+	var want := OrderTemplate.new()
+	want.item = item
+	var customer := CustomerDefinition.new()
+	customer.id = id
+	customer.weight = weight
+	customer.wants = [want]
+	return customer

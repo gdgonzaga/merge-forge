@@ -167,7 +167,7 @@ func end_dungeon_cleared() -> void:
 		bp_reward = _dungeon.blueprint_reward.id
 		GameManager.add_blueprint(bp_reward)
 	GameManager.add_gold(gold_reward)
-	GameManager.add_shop_xp(_dungeon.xp_reward)
+	var xp_gained := GameManager.add_shop_xp(_dungeon.xp_reward)
 	var reagents := grant_reagent_rewards(_dungeon, _rng)
 	_save_board_state()
 	EventBus.save_requested.emit()
@@ -175,7 +175,7 @@ func end_dungeon_cleared() -> void:
 		"cleared": true,
 		"gold_reward": gold_reward,
 		"blueprint_reward": bp_reward,
-		"xp_gained": _dungeon.xp_reward,
+		"xp_gained": xp_gained,
 		"reagent_rewards": reagents,
 		"level_before": level_before,
 		"level_after": GameManager.get_shop_level(),

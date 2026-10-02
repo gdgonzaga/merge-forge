@@ -1,0 +1,39 @@
+[gd_resource type="Resource" script_class="ItemDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/effect_definition.gd" id="1_ea4dw"]
+[ext_resource type="Script" path="res://resources/definitions/merge_result.gd" id="2_yx3ie"]
+[ext_resource type="Resource" path="res://resources/definitions/items/polished_gem.tres" id="3_djnbv"]
+[ext_resource type="Script" path="res://resources/definitions/reagent_variant.gd" id="4_qhygf"]
+[ext_resource type="Resource" path="res://resources/definitions/blueprints/bp_shade_crystal.tres" id="5_jxb2g"]
+[ext_resource type="Resource" path="res://resources/definitions/reagents/shadow_essence.tres" id="6_vsgbk"]
+[ext_resource type="Resource" path="res://resources/definitions/items/shade_crystal.tres" id="7_3cfp7"]
+[ext_resource type="Script" path="res://resources/definitions/item_definition.gd" id="8_mvs62"]
+[ext_resource type="Texture2D" path="res://resources/sprites/items/herb_bundle.png" id="9_2tpk1"]
+
+[sub_resource type="Resource" id="Resource_dmu3v"]
+script = ExtResource("1_ea4dw")
+type = "heal"
+value = 10
+
+[sub_resource type="Resource" id="Resource_picek"]
+script = ExtResource("2_yx3ie")
+result = ExtResource("3_djnbv")
+
+[sub_resource type="Resource" id="Resource_ivge1"]
+script = ExtResource("4_qhygf")
+result = ExtResource("7_3cfp7")
+reagent = ExtResource("6_vsgbk")
+blueprint = ExtResource("5_jxb2g")
+
+[resource]
+script = ExtResource("8_mvs62")
+id = "cut_gem"
+name = "Cut Gem"
+family = "gem"
+gold_value = 20
+dungeon_usable = true
+dungeon_use_target = "party-individual"
+effect = SubResource("Resource_dmu3v")
+sprite = ExtResource("9_2tpk1")
+merge_results = Array[ExtResource("2_yx3ie")]([SubResource("Resource_picek")])
+reagent_variants = Array[ExtResource("4_qhygf")]([SubResource("Resource_ivge1")])

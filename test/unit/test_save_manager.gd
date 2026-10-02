@@ -57,7 +57,7 @@ func test_load_wrong_version_returns_CORRUPT() -> void:
 
 func test_load_previous_save_version_returns_CORRUPT() -> void:
 	var old_save := GameManager.serialize()
-	old_save["version"] = 8
+	old_save["version"] = 9
 	_write_save_file(JSON.stringify(old_save))
 	assert_int(SaveManager.load_game_ex()["status"]).is_equal(SaveManager.LoadStatus.CORRUPT)
 
@@ -293,3 +293,63 @@ func test_load_without_shop_xp_returns_CORRUPT() -> void:
 	bad.erase("shop_xp")
 	_write_save_file(JSON.stringify(bad))
 	assert_int(SaveManager.load_game_ex()["status"]).is_equal(SaveManager.LoadStatus.CORRUPT)
+
+
+# --- v10: town and Guild Charter progress ---
+
+func test_charter_progress_survives_save_and_load() -> void:
+	var far := TownDefinition.new()
+	far.id = "__test_far"
+	set_definition(DefinitionLibrary.towns, far)
+	GameManager.current_town = "__test_far"
+	GameManager.charters = 2
+	GameManager.charter_points = 7
+	GameManager.perk_levels = {"__perk": 1}
+	GameManager.codex = {"__item": 2}
+	GameManager.codex_stars_credited = 4
+	GameManager.codex_families_credited.assign(["__family"])
+	SaveManager.save_game()
+	var r: Dictionary = SaveManager.load_game_ex()
+	assert_int(r["status"]).is_equal(SaveManager.LoadStatus.OK)
+	reset_game_state()
+	GameManager.deserialize(r["data"])
+	assert_str(GameManager.current_town).is_equal("__test_far")
+	assert_int(GameManager.charters).is_equal(2)
+	assert_int(GameManager.charter_points).is_equal(7)
+	assert_dict(GameManager.perk_levels).is_equal({"__perk": 1})
+	assert_dict(GameManager.codex).is_equal({"__item": 2})
+	assert_int(GameManager.codex_stars_credited).is_equal(4)
+	assert_array(GameManager.codex_families_credited).is_equal(["__family"])
+
+
+func test_load_without_charter_fields_returns_CORRUPT() -> void:
+	for field: String in ["current_town", "charters", "charter_points", "perk_levels", "codex", "codex_stars_credited", "codex_families_credited"]:
+		var bad := GameManager.serialize()
+		bad.erase(field)
+		_write_save_file(JSON.stringify(bad))
+		assert_int(SaveManager.load_game_ex()["status"]).override_failure_message("no %s" % field) \
+			.is_equal(SaveManager.LoadStatus.CORRUPT)
+
+
+func test_load_bad_charter_fields_returns_CORRUPT() -> void:
+	var bad_values: Array = [
+		["current_town", 5],
+		["current_town", "__no_such_town"],
+		["charters", -1],
+		["charters", 1.5],
+		["charter_points", true],
+		["perk_levels", []],
+		["perk_levels", {"__perk": -1}],
+		["codex", []],
+		["codex", {"__item": 3}],
+		["codex", {"__item": 0.5}],
+		["codex_stars_credited", -2],
+		["codex_families_credited", "metal"],
+		["codex_families_credited", [4]],
+	]
+	for pair: Array in bad_values:
+		var bad := GameManager.serialize()
+		bad[pair[0]] = pair[1]
+		_write_save_file(JSON.stringify(bad))
+		assert_int(SaveManager.load_game_ex()["status"]).override_failure_message("%s = %s" % [pair[0], str(pair[1])]) \
+			.is_equal(SaveManager.LoadStatus.CORRUPT)

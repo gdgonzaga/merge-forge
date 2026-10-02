@@ -8,6 +8,21 @@ const SHOP := preload("res://shop/shop_session.tscn")
 
 
 func test_the_session_deals_what_prep_forecast() -> void:
+	var item := ItemDefinition.new()
+	item.id = "__test_forecast_item"
+	set_definition(DefinitionLibrary.items, item)
+	var entry := WeightedItem.new()
+	entry.item = item
+	var crate := CrateDefinition.new()
+	crate.id = "__test_forecast_crate"
+	crate.pool = [entry]
+	set_definition(DefinitionLibrary.crates, crate)
+	var want := OrderTemplate.new()
+	want.item = item
+	var customer := CustomerDefinition.new()
+	customer.id = "__test_forecast_customer"
+	customer.wants = [want]
+	set_definition(DefinitionLibrary.customers, customer)
 	var plan := _forecast_plan()
 	assert_bool(plan.customers.is_empty()).is_false()
 	assert_array(_describe(_shop_plan())).is_equal(_describe(plan))

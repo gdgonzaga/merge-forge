@@ -1,0 +1,57 @@
+[gd_resource type="Resource" script_class="CustomerDefinition" format=3]
+
+[ext_resource type="Script" path="res://resources/definitions/loyalty_reward.gd" id="1_yssru"]
+[ext_resource type="Resource" path="res://resources/definitions/reagents/fire_essence.tres" id="2_s6k5i"]
+[ext_resource type="Resource" path="res://resources/definitions/reagents/shadow_essence.tres" id="3_qyqaq"]
+[ext_resource type="Script" path="res://resources/definitions/customer_definition.gd" id="4_4qxjo"]
+[ext_resource type="Texture2D" path="res://resources/sprites/portraits/customer_06.png" id="5_bjoso"]
+[ext_resource type="Script" path="res://resources/definitions/order_template.gd" id="6_djxoc"]
+[ext_resource type="Resource" path="res://resources/definitions/items/cut_gem.tres" id="7_cyq2c"]
+[ext_resource type="Resource" path="res://resources/definitions/items/iron_ingot.tres" id="8_2jtle"]
+
+[sub_resource type="Resource" id="Resource_7683i"]
+script = ExtResource("1_yssru")
+points = 5
+title = "Familiar Face"
+gold = 100
+
+[sub_resource type="Resource" id="Resource_3hji7"]
+script = ExtResource("1_yssru")
+points = 15
+title = "Regular"
+reagent = ExtResource("2_s6k5i")
+reagent_count = 2
+
+[sub_resource type="Resource" id="Resource_ooo7x"]
+script = ExtResource("1_yssru")
+points = 30
+title = "Old Friend"
+gold = 200
+reagent = ExtResource("3_qyqaq")
+reagent_count = 1
+
+[sub_resource type="Resource" id="Resource_cdvk1"]
+script = ExtResource("6_djxoc")
+item = ExtResource("7_cyq2c")
+weight = 2
+min_quantity = 2
+max_quantity = 3
+
+[sub_resource type="Resource" id="Resource_6q6tq"]
+script = ExtResource("6_djxoc")
+item = ExtResource("8_2jtle")
+weight = 2
+min_quantity = 2
+max_quantity = 3
+
+[resource]
+script = ExtResource("4_4qxjo")
+id = "st_06"
+name = "Pell"
+role = "Tavern Keeper"
+sprite = ExtResource("5_bjoso")
+min_orders = 2
+max_orders = 2
+price_multiplier = 0.9
+wants = Array[ExtResource("6_djxoc")]([SubResource("Resource_cdvk1"), SubResource("Resource_6q6tq")])
+loyalty_rewards = Array[ExtResource("1_yssru")]([SubResource("Resource_7683i"), SubResource("Resource_3hji7"), SubResource("Resource_ooo7x")])

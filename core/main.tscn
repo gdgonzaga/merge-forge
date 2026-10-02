@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" uid="uid://bm6xsds8bt43e" path="res://core/main.gd" id="1"]
 [ext_resource type="PackedScene" uid="uid://corehud001" path="res://core/hud.tscn" id="2"]
+[ext_resource type="PackedScene" path="res://core/splash_screen.tscn" id="3_splash"]
 
 [node name="Main" type="Node" unique_id=168124041]
 script = ExtResource("1")
@@ -32,3 +33,9 @@ offset_top = 8.0
 offset_right = 7.0
 offset_bottom = 48.0
 grow_vertical = 1
+
+[node name="SplashLayer" type="CanvasLayer" parent="."]
+layer = 2
+
+[node name="SplashScreen" parent="SplashLayer" instance=ExtResource("3_splash")]
+unique_name_in_owner = true

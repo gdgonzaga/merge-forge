@@ -302,3 +302,20 @@ func _crate(id: String, contents: Array) -> CrateDefinition:
 		entry.item = item
 		crate.pool.append(entry)
 	return crate
+
+
+# --- towns ---
+
+func test_a_crate_outside_the_town_makes_nothing_craftable() -> void:
+	var ore := _item("__test_away_ore")
+	set_definition(DefinitionLibrary.items, ore)
+	var crate := _crate("__test_away_crate", [ore])
+	set_definition(DefinitionLibrary.crates, crate)
+	test_town.crates.erase(crate)
+	assert_bool(RecipeResolver.is_craftable(ore)).is_false()
+
+
+func test_a_blueprint_outside_the_town_brings_nothing_within_reach() -> void:
+	var chain := _gated_chain()
+	test_town.blueprints.erase(DefinitionLibrary.get_blueprint("__test_bp_a"))
+	assert_bool(RecipeResolver.is_within_one_blueprint([chain[1]] as Array[ItemDefinition])).is_false()
