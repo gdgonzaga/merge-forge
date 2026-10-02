@@ -301,3 +301,73 @@ func test_the_shop_shows_the_towns_background() -> void:
 	test_town.background = backdrop
 	var session := _start_session()
 	assert_object(session.get_node("%BG").texture).is_same(backdrop)
+
+
+# --- quit / early session end ---
+
+func test_tapping_leave_opens_confirm_dialog() -> void:
+	var session := _start_session()
+	session.get_node("%QuitBtn").pressed.emit()
+	var dialog := _dialog(session)
+	assert_object(dialog).is_not_null()
+	assert_bool(dialog.visible).is_true()
+	var label: Label = dialog.get_node("Margin/VBox/MessageLabel")
+	assert_str(label.text).is_equal("End shop session early?\nYou will keep earnings from customers served so far.")
+	var confirm_btn: Button = dialog.get_node("Margin/VBox/BtnBox/ConfirmBtn")
+	var cancel_btn: Button = dialog.get_node("Margin/VBox/BtnBox/CancelBtn")
+	assert_str(confirm_btn.text).is_equal("End Day")
+	assert_str(cancel_btn.text).is_equal("Stay")
+
+
+func test_confirming_leave_ends_session_early_and_records_unserved() -> void:
+	set_definition(DefinitionLibrary.shop_rules, _rules(3))
+	var session := _start_session()
+	await _fulfil_next(session)
+	assert_int(session.current_index).is_equal(1)
+	session.get_node("%QuitBtn").pressed.emit()
+	var dialog := _dialog(session)
+	var confirm_btn: Button = dialog.get_node("Margin/VBox/BtnBox/ConfirmBtn")
+	confirm_btn.pressed.emit()
+	await _await_session_end(session)
+	assert_int(session.summary_data["fulfilled"]).is_equal(1)
+	assert_array(session.summary_data["notes"]).contains(["Closed early (2 unserved)"])
+	assert_bool(session.get_node("%QuitBtn").visible).is_false()
+
+
+func test_cancelling_leave_keeps_session_active() -> void:
+	set_definition(DefinitionLibrary.shop_rules, _rules(3))
+	var session := _start_session()
+	session.get_node("%QuitBtn").pressed.emit()
+	var dialog := _dialog(session)
+	var cancel_btn: Button = dialog.get_node("Margin/VBox/BtnBox/CancelBtn")
+	cancel_btn.pressed.emit()
+	await get_tree().process_frame
+	assert_bool(session.summary_data.has("level_after")).is_false()
+	assert_int(session.current_index).is_equal(0)
+	assert_bool(session.get_node("%QuitBtn").visible).is_true()
+
+
+func test_android_back_opens_quit_confirm_or_closes_it_if_open() -> void:
+	set_definition(DefinitionLibrary.shop_rules, _rules(3))
+	var session := _start_session()
+	session.notification(Node.NOTIFICATION_WM_GO_BACK_REQUEST)
+	var dialog := _dialog(session)
+	assert_object(dialog).is_not_null()
+	assert_bool(dialog.visible).is_true()
+	session.notification(Node.NOTIFICATION_WM_GO_BACK_REQUEST)
+	assert_bool(dialog.visible).is_false()
+	assert_bool(session.summary_data.has("level_after")).is_false()
+
+
+func test_quit_button_is_touch_sized() -> void:
+	var session := _start_session()
+	var quit_btn: Button = session.get_node("%QuitBtn")
+	assert_bool(quit_btn.custom_minimum_size.x >= 120.0).is_true()
+	assert_bool(quit_btn.custom_minimum_size.y >= 120.0).is_true()
+
+
+func _dialog(session: Control) -> PopupPanel:
+	for child in session.get_children():
+		if child is PopupPanel and child.name != "ContractDelivery" and not child.is_queued_for_deletion():
+			return child
+	return null

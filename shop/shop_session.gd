@@ -2,6 +2,7 @@ extends Control
 
 const PORTRAIT_SIZE := 200
 const CONTRACT_SAFE_MARGIN := 48
+const CONFIRM_DIALOG := preload("res://ui/confirm_dialog.tscn")
 const ORDER_STREAK := preload("res://shop/order_streak.gd")
 const REWARD_GRANT := preload("res://shop/reward_grant.gd")
 const CONTRACT_PROGRESS := preload("res://shop/contract_progress.gd")
@@ -14,6 +15,8 @@ var _rules: ShopRulesDefinition
 var _streak := ORDER_STREAK.new()
 var _grant := REWARD_GRANT.new()
 var _contracts: Array[RefCounted] = []
+var _dialog: PopupPanel
+var _session_ended: bool = false
 # Per-position shadow alpha in the pending queue: the back of a full queue
 # tops out just under 100% (e.g. 8 / 9 with 10 customers). Fixed for the
 # session, so the stack lightens as it shrinks.
@@ -33,6 +36,7 @@ var _shadow_step: float = 0.0
 @onready var _contracts_inset: MarginContainer = %ContractsInset
 @onready var _contract_sheet: PopupPanel = %ContractDelivery
 @onready var _pending_content: Control = $CustomerBox/CustomerAndLabels/Customers/PendingCustomers/Content
+@onready var _quit_btn: Button = %QuitBtn
 
 
 func _ready() -> void:
@@ -79,6 +83,7 @@ func _ready() -> void:
 	_build_crate_buttons()
 	GameManager.shop_level_changed.connect(_on_shop_level_changed)
 	_reject_btn.pressed.connect(reject_customer)
+	_quit_btn.pressed.connect(_on_quit_pressed)
 	# PendingCustomers lays out after _ready, so its Content.size.x is 0 here.
 	# The resized signal fires once layout assigns a real width, and again on
 	# any viewport resize — both reposition the portrait stack. advance_customer
@@ -281,6 +286,13 @@ func _award_loyalty(customer: CustomerDefinition, points: int) -> void:
 
 
 func end_session() -> void:
+	if _session_ended:
+		return
+	_session_ended = true
+
+	if _is_dialog_open():
+		_dialog.hide()
+
 	_clear_orders()
 	if is_instance_valid(_customer_label):
 		_customer_label.text = "Session Complete!"
@@ -293,6 +305,16 @@ func end_session() -> void:
 	if is_instance_valid(_reject_btn):
 		_reject_btn.disabled = true
 		_reject_btn.visible = false
+	if is_instance_valid(_quit_btn):
+		_quit_btn.disabled = true
+		_quit_btn.visible = false
+	if is_instance_valid(_pending_content):
+		for child in _pending_content.get_children():
+			child.queue_free()
+
+	if current_index < customers.size():
+		var unserved := customers.size() - current_index
+		summary_data["notes"].append("Closed early (%d unserved)" % unserved)
 
 	var board_ref = _get_board_grid()
 	if board_ref and is_instance_valid(board_ref):
@@ -307,6 +329,40 @@ func end_session() -> void:
 	GameManager.record_session_played()
 	EventBus.save_requested.emit()
 	EventBus.session_ended.emit(summary_data)
+
+
+func _notification(what: int) -> void:
+	if what != NOTIFICATION_WM_GO_BACK_REQUEST:
+		return
+	if _session_ended:
+		return
+	if _is_dialog_open():
+		_dialog.hide()
+		return
+	if _contract_sheet != null and is_instance_valid(_contract_sheet) and _contract_sheet.visible:
+		return
+	if current_index < customers.size():
+		_on_quit_pressed()
+
+
+func _on_quit_pressed() -> void:
+	if _session_ended or _is_dialog_open() or current_index >= customers.size():
+		return
+	if _contract_sheet != null and is_instance_valid(_contract_sheet) and _contract_sheet.visible:
+		return
+	_dialog = CONFIRM_DIALOG.instantiate()
+	add_child(_dialog)
+	_dialog.setup(
+		"End shop session early?\nYou will keep earnings from customers served so far.",
+		end_session,
+		Callable(),
+		"End Day",
+		"Stay",
+	)
+
+
+func _is_dialog_open() -> bool:
+	return _dialog != null and is_instance_valid(_dialog) and _dialog.visible
 
 
 func try_buy_crate(crate_id: String) -> bool:
@@ -393,7 +449,7 @@ func _store_contracts() -> void:
 
 
 func _refresh_contracts_button() -> void:
-	var show_button := not _contracts.is_empty() and current_index < customers.size()
+	var show_button := not _session_ended and not _contracts.is_empty() and current_index < customers.size()
 	_contracts_inset.visible = show_button
 	_contracts_btn.visible = show_button
 	_contracts_btn.text = "Contracts (%d)" % _contracts.size()

@@ -62,7 +62,7 @@ No autoload uses `class_name` — globally accessible by registration name only 
 | `merge_completed(result_id: String, result_quality: int)` | `merge_resolver.gd` | `audio_manager.gd`, `game_manager.gd` (`record_crafted`, the codex) | A merge produced a result item, at `result_quality` (0 Normal, 1 Fine, 2 Masterwork) |
 | `customer_fulfilled(order_id: String)` | `shop_session.gd` | `save_manager.gd` | Order delivered to customer |
 | `customer_rejected(customer_id: String)` | `shop_session.gd` | `save_manager.gd` | Customer was skipped |
-| `session_ended(summary: Dictionary)` | `shop_session.gd` | `main.gd` | 10th customer done, transition to summary. Summary: `{gold_earned: int, items_sold: int, fulfilled: int, rejected: int, portraits: Array, xp_earned: int, level_before: int, level_after: int}` |
+| `session_ended(summary: Dictionary)` | `shop_session.gd` | `main.gd` | All customers done or session closed early, transition to summary. Summary: `{gold_earned: int, items_sold: int, fulfilled: int, rejected: int, portraits: Array, xp_earned: int, level_before: int, level_after: int, notes: Array[String]}` |
 | `session_summary_dismissed()` | `session_summary.gd` | `main.gd` | Player taps Continue, go to prep |
 | `prep_start_session()` | `prep_phase.gd` | `main.gd` | Player starts next shop session |
 | `prep_enter_dungeon(dungeon_id: String)` | `prep_phase.gd` | `main.gd` | Player enters that dungeon (if unlocked) |
@@ -826,6 +826,7 @@ Customers are dealt from `CustomerDefinition` archetypes (see Content Definition
 | `get_contracts() -> Array[RefCounted]` | Returns the active contract progress objects for the shop's Contracts sheet. |
 | `deliver_to_contract(contract_id: String, item_id: String, count: int) -> int` | Moves up to `count` qualifying items into an active contract, grants a completed contract once, and saves the spent board and shelf with progress and rewards. Returns the quantity moved. |
 | `try_buy_crate(crate_id: String) -> bool` | Delegates to `board.buy_crate(crate_id)`. MergeBoard handles discount, pool rolling, and merge-safe placement internally, and refuses (returning false) a crate below `GameManager.meets_level(crate.min_shop_level)`. |
+| `end_session()` | Ends the session (normal finish or early forfeit via confirm dialog / Android back), saves board and shelf state, ticks contracts, appends unserved count to summary notes if closed early, and emits `EventBus.session_ended`. |
 
 #### OrderCard
 
