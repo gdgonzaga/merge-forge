@@ -13,7 +13,7 @@ corner_radius_bottom_left = 10
 
 [resource]
 default_font = ExtResource("1_1ymaj")
-default_font_size = 40
-Button/font_sizes/font_size = 32
+default_font_size = 30
+Button/font_sizes/font_size = 30
 VScrollBar/styles/grabber = SubResource("StyleBoxFlat_ssa0q")
 VScrollBar/styles/scroll = null

@@ -17,6 +17,7 @@ texture_margin_bottom = 6.0
 custom_minimum_size = Vector2(0, 64)
 offset_right = 199.0
 offset_bottom = 140.0
+mouse_filter = 2
 theme_override_styles/panel = SubResource("StyleBoxTexture_1")
 script = ExtResource("1")
 
