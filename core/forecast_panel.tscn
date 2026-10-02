@@ -31,21 +31,18 @@ size_flags_horizontal = 3
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_fonts/font = ExtResource("2_medieval")
-theme_override_font_sizes/font_size = 44
 text = "Modifier"
 
 [node name="ModifierDescription" type="Label" parent="ModifierCard/HBoxContainer/VBoxContainer" unique_id=1703540816]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_font_sizes/font_size = 36
 text = "Description"
 autowrap_mode = 3
 
 [node name="DemandTitle" type="Label" parent="." unique_id=919679877]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("2_medieval")
-theme_override_font_sizes/font_size = 40
 text = "Demand"
 
 [node name="DemandList" type="VBoxContainer" parent="." unique_id=2052760353]
@@ -57,7 +54,6 @@ theme_override_constants/separation = 8
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_fonts/font = ExtResource("2_medieval")
-theme_override_font_sizes/font_size = 40
 text = "First customers"
 
 [node name="CustomerPortraits" type="HFlowContainer" parent="." unique_id=1857775672]
@@ -70,6 +66,5 @@ theme_override_constants/v_separation = 24
 unique_name_in_owner = true
 visible = false
 layout_mode = 2
-theme_override_font_sizes/font_size = 36
 text = "Nobody wants anything you can make yet. Buy a blueprint or a crate."
 autowrap_mode = 3

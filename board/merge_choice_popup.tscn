@@ -29,4 +29,3 @@ custom_minimum_size = Vector2(240, 48)
 text = "Choose Merge Result"
 horizontal_alignment = 1
 theme_override_fonts/font = ExtResource("3_font")
-theme_override_font_sizes/font_size = 32

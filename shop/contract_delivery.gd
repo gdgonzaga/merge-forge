@@ -90,7 +90,6 @@ func _header(title: String) -> Label:
 	label.text = title
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.add_theme_font_override("font", BODY_FONT)
-	label.add_theme_font_size_override("font_size", HEADER_FONT_SIZE)
 	return label
 
 

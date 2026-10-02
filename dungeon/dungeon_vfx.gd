@@ -18,7 +18,6 @@ func spawn_floating_text(global_pos: Vector2, text: String, color: Color, is_cri
 	lbl.text = text
 	lbl.modulate = color
 	lbl.add_theme_font_override("font", load("res://resources/fonts/RobotoCondensed-VariableFont_wght.ttf"))
-	lbl.add_theme_font_size_override("font_size", 36 if is_crit else 28)
 	lbl.position = _to_local(global_pos) - Vector2(30, 15)
 	add_child(lbl)
 	var tween := create_tween()

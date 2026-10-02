@@ -1,0 +1,19 @@
+[gd_resource type="Theme" format=3 uid="uid://rg2g5uy2matk"]
+
+[ext_resource type="FontFile" uid="uid://cnabowbvxxs7y" path="res://resources/fonts/ModernAntiqua-Regular.ttf" id="1_1ymaj"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ssa0q"]
+content_margin_left = 10.0
+content_margin_right = 10.0
+bg_color = Color(0.70980394, 0.44313726, 0.23529412, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+
+[resource]
+default_font = ExtResource("1_1ymaj")
+default_font_size = 40
+Button/font_sizes/font_size = 32
+VScrollBar/styles/grabber = SubResource("StyleBoxFlat_ssa0q")
+VScrollBar/styles/scroll = null

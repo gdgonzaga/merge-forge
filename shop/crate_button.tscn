@@ -5,9 +5,11 @@
 [ext_resource type="StyleBox" uid="uid://c3ogmo02ytwex" path="res://resources/themes/button_secondary_disabled.tres" id="3"]
 
 [node name="CrateButton" type="Button" unique_id=996645086]
-custom_minimum_size = Vector2(0, 48)
+custom_minimum_size = Vector2(340, 120)
+custom_maximum_size = Vector2(340, -1)
+offset_right = 340.0
+offset_bottom = 120.0
 size_flags_horizontal = 3
-theme_override_font_sizes/font_size = 24
 theme_override_styles/normal = ExtResource("1")
 theme_override_styles/pressed = ExtResource("2")
 theme_override_styles/hover = ExtResource("1")

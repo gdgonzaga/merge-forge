@@ -43,9 +43,9 @@ grow_vertical = 2
 theme_override_constants/separation = 12
 
 [node name="Title" type="Label" parent="VBox" unique_id=1976017540]
+unique_name_in_owner = true
 layout_mode = 2
 theme_override_fonts/font = ExtResource("8_font")
-theme_override_font_sizes/font_size = 36
 text = "Prep Phase"
 horizontal_alignment = 1
 
@@ -90,7 +90,7 @@ metadata/_tab_index = 2
 [node name="BpContent" type="VBoxContainer" parent="VBox/TabContainer/Blueprints" unique_id=504126687]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_constants/separation = 6
+theme_override_constants/separation = 20
 
 [node name="PlaceholderCard" parent="VBox/TabContainer/Blueprints/BpContent" unique_id=2031856559 instance=ExtResource("2")]
 visible = false
@@ -106,7 +106,7 @@ metadata/_tab_index = 3
 [node name="UpgradeContent" type="VBoxContainer" parent="VBox/TabContainer/Upgrades" unique_id=504126688]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_constants/separation = 6
+theme_override_constants/separation = 20
 
 [node name="PlaceholderCard" parent="VBox/TabContainer/Upgrades/UpgradeContent" unique_id=401739962 instance=ExtResource("2")]
 layout_mode = 2
@@ -121,7 +121,7 @@ metadata/_tab_index = 4
 [node name="ReagentContent" type="VBoxContainer" parent="VBox/TabContainer/Reagents" unique_id=504126689]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_constants/separation = 6
+theme_override_constants/separation = 20
 
 [node name="PlaceholderCard" parent="VBox/TabContainer/Reagents/ReagentContent" unique_id=839663364 instance=ExtResource("2")]
 layout_mode = 2
@@ -134,39 +134,49 @@ alignment = 1
 [node name="QuitBtn" type="Button" parent="VBox/BtnBox" unique_id=504126690]
 custom_minimum_size = Vector2(200, 70)
 layout_mode = 2
-theme_override_font_sizes/font_size = 22
 theme_override_styles/normal = ExtResource("4_rff1c")
 theme_override_styles/pressed = ExtResource("5_qgtw2")
 theme_override_styles/hover = ExtResource("4_rff1c")
 theme_override_styles/disabled = ExtResource("7_4ueio")
 text = "Quit to Menu"
+autowrap_mode = 3
 
 [node name="SessionBtn" type="Button" parent="VBox/BtnBox" unique_id=504126691]
 custom_minimum_size = Vector2(200, 70)
 layout_mode = 2
-theme_override_font_sizes/font_size = 22
 theme_override_styles/normal = ExtResource("4_lnvqs")
 theme_override_styles/pressed = ExtResource("5_j1ycp")
 theme_override_styles/hover = ExtResource("4_lnvqs")
 theme_override_styles/disabled = ExtResource("7_qgtw2")
 text = "Start Session"
+autowrap_mode = 3
 
 [node name="DungeonBtn" type="Button" parent="VBox/BtnBox" unique_id=504126692]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(250, 70)
 layout_mode = 2
-theme_override_font_sizes/font_size = 22
 theme_override_styles/normal = ExtResource("4_lnvqs")
 theme_override_styles/pressed = ExtResource("5_j1ycp")
 theme_override_styles/hover = ExtResource("4_lnvqs")
 theme_override_styles/disabled = ExtResource("7_qgtw2")
 disabled = true
 text = "Enter Dungeon"
+autowrap_mode = 3
+
+[node name="GuildBtn" type="Button" parent="VBox/BtnBox" unique_id=387084987]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(200, 120)
+layout_mode = 2
+theme_override_styles/normal = ExtResource("4_rff1c")
+theme_override_styles/pressed = ExtResource("5_qgtw2")
+theme_override_styles/hover = ExtResource("4_rff1c")
+theme_override_styles/disabled = ExtResource("7_4ueio")
+text = "Guild"
+autowrap_mode = 3
 
 [node name="DebugBtn" type="Button" parent="VBox" unique_id=504126693]
 custom_minimum_size = Vector2(200, 50)
 layout_mode = 2
-theme_override_font_sizes/font_size = 16
 theme_override_styles/normal = ExtResource("4_rff1c")
 theme_override_styles/pressed = ExtResource("5_qgtw2")
 theme_override_styles/hover = ExtResource("4_rff1c")

@@ -34,7 +34,8 @@ window/handheld/orientation=1
 
 [gui]
 
-theme/custom_font="uid://cnabowbvxxs7y"
+theme/default_font_antialiasing=0
+theme/custom="res://resources/themes/default_theme.tres"
 
 [input_devices]
 

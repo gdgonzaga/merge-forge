@@ -6,6 +6,8 @@
 
 [node name="OrderCard" type="PanelContainer" unique_id=1243468917]
 custom_minimum_size = Vector2(0, 56)
+offset_right = 116.0
+offset_bottom = 100.0
 theme_override_styles/panel = ExtResource("1_7du84")
 script = ExtResource("1")
 
@@ -26,9 +28,7 @@ size_flags_vertical = 4
 
 [node name="QtyLabel" type="Label" parent="HBox" unique_id=617014729]
 layout_mode = 2
-theme_override_font_sizes/font_size = 20
 
 [node name="RewardLabel" type="Label" parent="HBox" unique_id=1199821408]
 modulate = Color(1, 0.84, 0, 1)
 layout_mode = 2
-theme_override_font_sizes/font_size = 20

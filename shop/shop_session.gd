@@ -20,6 +20,7 @@ var _contracts: Array[RefCounted] = []
 var _shadow_step: float = 0.0
 
 @onready var board: Control = $CustomerBox/Board
+@onready var _background: TextureRect = %BG
 @onready var _portrait_rect: TextureRect = $CustomerBox/CustomerAndLabels/Customers/CurrentCustomer/PortraitWrapper/PortraitRect
 @onready var _customer_label: Label = $CustomerBox/CustomerAndLabels/CustomerLabels/CustomerLabel
 @onready var _remaining_label: Label = $CustomerBox/CustomerAndLabels/CustomerLabels/RemainingLabel
@@ -50,6 +51,9 @@ func _ready() -> void:
 	plan = SessionPlanner.plan_next_session()
 	customers = plan.customers
 	_shadow_step = 1.0 / float(maxi(customers.size() - 1, 1))
+	var town := GameManager.get_current_town()
+	if town.background != null:
+		_background.texture = town.background
 
 	AudioManager.play_sfx("session_start")
 
@@ -88,7 +92,7 @@ func _build_crate_buttons() -> void:
 	for child in _crate_buttons.get_children():
 		child.queue_free()
 	var crate_scene: PackedScene = load("res://shop/crate_button.tscn")
-	for crate in DefinitionLibrary.get_all_crates():
+	for crate in DefinitionLibrary.get_town_crates(GameManager.get_current_town()):
 		if not GameManager.meets_level(crate.min_shop_level):
 			continue
 		var btn: Button = crate_scene.instantiate()
@@ -208,8 +212,7 @@ func try_fulfill_order(order_index: int) -> void:
 	board.take_sellable(item_id, needed, order.min_quality)
 	var reward := order.gold_reward
 	GameManager.add_gold(reward)
-	var xp: int = _streak.fulfill(reward, _rules)
-	GameManager.add_shop_xp(xp)
+	var xp: int = GameManager.add_shop_xp(_streak.fulfill(reward, _rules))
 	var points := _rules.loyalty_per_quality_order if order.min_quality > 0 else _rules.loyalty_per_order
 	_award_loyalty(customer.definition, points)
 	EventBus.customer_fulfilled.emit(item_id)
@@ -272,7 +275,7 @@ func _award_loyalty(customer: CustomerDefinition, points: int) -> void:
 		return
 	var before := GameManager.get_loyalty(customer.id)
 	GameManager.add_loyalty(customer.id, points)
-	for reward in customer.rewards_crossed(before, before + points):
+	for reward in customer.rewards_crossed(before, GameManager.get_loyalty(customer.id)):
 		var given := _grant.grant(reward.gold, reward.blueprint, reward.reagent, reward.reagent_count)
 		summary_data["notes"].append("%s gives you: %s" % [customer.name, ", ".join(given)])
 

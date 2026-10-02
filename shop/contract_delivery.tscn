@@ -41,7 +41,6 @@ theme_override_constants/separation = 24
 [node name="Title" type="Label" parent="Margin/VBox"]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("2")
-theme_override_font_sizes/font_size = 44
 text = "Contracts"
 
 [node name="Scroll" type="ScrollContainer" parent="Margin/VBox"]
@@ -60,7 +59,6 @@ unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 120)
 layout_mode = 2
 theme_override_fonts/font = ExtResource("2")
-theme_override_font_sizes/font_size = 40
 theme_override_styles/normal = ExtResource("3")
 theme_override_styles/pressed = ExtResource("4")
 theme_override_styles/hover = ExtResource("3")

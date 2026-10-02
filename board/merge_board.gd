@@ -69,7 +69,7 @@ func setup(config: Dictionary) -> void:
 
 func buy_crate(crate_id: String) -> bool:
 	var crate := DefinitionLibrary.get_crate(crate_id)
-	if crate == null:
+	if crate == null or not crate in GameManager.get_current_town().crates:
 		return false
 	if not GameManager.meets_level(crate.min_shop_level):
 		return false
@@ -221,7 +221,6 @@ func show_quality_lost(best_quality: int, grid_pos: Vector2i) -> void:
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	label.add_theme_color_override("font_color", Color(1, 0.99, 0, 1))
 	label.add_theme_font_override("font", load("res://resources/fonts/RobotoCondensed-VariableFont_wght.ttf"))
-	label.add_theme_font_size_override("font_size", 32)
 	label.position = cell_center - Vector2(60, 16)
 	label.size = Vector2(120, 32)
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE

@@ -38,7 +38,6 @@ func show_options(options: Array[Dictionary]) -> void:
 				details.append("%dg" % reagent_cost)
 		btn.text = display_name if details.is_empty() else "%s (%s)" % [display_name, ", ".join(details)]
 		btn.custom_minimum_size = Vector2(220, 120)
-		btn.add_theme_font_size_override("font_size", 32)
 		var item_id: String = opt.get("item_id", "")
 		var reagent_id: String = opt.get("reagent_id", "")
 		btn.pressed.connect(_on_button_pressed.bind(item_id, is_variant, reagent_id))

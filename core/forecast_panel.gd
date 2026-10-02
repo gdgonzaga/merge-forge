@@ -72,11 +72,10 @@ func _show_customers(customers: Array[ShopCustomer], show_orders: bool) -> void:
 		_portraits.add_child(column)
 
 
-func _label(text: String, font_size: int) -> Label:
+func _label(text: String, _font_size: int = 0) -> Label:
 	var label := Label.new()
 	label.text = text
 	label.add_theme_font_override("font", BODY_FONT)
-	label.add_theme_font_size_override("font_size", font_size)
 	return label
 
 
