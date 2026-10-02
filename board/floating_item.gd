@@ -3,10 +3,12 @@ extends Control
 signal despawn_timeout()
 
 const QUALITY_STARS := preload("res://ui/quality_stars.tscn")
+const DRAGGED_TINT := Color(1.0, 0.95, 0.5, 0.75)
 
 var item_data: Dictionary = {}
 var despawn_time: float = 12.0
 var time_remaining: float = 12.0
+var _is_dragging: bool = false
 
 @onready var _icon: TextureRect = $Icon
 @onready var _timer_bar: ColorRect = $TimerBar
@@ -25,11 +27,20 @@ func setup(data: Dictionary, time: float) -> void:
 	_apply_icon()
 
 
+func _notification(what: int) -> void:
+	if what == Node.NOTIFICATION_DRAG_END:
+		if _is_dragging:
+			_is_dragging = false
+			if _icon != null:
+				_icon.modulate = Color.WHITE
+
+
 func _apply_icon() -> void:
 	if _icon == null:
 		return
 	_icon.texture = item_data["definition"].sprite
 	_icon.visible = true
+	_icon.modulate = DRAGGED_TINT if _is_dragging else Color.WHITE
 	_stars.set_quality(item_data["quality"])
 
 
@@ -54,14 +65,20 @@ func _process(delta: float) -> void:
 func _get_drag_data(at_position: Vector2) -> Variant:
 	if item_data.is_empty():
 		return null
+	_is_dragging = true
+	if _icon != null:
+		_icon.modulate = DRAGGED_TINT
+	var preview_root := Control.new()
 	var preview := TextureRect.new()
 	preview.size = Vector2(96, 96)
 	preview.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	preview.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	preview.texture = item_data["definition"].sprite
+	preview_root.add_child(preview)
 	_add_quality_preview(preview, item_data["quality"])
-	set_drag_preview(preview)
-	preview.position = Vector2(-14, -100)
+	# Godot moves the preview root to the pointer; offset its child instead.
+	preview.position = Vector2(-48, -112)
+	set_drag_preview(preview_root)
 	return make_drag_data()
 
 
